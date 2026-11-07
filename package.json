@@ -23,7 +23,7 @@
 		"prepack": "npm run check:public"
 	},
 	"keywords": [],
-	"license": "0-BSD",
+	"license": "MIT",
 	"devDependencies": {
 		"@codemirror/commands": "6.8.1",
 		"@codemirror/language": "6.11.3",

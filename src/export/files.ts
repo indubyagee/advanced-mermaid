@@ -1,10 +1,13 @@
 /** Return a vault-relative folder, refusing traversal before normalization. */
 export function exportFolder(input: string): string {
 	const folder = input.trim();
-	if (!folder) return '';
-	if (folder.startsWith('/') || /[\\:<>"|?*]/.test(folder) || [...folder].some(controlCharacter)) throw new Error('Choose a folder inside this vault using forward slashes.');
+	if (!folder)
+		return '';
+	if (folder.startsWith('/') || /[\\:<>"|?*]/.test(folder) || [...folder].some(controlCharacter))
+		throw new Error('Choose a folder inside this vault using forward slashes.');
 	const parts = folder.replace(/\/+$/, '').split('/');
-	if (parts.some(part => !part || part === '.' || part === '..' || /[. ]$/.test(part))) throw new Error('Choose a vault folder without empty, dot, or parent segments.');
+	if (parts.some(part => !part || part === '.' || part === '..' || /[. ]$/.test(part)))
+		throw new Error('Choose a vault folder without empty, dot, or parent segments.');
 	return parts.join('/');
 }
 
@@ -28,7 +31,14 @@ export interface ExportVault {
 }
 
 /** Creation (never modification) protects existing files, including racing saves. */
-export async function saveExport(vault: ExportVault, folder: string, basename: string, extension: 'svg' | 'png', data: string | ArrayBuffer, current: () => boolean): Promise<string> {
+export async function saveExport(
+	vault: ExportVault,
+	folder: string,
+	basename: string,
+	extension: 'svg' | 'png',
+	data: string | ArrayBuffer,
+	current: () => boolean
+): Promise<string> {
 	const safeFolder = exportFolder(folder);
 	for (let attempt = 0; attempt < 100; attempt++) {
 		const filename = `${basename}${attempt ? `-${attempt + 1}` : ''}.${extension}`;

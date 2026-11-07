@@ -15,6 +15,9 @@ import { insertDisplayOverride, insertStyleOverride, type StyleTarget } from './
 import { overrideSelector } from '../ui/override-selector';
 import { resolveDisplay } from '../rendering/overrides';
 import { applyEditorStyle } from '../styles/editor-style';
+import { DiagramSyntaxSelector } from '../ui/diagram-syntax-selector';
+import { initializeDiagram, insertComponent, type SourceInsertion } from './syntax/source';
+import { insertConfiguration } from './syntax/configuration-insertion';
 
 export class LiveEditor {
 	readonly element: HTMLElement;
@@ -28,6 +31,7 @@ export class LiveEditor {
 	private readonly controller: DiagramController;
 	private readonly scheduler: PreviewScheduler;
 	private readonly nested: EditorView;
+	private readonly syntax: DiagramSyntaxSelector;
 	private css = '';
 	private cssBaseline = '';
 	private sourceBaseline = '';
@@ -56,6 +60,14 @@ export class LiveEditor {
 		for (const mode of ['mermaid', 'css'] as const) this.tab(sources, mode === 'css' ? 'CSS' : 'Mermaid', () => this.selectInput(mode), mode === 'mermaid');
 		const outputs = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Preview format' } });
 		for (const mode of ['pele', 'mermaid', 'svg']) this.tab(outputs, mode === 'svg' ? 'SVG' : mode === 'pele' ? 'Pele' : 'Mermaid', () => { this.outputMode = mode; void this.showOutput(); }, mode === 'pele');
+		this.syntax = new DiagramSyntaxSelector(this.element.createDiv(), () => this.bridge.source(), {
+			diagram: diagram => this.insertSyntax(source => initializeDiagram(source, diagram)),
+			component: component => this.insertSyntax(source => {
+				const selection = this.nested.state.selection.main;
+				return insertComponent(source, selection.from, selection.to, component.text);
+			}),
+			configuration: diagram => this.insertSyntax(source => insertConfiguration(source, diagram)),
+		});
 		overrideSelector(this.element, () => overrideOptions(this.bridge.source()), (option, target) => this.insertOverride(option, target));
 		const columns = this.element.createDiv({ cls: 'advanced-mermaid-editor-columns' });
 		this.sourceHost = columns.createDiv({ cls: 'advanced-mermaid-editor-source', attr: { role: 'tabpanel', 'aria-label': 'Diagram source' } });
@@ -88,7 +100,7 @@ export class LiveEditor {
 			if (this.compositionRange) this.compositionRange.to = Math.max(this.compositionRange.to, update.state.selection.main.to);
 			if (this.inputMode === 'mermaid') {
 				if (this.conflict) { this.draftStatus.textContent = 'Draft retained. Use Note Version before applying further edits.'; return; }
-				bridge.forward(update); this.sourceBaseline = bridge.source(); this.invalidatePreview();
+				bridge.forward(update); this.sourceBaseline = bridge.source(); this.syntax.refresh(); this.invalidatePreview();
 			} else { this.css = update.state.doc.toString(); this.cssDirty = this.css !== this.cssBaseline; this.validateCss(); }
 			if (!update.view.composing && !this.conflict && (this.visible || this.nested.hasFocus)) this.scheduler.schedule(settings().liveEditor.debounceMs);
 		}), EditorView.domEventHandlers({
@@ -98,6 +110,7 @@ export class LiveEditor {
 		extensions.push(this.presentation.of(this.presentationExtensions()));
 		this.nested = new EditorView({ state: EditorState.create({ doc: this.sourceBaseline, extensions }), parent: this.sourceHost });
 		this.scheduler = new PreviewScheduler(win, () => this.render(), text => { this.status.textContent = text; });
+		this.syntax.load();
 		this.controller = new DiagramController(this.canonical, this.sourceBaseline, settings, app, file, { boundary: this.preview, keepLastValid: true, changed: (valid, error) => {
 			this.status.textContent = valid ? 'Current · ' + (this.canonical.dataset.category ?? 'diagram') : (this.canonical.classList.contains('advanced-mermaid-fallback') ? 'Using global/type fallback styling. ' : this.canonical.classList.contains('advanced-mermaid-stale') ? 'Preview is from the last valid source. ' : 'Diagram error. ') + (error instanceof Error ? error.message : 'Diagram error');
 			if (error && typeof error === 'object' && 'line' in error && typeof error.line === 'number' && Number.isInteger(error.line)) {
@@ -159,6 +172,20 @@ export class LiveEditor {
 		} catch (error) { this.invalid = true; this.draftStatus.textContent = String(error); return false; }
 	}
 	canClose(): boolean { if (!this.nested.composing && this.flush()) return true; this.draftStatus.textContent += ' Finish composing, or copy or discard the draft before closing.'; return false; }
+	private insertSyntax(create: (source: string) => SourceInsertion): void {
+		if (this.disposed) return;
+		if (this.nested.composing || !this.flush()) { this.draftStatus.textContent = 'Resolve the current draft or finish composing before inserting syntax.'; return; }
+		try {
+			if (!this.selectInput('mermaid')) return;
+			const source = this.bridge.source();
+			if (source !== this.nested.state.doc.toString()) throw new Error('The note changed. Sync the source before inserting syntax.');
+			const inserted = create(source);
+			if (inserted.source !== source && !this.bridge.commit(inserted.source, inserted)) throw new Error('The source block is no longer available.');
+			this.sync(); this.syntax.refresh();
+			this.nested.dispatch({ selection: { anchor: inserted.from, head: inserted.to }, scrollIntoView: true }); this.nested.focus();
+			this.draftStatus.textContent = inserted.source === source ? 'Existing syntax selected; authored values are kept.' : '';
+		} catch (error) { this.draftStatus.textContent = error instanceof Error ? error.message : String(error); }
+	}
 	private insertOverride(option: OverrideOption, target: StyleTarget): void {
 		if (this.nested.composing || !this.flush()) { this.draftStatus.textContent = 'Resolve the current draft or finish composing before inserting an override.'; return; }
 		try {
@@ -175,6 +202,8 @@ export class LiveEditor {
 		if (mode === this.inputMode) return true;
 		if (this.inputMode === 'css' && !this.flush()) return false;
 		this.inputMode = mode;
+		this.syntax.setInputMode(mode);
+		for (const tab of Array.from(this.element.querySelectorAll('[aria-label="Source format"] [role="tab"]'))) tab.setAttribute('aria-selected', String(tab.textContent === (mode === 'css' ? 'CSS' : 'Mermaid')));
 		this.nested.dispatch({ effects: this.presentation.reconfigure(this.presentationExtensions()) });
 		if (mode === 'css') {
 			try { this.css = styleRegion(this.bridge.source())?.css ?? ''; this.cssBaseline = this.css; } catch (error) { this.draftStatus.textContent = String(error); }
@@ -209,6 +238,7 @@ export class LiveEditor {
 		if (!force && this.cssDirty && css !== this.cssBaseline) { this.conflict = true; this.invalidatePreview(); this.draftStatus.textContent = 'Note styles changed externally. Copy the draft or use note version.'; return; }
 		if (force || !this.cssDirty) { this.css = css; this.cssBaseline = css; this.invalid = false; }
 		this.sourceBaseline = source;
+		this.syntax.refresh();
 		if (!this.nested.composing || !overlaps) this.replaceNested(this.inputMode === 'css' ? this.css : source);
 		this.invalidatePreview(); if (this.visible || this.nested.hasFocus) this.scheduler.schedule(this.settings().liveEditor.debounceMs); else this.scheduler.cancel();
 	}
@@ -259,7 +289,7 @@ export class LiveEditor {
 	destroy(): void {
 		if (this.disposed) return;
 		if (this.cssDirty || this.conflict) retainDraft({ file: this.file, source: this.inputMode === 'mermaid' ? this.nested.state.doc.toString() : this.sourceBaseline, css: this.css, reason: 'Editor closed with an unsaved draft' });
-		this.disposed = true; this.outputRevision++; this.scheduler.destroy(); this.resize.disconnect(); this.intersection.disconnect(); this.nested.destroy(); this.controller.destroy();
+		this.disposed = true; this.outputRevision++; this.scheduler.destroy(); this.resize.disconnect(); this.intersection.disconnect(); this.syntax.unload(); this.nested.destroy(); this.controller.destroy();
 		this.element.ownerDocument.defaultView!.clearTimeout(this.cssTimer);
 	}
 }

@@ -20,8 +20,7 @@
 	position: relative;
 	min-width: 0;
 }
-.advanced-mermaid-settings .setting-item-control,
-.advanced-mermaid-settings.setting-item .setting-item-control { flex-wrap: wrap; gap: 6px; }
+.advanced-mermaid-settings .setting-item-control, .advanced-mermaid-settings.setting-item .setting-item-control { flex-wrap: wrap; gap: 6px; }
 .advanced-mermaid-color-pair { display: flex; flex-wrap: wrap; gap: 8px; }
 .advanced-mermaid-color-input { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .advanced-mermaid-control-label { font-size: var(--font-ui-smaller); max-width: 140px; }
@@ -30,14 +29,19 @@
 .advanced-mermaid-color-input button { padding: 3px 6px; }
 .advanced-mermaid-number-row input[type="number"] { width: 85px; }
 .advanced-mermaid-number-row input[type="range"] { max-width: 150px; min-width: 70px; }
-.advanced-mermaid-preset-source { width: 100%; min-width: 180px; min-height: 180px; font-family: var(--font-monospace); resize: vertical; }
-.advanced-mermaid-editor-mode, .advanced-mermaid-override-selector { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0; }
+.advanced-mermaid-preset-source {
+	width: 100%; min-width: 180px; min-height: 180px; font-family: var(--font-monospace); resize: vertical;
+}
+.advanced-mermaid-editor-mode, .advanced-mermaid-override-selector {
+	display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0;
+}
 .advanced-mermaid-override-selector { font-family: var(--font-interface); font-size: var(--font-ui-small); }
 .advanced-mermaid-override-selector select { max-width: 100%; }
-.advanced-mermaid-settings [aria-invalid="true"], .advanced-mermaid-color-input [aria-invalid="true"] { border-color: var(--text-error); }
+.advanced-mermaid-settings [aria-invalid="true"],.advanced-mermaid-color-input [aria-invalid="true"] {
+	border-color: var(--text-error);
+}
 /* A custom subgraph fill uses its full opacity instead of the default tint. */
 .advanced-mermaid-custom-cluster-fill { --pele-cluster-opacity: 1; }
-
 /* Set defaults on semantic groups. Authored inline styles and shape attributes
    continue to take precedence over inherited values. Pele's internal --_s,
    --_a, --_b, and --_m tokens supply surface, alternate surface, border, and
@@ -50,8 +54,12 @@
 	stroke-width: var(--pele-node-width, 1px);
 }
 /* Edge strokes and label backgrounds have separate controls from node paint. */
-.advanced-mermaid .pele-edges { stroke-width: var(--pele-edge-width, 1px); }
-.advanced-mermaid .pele-edge-labels { fill: var(--pele-edge-label-text, var(--pele-fg)); }
+.advanced-mermaid .pele-edges {
+	stroke-width: var(--pele-edge-width, 1px);
+ }
+.advanced-mermaid .pele-edge-labels {
+	fill: var(--pele-edge-label-text, var(--pele-fg));
+}
 .advanced-mermaid .pele-edge-label > rect {
 	fill: var(--pele-edge-label-bg, var(--pele-bg));
 	stroke: var(--pele-edge-label-border, none);
@@ -112,10 +120,17 @@
 .advanced-mermaid-snapshot > svg.pele { max-width: none !important; max-height: none !important; }
 /* Export disclosure: wrap format actions and suppress an empty status line. */
 .advanced-mermaid-export { position: relative; max-width: 100%; text-align: end; }
-.advanced-mermaid-export summary { cursor: pointer; display: inline-flex; align-items: center; justify-content: center; text-align: center; vertical-align: middle; padding: 4px 8px; min-height: 28px; box-sizing: border-box; font-size: var(--font-ui-small, 13px); border: 1px solid var(--background-modifier-border); border-radius: var(--radius-s, 4px); }
+.advanced-mermaid-export summary {
+	cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+	text-align: center; vertical-align: middle; padding: 4px 8px; min-height: 28px;
+	box-sizing: border-box; font-size: var(--font-ui-small, 13px);
+	border: 1px solid var(--background-modifier-border); border-radius: var(--radius-s, 4px);
+}
 .advanced-mermaid-export summary::marker { content: ''; }
 .advanced-mermaid-export summary::-webkit-details-marker { display: none; }
-.advanced-mermaid :is(button, .advanced-mermaid-export summary) { font-size: var(--advanced-mermaid-button-font-size, var(--font-ui-small, 13px)); }
+.advanced-mermaid :is(button, .advanced-mermaid-export summary) {
+	font-size: var(--advanced-mermaid-button-font-size, var(--font-ui-small, 13px));
+}
 /* Pele normally hides Reset at the fitted scale. Keep the full control stack
    available in every rendered view, including small diagrams. */
 .advanced-mermaid .pele-zoom .pele-zoom-reset { display: grid !important; }
@@ -138,29 +153,90 @@
 .advanced-mermaid-error { border-color: var(--pele-error, var(--text-error)); color: var(--pele-error, var(--text-error)); }
 /* Inline editor: establish a query container so layout follows the editor's
    available width, including when Obsidian places it in a narrow pane. */
-.advanced-mermaid-editor { container-type: inline-size; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m, 6px); padding: 12px; max-width: 100%; box-sizing: border-box; }
-.advanced-mermaid-editor-header, .advanced-mermaid-editor-header [role="tablist"], .advanced-mermaid-editor-footer, .advanced-mermaid-draft-actions, .advanced-mermaid-editor-end-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.advanced-mermaid-editor {
+	container-type: inline-size; border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m, 6px); padding: 12px; max-width: 100%; box-sizing: border-box;
+}
+.advanced-mermaid-editor-header,
+.advanced-mermaid-editor-header [role="tablist"],
+.advanced-mermaid-editor-footer,
+.advanced-mermaid-draft-actions,
+.advanced-mermaid-editor-end-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
 .advanced-mermaid-editor-header { justify-content: space-between; margin-bottom: 12px; }
 .advanced-mermaid-editor-header [aria-label="Preview format"] { margin-inline-start: auto; }
-.advanced-mermaid-editor-footer { align-items: flex-end; justify-content: space-between; margin-top: 12px; }
-.advanced-mermaid-editor-end-actions { align-items: flex-start; margin-inline-start: auto; }
-.advanced-mermaid-editor-end-actions .advanced-mermaid-actions { margin-top: 0; min-width: 0; flex-wrap: wrap; }
-.advanced-mermaid-editor-status, .advanced-mermaid-renderer-details { font-size: var(--font-ui-smaller, 12px); }
+.advanced-mermaid-syntax-selector {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 8px;
+	margin-bottom: 12px; }
+.advanced-mermaid-syntax-selector[hidden] { display: none; }
+.advanced-mermaid-syntax-selector label {
+	display: flex;
+	flex-direction: column;
+	gap: 4px; min-width: 0;
+	max-width: 100%;
+	font-size: var(--font-ui-small, 13px);
+}
+.advanced-mermaid-syntax-selector label:nth-child(2) { flex: 1 1 220px; }
+.advanced-mermaid-syntax-selector select { width: 100%; max-width: 100%; min-width: 0; }
+
+.advanced-mermaid-editor-footer {
+	align-items: flex-end;
+	justify-content: space-between;
+	margin-top: 12px;
+}
+.advanced-mermaid-editor-end-actions {
+	align-items: flex-start;
+	margin-inline-start: auto;
+}
+.advanced-mermaid-editor-end-actions .advanced-mermaid-actions {
+	margin-top: 0;
+	min-width: 0;
+	flex-wrap: wrap;
+}
+.advanced-mermaid-editor-status, .advanced-mermaid-renderer-details {
+	font-size: var(--font-ui-smaller, 12px);
+}
 /* Source/preview split: zero minimum tracks allow long content to scroll
    inside each pane. The stacked layout setting forces a single column. */
-.advanced-mermaid-editor-columns { display: grid; grid-template-columns: minmax(0, 48fr) minmax(0, 52fr); gap: 16px; }
+.advanced-mermaid-editor-columns {
+	display: grid;
+	grid-template-columns: minmax(0, 48fr) minmax(0, 52fr);
+	gap: 16px;
+}
 .advanced-mermaid-editor[data-layout="stacked"] .advanced-mermaid-editor-columns { grid-template-columns: minmax(0, 1fr); }
 .advanced-mermaid-editor-source, .advanced-mermaid-editor-preview { min-width: 0; max-width: 100%; overflow: auto; }
 /* Bound CodeMirror's height and scroll its source in a monospace font. */
-.advanced-mermaid-editor-source > .cm-editor { min-height: 180px; max-height: 70vh; border: 1px solid var(--background-modifier-border); border-radius: var(--radius-m, 6px); overflow: hidden; }
+.advanced-mermaid-editor-source > .cm-editor {
+	min-height: 180px;
+	max-height: 70vh;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m, 6px);
+	overflow: hidden;
+}
 /* Obsidian's Markdown rules reach nested editors. Restore an independent
    source layout with room for gutters, without changing the parent editor. */
-div.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scroller { overflow: auto; font-family: var(--font-monospace, monospace); font-size: var(--advanced-mermaid-editor-font-size, inherit); }
-.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scroller .cm-content { min-height: 180px; width: auto; max-width: none; flex-basis: auto !important; padding: 4px 0; }
-.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scroller .cm-line { max-width: none; padding: 0 8px; }
+div.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scroller {
+	overflow: auto; font-family: var(--font-monospace, monospace);
+	font-size: var(--advanced-mermaid-editor-font-size, inherit);
+}
+.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scroller .cm-content {
+	min-height: 180px; width: auto; max-width: none; flex-basis: auto !important; padding: 4px 0;
+}
+.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scroller .cm-line {
+	max-width: none; padding: 0 8px;
+}
 /* Minimal makes note gutters absolute with !important. Nested gutters must
    retain CodeMirror's sticky position and their own space in the flex row. */
-.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scroller .cm-gutters { position: sticky !important; z-index: 200; margin-inline: 0; background: var(--advanced-mermaid-source-background); }
+.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scroller .cm-gutters {
+	position: sticky !important; z-index: 200; margin-inline: 0;
+	background: var(--advanced-mermaid-source-background);
+}
 /* Editor presentation is independent of diagram style overrides. Theme pairs
    resolve through CSS so a light/dark switch also updates existing editors. */
 .advanced-mermaid-editor, .advanced-mermaid-editor-mode {

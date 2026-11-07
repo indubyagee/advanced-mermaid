@@ -14,6 +14,8 @@ flowchart LR
 ```
 ````
 
+![Live Editor](docs/media/preview-dark-flowchart-short-1.png)
+
 The plugin uses Obsidian's Markdown code-block processor. Reading view, rendered Live Preview blocks, and embeds are integration targets. Browser fixtures exercise the integration through test adapters; real-device behavior requires separate validation. Source mode remains plain editable Markdown.
 
 ## Display settings
@@ -38,6 +40,8 @@ flowchart LR
   A --> B
 ```
 ````
+
+![Live Editor with local overrides](docs/media/preview-dark-flowchart-short-2.png)
 
 `max-width` accepts `normal`, `wide`, `maximum`, `none`, or `auto`. `max-height` accepts concrete lengths, `short`, `medium`, `tall`, `none`, or `auto`. `aspect-ratio` and `fill` accept `true` or `false`. `auto` selects orientation defaults; `none` removes the additional limit while width stays inside the pane. An omitted key inherits the global setting. Precedence is **diagram override → saved global setting → orientation/plugin default**. Existing `align` and concrete `max-height` directives remain valid.
 
@@ -73,6 +77,8 @@ Settings use Obsidian's native declarative pages/groups and appear in settings s
 
 In Live Preview, the mode buttons appear in this order: **Rendered View**, **Live Editor**, **Static Editor**. Select **Live Editor** above a complete top-level `pele` or `mermaid` fence, or use **Advanced Mermaid: Toggle inline editor**. **Static Editor** focuses the original fenced Markdown. **Rendered View** is selected when neither editor is active; select it to exit either editor. Esc and toggling an active Live Editor also return to Rendered View. The note cursor moves outside the fence so Live Preview does not immediately reopen source. A fence-only note gains one trailing newline if it has no existing position outside the fence. Explicit static/rendered choices suppress focused-block reopening for that block while its note pane is open. Cached Pele previews resume with the latest saved source on return. Backtick and tilde fences are supported; lists, quotes, and callouts retain ordinary presentation. One inline editor can be active in each pane. Inactive Mermaid blocks and Reading view keep Obsidian's native renderer. Source mode stays plain Markdown.
 
+The **Diagram** menu offers all 33 families supported by Pele, with 55 declaration choices including directions and C4/Railroad variants. Selecting **Flowchart TB** inserts `flowchart TB`, keeping existing frontmatter, comments and body statements. **Component** offers diagram-specific snippets, including classic `A["node"]` and expanded `A@{ shape: rect, label: process }` Flowchart nodes, and inserts at the source position or replaces selected body text. **Insert configuration** adds frontmatter examples for the selected family and fills missing keys while keeping authored values. Each action uses one parent-editor undo step. The menus follow manual declaration edits and are hidden in the CSS tab. See the [syntax controls guide](https://github.com/indubyagee/advanced-mermaid/blob/main/docs/live-editor-syntax.md) for examples, configuration compatibility, and source-preservation details.
+
 The **Local override** selector inserts display directives or registered style variables with valid current values. Style overrides offer Both themes, Light, and Dark targeting. Existing values are selected without replacement; each insertion is one parent-editor undo step. Resolve malformed comments or an invalid/conflicting CSS draft before inserting. Local Pele settings and presets affect inline previews/exports of `mermaid` fences; their native rendering follows Obsidian's own styles.
 
 The source pane has **Mermaid** and **CSS** tabs; output has **Pele**, **Mermaid**, and read-only **SVG** tabs. The source excludes the enclosing fences. Mermaid edits enter the parent note immediately, with one parent undo history. CSS accepts a constrained variable language, validates immediately, and saves a valid draft after the configured delay. Only Mermaid text and visible comments persist:
@@ -80,13 +86,15 @@ The source pane has **Mermaid** and **CSS** tabs; output has **Pele**, **Mermaid
 ````markdown
 ```pele
 %% advanced-mermaid-style:v1
-%% .pele { --pele-surface: #153030; }
+%% .pele { --pele-surface: #153030;  --pele-fg: #FFFFFF; }
 %% .theme-dark .pele { --pele-surface: #2D4646; }
 %% advanced-mermaid-style:end
 flowchart LR
  A --> B
 ```
 ````
+
+![alt text](docs/media/preview-dark-flowchart-short-3a.png)
 
 Allowed selectors are `.pele`, `.theme-light .pele`, and `.theme-dark .pele`. Values are literal hex colors, local family names, and bounded `px` lengths. Element controls use registered names such as `--advanced-mermaid-sequence-note-fill`; measured label size uses `--advanced-mermaid-label-size`. Arbitrary properties, URLs, `var()`, imports, private renderer variables, and `!important` are rejected. Malformed comments produce source-line diagnostics and a clearly labeled fallback preview with export disabled.
 

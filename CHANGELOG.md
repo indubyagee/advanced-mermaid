@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add Live Editor diagram selection for all 33 Pele families, diagram-specific component snippets at the source selection, and frontmatter configuration generation with authored-value preservation and parent undo/redo.
 - Add optional custom YAML frontmatter for each diagram family, with source-block overrides, validation, and scoped reset/undo.
 - Use Advanced Mermaid consistently in plugin metadata, controls, code identifiers, note directives, and CSS variables.
 - Bound diagram source before preprocessing and scan YAML frontmatter without repeated prefix work.

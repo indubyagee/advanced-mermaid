@@ -14,6 +14,7 @@ import { runEditorStyleChecks } from './editor-style-browser.mjs';
 import { runRendererOwnershipChecks } from './renderer-ownership-browser.mjs';
 import { runZoomStyleChecks } from './zoom-style-browser.mjs';
 import { runFrontmatterChecks } from './frontmatter-browser.mjs';
+import { runSyntaxChecks } from './syntax-browser.mjs';
 
 const bundle = await build({ entryPoints: ['tests/browser-entry.ts'], bundle: true, write: false, format: 'iife', globalName: 'fixture', alias: { obsidian: resolve('tests/obsidian.ts') } });
 const css = await readFile('styles.css', 'utf8');
@@ -28,6 +29,7 @@ try {
 	const page = await browser.newPage({ viewport: { width: 1000, height: 800 } });
 	page.on('pageerror', error => console.error('Browser error:', error));
 	await page.goto(`http://127.0.0.1:${server.address().port}`);
+	await runSyntaxChecks(page);
 	await runFrontmatterChecks(page);
 	const sourceBudget = await page.evaluate(() => {
 		const item = fixture.diagram('---\n' + ' '.repeat(60_000) + '\n---\nflowchart LR\n A-->B');
