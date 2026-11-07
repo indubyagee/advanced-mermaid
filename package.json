@@ -1,0 +1,49 @@
+{
+	"name": "advanced-mermaid",
+	"private": true,
+	"version": "0.2.2",
+	"description": "Local Mermaid diagram rendering and inline editing for Obsidian",
+	"repository": { "type": "git", "url": "https://github.com/indubyagee/advanced-mermaid.git" },
+	"homepage": "https://github.com/indubyagee/advanced-mermaid#readme",
+	"bugs": { "url": "https://github.com/indubyagee/advanced-mermaid/issues" },
+	"files": ["main.js", "manifest.json", "styles.css", "README.md", "CHANGELOG.md", "LICENSE"],
+	"main": "main.js",
+	"type": "module",
+	"scripts": {
+		"dev": "node esbuild.config.mjs",
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"version": "node version-bump.mjs && git add manifest.json versions.json",
+		"lint": "eslint .",
+		"test": "node scripts/test.mjs",
+		"test:browser": "node scripts/browser-test.mjs",
+		"test:host": "node scripts/host-v02-test.mjs",
+		"typecheck": "tsc --noEmit --skipLibCheck -p tests/tsconfig.json",
+		"check:public": "node scripts/check-public.mjs",
+		"check:history": "node scripts/check-public.mjs --history",
+		"prepack": "npm run check:public"
+	},
+	"keywords": [],
+	"license": "0-BSD",
+	"devDependencies": {
+		"@codemirror/commands": "6.8.1",
+		"@codemirror/language": "6.11.3",
+		"@codemirror/state": "6.7.6",
+		"@codemirror/view": "6.43.13",
+		"@eslint/js": "^9.39.4",
+		"@lezer/markdown": "^1.8.1",
+		"@types/node": "^22.15.17",
+		"esbuild": "0.25.5",
+		"eslint": "^9.39.4",
+		"eslint-plugin-obsidianmd": "^0.4.0",
+		"globals": "^17.6.0",
+		"jiti": "^2.6.1",
+		"js-yaml": "4.3.2",
+		"obsidian": "1.14.4",
+		"playwright": "^1.64.1",
+		"typescript": "^5.8.3",
+		"typescript-eslint": "^8.59.1"
+	},
+	"dependencies": {
+		"pele": "1.12.0"
+	}
+}

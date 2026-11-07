@@ -1,0 +1,51 @@
+import assert from 'node:assert/strict';
+
+export async function runInlineSettingsChecks(page) {
+	const result = await page.evaluate(async () => {
+		const settings = fixture.normalizeSettings(null); settings.alignment = 'right';
+		settings.style.global.colors.text = { light: '#123', dark: '#abc' };
+		settings.style.diagrams.state = { useGlobal: false, overrides: { colors: { text: { dark: '#def' } }, elements: {} } };
+		const tab = new fixture.AdvancedMermaidSettingTab(fixture.app, {}, settings, () => {});
+		tab.containerEl = document.body.createDiv(); tab.update();
+		const row = name => [...tab.containerEl.querySelectorAll('.setting-item')].find(item => [...item.querySelectorAll('label')].some(label => label.textContent === name));
+		const open = name => row(name).querySelector('button').click();
+		const back = () => tab.containerEl.querySelector('button[aria-label="Back"]').click();
+		const edit = (label, value) => { const input = tab.containerEl.querySelector(`input[aria-label="${label}"]`); input.value = value; input.dispatchEvent(new Event('input')); };
+		open('Editor style settings');
+		edit('Source font size', '21'); const fontSize = settings.liveEditor.fontSizePx;
+		tab.containerEl.querySelector('[aria-label="Reset Source font size"]').click(); const fontReset = settings.liveEditor.fontSizePx === null;
+		back();
+		open('Global style settings');
+		const colorRows = tab.containerEl.querySelectorAll('.advanced-mermaid-color-row').length;
+		const paired = row('Primary text').querySelectorAll('input[type="color"]').length === 2;
+		edit('Primary text Light', 'rgba(255, 0, 0, .5)'); const rgba = settings.style.global.colors.text.light;
+		tab.containerEl.querySelector('[aria-label="Reset Primary text Light"]').click(); const independent = !settings.style.global.colors.text.light && settings.style.global.colors.text.dark === '#abc';
+		open('Reset global styles');
+		const globalReset = !Object.keys(settings.style.global.colors).length && settings.style.diagrams.state.overrides.colors.text.dark === '#def';
+		settings.alignment = 'left'; open('Styles reset');
+		const undoScope = settings.alignment === 'left' && settings.style.global.colors.text.dark === '#abc';
+		back(); open('Diagram-specific style settings');
+		const select = tab.containerEl.querySelector('[aria-label="Diagram selection"]'); select.value = 'flowchart'; select.dispatchEvent(new Event('change'));
+		row('Use global styles').querySelector('input').click();
+		edit('Primary text Light', '#456');
+		const sparse = settings.style.diagrams.flowchart.overrides.colors.text.light === '#445566' && settings.style.diagrams.flowchart.overrides.colors.text.dark === undefined;
+		row('Use global styles').querySelector('input').click(); const retained = settings.style.diagrams.flowchart.overrides.colors.text.light === '#445566';
+		open('Reset this diagram type'); const typeReset = settings.style.diagrams.flowchart === undefined && settings.style.diagrams.state.overrides.colors.text.dark === '#def';
+		back(); open('Preset class settings');
+		open('Preset class code block');
+		const modal = document.querySelector('.modal'); const source = modal.querySelector('textarea'); source.value = 'preset:\n  - alias: Custom\n    fill: #12345680\n    width: 2.5px'; source.dispatchEvent(new Event('input'));
+		[...modal.querySelectorAll('button')].find(button => button.textContent === 'Save').click();
+		const presetSaved = settings.presets.length === 1 && settings.presets[0].alias === 'Custom' && settings.presets[0].width === 2.5;
+		open('Preset class code block'); const invalidModal = document.querySelector('.modal'); const invalid = invalidModal.querySelector('textarea'); invalid.value = 'preset:\n  - alias: Bad\n    fill: url(remote)'; invalid.dispatchEvent(new Event('input'));
+		[...invalidModal.querySelectorAll('button')].find(button => button.textContent === 'Save').click(); const invalidRetained = settings.presets[0].alias === 'Custom' && !!document.querySelector('.modal');
+		[...invalidModal.querySelectorAll('button')].find(button => button.textContent === 'Cancel').click();
+		back(); open('Local overrides and example');
+		const example = [...tab.containerEl.querySelectorAll('details')].find(section => section.querySelector('summary')?.textContent === 'Show example');
+		example.open = true; await new Promise(resolve => setTimeout(resolve, 30)); const preview = example.querySelectorAll('svg.pele').length;
+		back(); const destroyed = !tab.containerEl.querySelector('svg.pele'); tab.hide(); tab.containerEl.remove();
+		return { colorRows, paired, rgba, independent, globalReset, undoScope, sparse, retained, typeReset, preview, destroyed, fontSize, fontReset, presetSaved, invalidRetained };
+	});
+	assert.equal(result.colorRows, 11); assert.equal(result.rgba, '#ff000080'); assert.equal(result.fontSize, 21); assert.equal(result.preview, 1);
+	for (const key of ['paired', 'independent', 'globalReset', 'undoScope', 'sparse', 'retained', 'typeReset', 'destroyed', 'fontReset', 'presetSaved', 'invalidRetained']) assert.equal(result[key], true, key);
+	console.log('Inline settings passed: native definitions/pages, paired colors, resets/undo, sparse type profiles, numeric inheritance, atomic presets and example cleanup.');
+}

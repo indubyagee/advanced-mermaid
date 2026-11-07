@@ -1,0 +1,3 @@
+#!/bin/sh
+# Run locally before any objects can be sent to a remote.
+node scripts/check-public.mjs --pre-push

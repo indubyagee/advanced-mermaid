@@ -1,0 +1,63 @@
+# vscode
+.vscode
+
+# Intellij
+*.iml
+.idea
+
+# npm
+node_modules
+
+# Generated builds, release copies, and test reports
+/dist/
+/package/
+/coverage/
+/test-results/
+/playwright-report/
+*.tsbuildinfo
+
+# Local backups and environment secrets
+*.bak
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Don't include the compiled main.js file in the repo.
+# They should be uploaded to GitHub releases instead.
+main.js
+
+# Exclude sourcemaps
+*.map
+
+# obsidian
+data.json
+
+# Exclude macOS Finder (System Explorer) View States
+.DS_Store
+/tasks/
+
+# Private planning, development notes, agent state, and local snapshots
+/.local/
+/.agents/
+/.codex/
+/.obsidian/
+AGENTS.md
+CLAUDE.md
+/docs/architecture.md
+/docs/superpowers/
+/docs/internal/
+/internal/
+/plans/
+/specs/
+/history/
+/references/
+/attachments/
+
+# Credentials and local diagnostic output
+*.key
+*.pem
+*.p12
+*.pfx
+*.log
+.npmrc.local

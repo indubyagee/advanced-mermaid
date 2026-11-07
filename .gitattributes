@@ -1,0 +1,20 @@
+# Keep local-only development records out of source archives as well as Git.
+.githooks/* text eol=lf
+AGENTS.md export-ignore
+CLAUDE.md export-ignore
+.local export-ignore
+.agents export-ignore
+.codex export-ignore
+.obsidian export-ignore
+tasks export-ignore
+docs/architecture.md export-ignore
+docs/superpowers export-ignore
+docs/internal export-ignore
+internal export-ignore
+plans export-ignore
+specs export-ignore
+history export-ignore
+references export-ignore
+attachments export-ignore
+test-results export-ignore
+package export-ignore

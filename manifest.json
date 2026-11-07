@@ -1,0 +1,10 @@
+{
+  "id": "advanced-mermaid",
+  "name": "Advanced Mermaid",
+  "version": "0.2.2",
+  "minAppVersion": "1.14.5",
+  "description": "Render Mermaid diagrams locally with inline editing, style overrides, and reusable preset classes.",
+  "author": "indubyagee",
+  "authorUrl": "https://github.com/indubyagee",
+  "isDesktopOnly": false
+}
