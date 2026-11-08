@@ -21,7 +21,7 @@ export async function runRendererOwnershipChecks(page) {
 		const wait = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 		try {
 			await wait(); const initial = first.host.querySelectorAll('svg.pele').length;
-			first.choose('Live Editor'); await wait();
+			first.choose('Live editor'); await wait();
 			const whileOwned = first.host.querySelectorAll('svg.pele').length;
 			const paneIsolation = other.host.querySelectorAll('svg.pele').length === 1;
 			first.view.dispatch({ changes: { from: 0, insert: 'Prefix\n' } }); await wait();
@@ -31,25 +31,25 @@ export async function runRendererOwnershipChecks(page) {
 			const delayed = first.view.dom.createDiv({ cls: 'delayed-preview' }); const count = children.length;
 			plugin.processor(source, delayed, first.context); await wait();
 			const delayedRegistered = children.length === count + 1 && !delayed.querySelector('svg.pele');
-			first.choose('Rendered View'); await wait();
+			first.choose('Rendered view'); await wait();
 			const restored = first.host.querySelectorAll('svg.pele').length;
 			const latest = first.host.querySelector('svg.pele')?.textContent.includes('Latest') && delayed.querySelector('svg.pele')?.textContent.includes('Latest');
 			const delayedRestored = delayed.querySelectorAll('svg.pele').length === 1;
 			let repeatable = true;
 			for (let i = 0; i < 4; i++) {
-				first.choose('Live Editor'); await wait(); repeatable &&= !first.host.querySelector('svg.pele');
-				first.choose('Rendered View'); await wait();
+				first.choose('Live editor'); await wait(); repeatable &&= !first.host.querySelector('svg.pele');
+				first.choose('Rendered view'); await wait();
 				repeatable &&= first.host.querySelectorAll('svg.pele').length === 1 && first.host.querySelectorAll('.advanced-mermaid-actions').length === 1;
 			}
-			first.choose('Live Editor'); await wait(); children[count].unload();
-			first.choose('Rendered View'); await wait(); const unloadedStaysEmpty = !delayed.querySelector('svg.pele');
-			first.choose('Static Editor'); await wait(); first.choose('Rendered View'); await wait();
+			first.choose('Live editor'); await wait(); children[count].unload();
+			first.choose('Rendered view'); await wait(); const unloadedStaysEmpty = !delayed.querySelector('svg.pele');
+			first.choose('Static editor'); await wait(); first.choose('Rendered view'); await wait();
 			const staticRestored = first.host.querySelectorAll('svg.pele').length === 1;
 			return { initial, whileOwned, restored, paneIsolation, mapped, delayedRegistered, delayedRestored, latest, repeatable, unloadedStaysEmpty, staticRestored };
 		} finally { first.view.destroy(); other.view.destroy(); for (const child of children) child.unload(); plugin.unload(); root.remove(); }
 	});
 	console.log('Cached renderer ownership:', JSON.stringify(report));
 	assert.equal(report.initial, 1); assert.equal(report.whileOwned, 0);
-	assert.equal(report.restored, 1, 'Rendered View must restore a reused Markdown preview after Live Editor releases ownership');
+	assert.equal(report.restored, 1, 'Rendered view must restore a reused Markdown preview after Live editor releases ownership');
 	for (const [key, value] of Object.entries(report)) if (!['initial', 'whileOwned', 'restored'].includes(key)) assert.equal(value, true, key);
 }

@@ -1,7 +1,7 @@
 /** Publication policy shared by the current-tree and outgoing-history checks. */
 export function isPrivatePath(input) {
 	const path = input.replaceAll('\\', '/');
-	return /(?:^|\/)(?:\.local|\.agents|\.codex|\.obsidian|\.vscode|\.idea|node_modules|tasks|internal|plans|planning|specs|history|references|attachments|test-results|playwright-report|coverage|dist|package)(?:\/|$)/i.test(path)
+	return /(?:^|\/)(?:\.private|\.local|\.agents|\.codex|\.obsidian|\.vscode|\.idea|node_modules|tasks|internal|plans|planning|specs|history|references|attachments|test-results|playwright-report|coverage|dist|package)(?:\/|$)/i.test(path)
 		|| /^docs\/(?:superpowers|internal|design|development)(?:\/|$)/i.test(path)
 		|| /^docs\/architecture\.md$/i.test(path)
 		|| /(?:^|\/)(?:AGENTS|CLAUDE)\.md$/i.test(path)

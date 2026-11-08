@@ -1,12 +1,24 @@
 {
 	"name": "advanced-mermaid",
 	"private": true,
-	"version": "0.2.2",
+	"version": "0.3.0",
 	"description": "Local Mermaid diagram rendering and inline editing for Obsidian",
-	"repository": { "type": "git", "url": "https://github.com/indubyagee/advanced-mermaid.git" },
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/indubyagee/advanced-mermaid.git"
+	},
 	"homepage": "https://github.com/indubyagee/advanced-mermaid#readme",
-	"bugs": { "url": "https://github.com/indubyagee/advanced-mermaid/issues" },
-	"files": ["main.js", "manifest.json", "styles.css", "README.md", "CHANGELOG.md", "LICENSE"],
+	"bugs": {
+		"url": "https://github.com/indubyagee/advanced-mermaid/issues"
+	},
+	"files": [
+		"main.js",
+		"manifest.json",
+		"styles.css",
+		"README.md",
+		"CHANGELOG.md",
+		"LICENSE"
+	],
 	"main": "main.js",
 	"type": "module",
 	"scripts": {
@@ -20,7 +32,8 @@
 		"typecheck": "tsc --noEmit --skipLibCheck -p tests/tsconfig.json",
 		"check:public": "node scripts/check-public.mjs",
 		"check:history": "node scripts/check-public.mjs --history",
-		"prepack": "npm run check:public"
+		"prepack": "npm run check:public",
+		"check:release": "node scripts/check-release.mjs"
 	},
 	"keywords": [],
 	"license": "MIT",

@@ -12,22 +12,40 @@ on:
 jobs:
     build:
         runs-on: ubuntu-latest
-
         strategy:
             matrix:
                 node-version: [20.x, 22.x, 24.x]
-                # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
         steps:
             - uses: actions/checkout@v6
               with:
                   persist-credentials: false
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v6
+                  fetch-depth: 0
+            - uses: actions/setup-node@v6
               with:
                   node-version: ${{ matrix.node-version }}
-                  cache: 'npm'
+                  cache: npm
             - run: npm ci
-            - run: npm run check:public
-            - run: npm run build --if-present
+            - run: npm test
+            - run: npm run typecheck
             - run: npm run lint
+            - run: npm run build
+            - run: npm run check:public
+            - run: npm run check:history
+            - run: npm run check:release
+
+    browser:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v6
+              with:
+                  persist-credentials: false
+            - uses: actions/setup-node@v6
+              with:
+                  node-version: 24
+                  cache: npm
+            - run: npm ci
+            - run: npx playwright install --with-deps chromium
+            - run: mkdir -p test-results
+            - run: npm run test:browser
+              env:
+                  ADVANCED_MERMAID_BROWSER: chromium

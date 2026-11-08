@@ -18,3 +18,7 @@ references export-ignore
 attachments export-ignore
 test-results export-ignore
 package export-ignore
+
+# Keep tested release files byte-identical on Windows and Linux.
+manifest.json text eol=lf
+styles.css text eol=lf

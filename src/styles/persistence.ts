@@ -7,6 +7,7 @@ export { isEditorFontSize } from './editor-style';
 
 export interface StyleSettings {
 	followObsidianTheme: boolean;
+	// Serialized profile field; this is not the global object.
 	global: StyleProfile;
 	diagrams: Partial<Record<DiagramCategory, TypeStyleProfile>>;
 }

@@ -14,7 +14,7 @@ export class PresetModal extends Modal {
 		this.setTitle(this.mode === 'text' ? 'Edit preset text' : this.original ? 'Edit preset class' : 'Create preset class');
 		const host = this.contentEl; host.addClass('advanced-mermaid-preset-dialog'); let draftText = this.baseline; const draft: PresetClass = { ...this.original, alias: this.original?.alias ?? '' };
 		if (this.mode === 'text') {
-			host.createEl('p', { text: 'Edit the preset list. Colors may use hex, RGB or HSL; widths use px. Saving replaces the library without changing notes.' });
+			host.createEl('p', { text: 'Edit the preset list. Colors may use hex, rgb or hsl; widths use px. Saving replaces the library without changing notes.' });
 			const input = host.createEl('textarea', { cls: 'advanced-mermaid-preset-source', attr: { 'aria-label': 'Preset text', spellcheck: 'false' } }); input.value = draftText;
 			input.addEventListener('input', () => { draftText = input.value; });
 		} else {

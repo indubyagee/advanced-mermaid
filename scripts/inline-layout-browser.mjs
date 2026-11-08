@@ -79,7 +79,7 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 			assert.match(metrics.font, /Courier New/, `${theme}: ${JSON.stringify(metrics)}`); assert.equal(metrics.contentFont, metrics.font);
 			assert.ok(metrics.gap >= 7, `${theme}: Source touches the gutter at ${width}px: ${metrics.gap}`);
 			assert.ok(metrics.radius > 0); assert.equal(metrics.overflow, false);
-			assert.deepEqual(metrics.labels, ['Copy Draft', 'Discard Changes', 'Use Note Version', 'Render Now']);
+			assert.deepEqual(metrics.labels, ['Copy draft', 'Discard changes', 'Use note version', 'Render now']);
 			assert.ok(Math.abs(metrics.export.right - metrics.footer.right) <= 1);
 			if (width >= 768) {
 				assert.equal(metrics.sourceTabs.top, metrics.previewTabs.top);
@@ -140,7 +140,7 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 			assert.equal(await fontSize.getAttribute('aria-invalid'), 'true');
 			assert.equal(await page.evaluate(() => layoutFixture.settings.liveEditor.fontSizePx), 22);
 		}
-		await page.locator('.advanced-mermaid-editor-mode').first().getByRole('button', { name: 'Rendered View', exact: true }).click();
+		await page.locator('.advanced-mermaid-editor-mode').first().getByRole('button', { name: 'Rendered view', exact: true }).click();
 		await page.evaluate(() => { if (!layoutFixture.inline.openAt('InlineEditor.md', 2)) throw new Error('Could not reopen the inline editor'); });
 		await page.waitForFunction(() => getComputedStyle(document.querySelector('.advanced-mermaid-editor-source .cm-content')).fontSize === '22px');
 		await page.getByRole('tab', { name: 'CSS', exact: true }).click();

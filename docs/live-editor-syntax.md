@@ -1,6 +1,6 @@
-# Live Editor syntax controls
+# Live editor syntax controls
 
-Open a complete top-level `pele` or `mermaid` code block in **Live Editor**. The Mermaid source tab has three syntax controls. They work locally and do not require additional settings.
+Open a complete top-level `pele` or `mermaid` code block in **Live editor**. The Mermaid source tab has three syntax controls. They work locally and do not require additional settings.
 
 | Control | Behavior |
 | --- | --- |
@@ -28,4 +28,4 @@ Templates provide editable Mermaid configuration values. The fields for families
 
 Pele 1.12.0 supports a subset of Mermaid configuration and uses its own layout and CSS-based appearance. A valid generated key may have no visible effect; Mermaid theme/look/layout choices do not select a different Pele renderer. Use **Local override** for the plugin's supported local display and style controls. Native Mermaid comparison continues to exclude frontmatter, as described in the main guide. See [Pele compatibility](https://pele.run/compatibility) for renderer differences.
 
-All declaration variants are tested with representative bodies and generated configuration through the pinned renderer. Component snippets are parser-tested in their required structural context. Browser fixtures exercise the controls, source selection, undo/redo, manual declaration changes, CSS draft protection and teardown. Real Obsidian and mobile validation remains separate from the browser adapters.
+Mobile loading is disabled. macOS and Linux host behavior remains unverified.

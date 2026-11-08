@@ -46,7 +46,7 @@ config:
     rankSpacing: 100
 ```
 
-When enabled, these defaults apply to all diagrams in the selected family in Pele reading view, Live Editor previews, and exports. Frontmatter authored in a Live Editor or source block overrides matching keys recursively; omitted keys inherit, while lists, scalar values and `null` replace their defaults. Source init directives and diagram-body statements retain the renderer's normal precedence. Notes are never rewritten. Native Mermaid views and comparisons follow Obsidian's own configuration.
+When enabled, these defaults apply to all diagrams in the selected family in Pele reading view, Live editor previews, and exports. Frontmatter authored in a Live editor or source block overrides matching keys recursively; omitted keys inherit, while lists, scalar values and `null` replace their defaults. Source init directives and diagram-body statements retain the renderer's normal precedence. Notes are never rewritten. Native Mermaid views and comparisons follow Obsidian's own configuration.
 
 Use normal Mermaid frontmatter keys such as `title` and `config`, including the correctly capitalized family key (`gitGraph`, `treeView`, `journey`, or `swimlane`, for example). Options take effect only when supported by Pele 1.12.0; accepting YAML does not imply support for every Mermaid option. Configurations are limited to 50,000 characters and bounded nesting; combined render input also follows the renderer's source limit.
 
@@ -115,7 +115,7 @@ Defaults below describe a new configuration with **Follow Obsidian theme** enabl
 | Source font size | Empty; inherit vault text size | Unchanged 8–40 px integer input, slider, and inheritance reset. Applies to Mermaid and CSS source. |
 | Source font color | Inherit | Paired light/dark pickers, literal text fields, and independent resets. Custom text color also colors syntax tokens; reset restores syntax highlighting. |
 | Source background color | Inherit | Paired controls for the source background and line-number gutter. |
-| Button font size | Empty; inherit interface size | 8–40 px integer input, slider, and reset for all Live Editor buttons, mode choices, and Export. |
+| Button font size | Empty; inherit interface size | 8–40 px integer input, slider, and reset for all Live editor buttons, mode choices, and Export. |
 | Button font colors → Active buttons / Inactive buttons / Export button | Inherit | One pair of light/dark color controls per row. Export inherits inactive colors unless separately overridden. |
 | Button background colors → Active buttons / Inactive buttons / Export button | Inherit | Same controls for button backgrounds. |
 | Zoom → Use global styles | Off | Bypasses dedicated Zoom colors without deleting them. Uses the normal inherited diagram/editor colors. Custom Zoom rows are hidden while enabled. |

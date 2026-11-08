@@ -85,14 +85,14 @@ export async function runInlineEditorChecks(page) {
 	await page.keyboard.press('Control+A'); await page.keyboard.type('.pele { color: red; }');
 	await page.waitForFunction(() => document.querySelector('.advanced-mermaid-draft-status').textContent.includes('Unsaved'));
 	assert.equal(await page.evaluate(() => inlineFixture.view.state.doc.toString()), validNote);
-	await page.locator('.advanced-mermaid-editor-mode').first().getByRole('button', { name: 'Rendered View', exact: true }).click(); assert.equal(await page.locator('.advanced-mermaid-editor').count(), 1);
-	await page.getByRole('button', { name: 'Discard Changes', exact: true }).click();
+	await page.locator('.advanced-mermaid-editor-mode').first().getByRole('button', { name: 'Rendered view', exact: true }).click(); assert.equal(await page.locator('.advanced-mermaid-editor').count(), 1);
+	await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
 	await content.click(); await page.keyboard.press('Control+A'); await page.keyboard.type('.pele { --pele-fg: #abc; }');
 	await page.evaluate(() => { const source = inlineFixture.view.state.doc.toString(); const offset = source.indexOf('#246'); inlineFixture.view.dispatch({ changes: { from: offset, to: offset + 4, insert: '#135' } }); });
 	await page.waitForFunction(() => document.querySelector('.advanced-mermaid-draft-status').textContent.includes('changed externally'));
 	assert.ok((await page.evaluate(() => inlineFixture.view.state.doc.toString())).includes('#135'));
 	assert.ok((await content.textContent()).includes('#abc'));
-	await page.getByRole('button', { name: 'Use Note Version', exact: true }).click();
+	await page.getByRole('button', { name: 'Use note version', exact: true }).click();
 	await page.getByRole('tab', { name: 'Mermaid', exact: true }).first().click();
 	await content.click(); await page.keyboard.press('Control+End'); await page.keyboard.type('\n C[unclosed');
 	await page.waitForSelector('.advanced-mermaid-stale');
@@ -100,7 +100,7 @@ export async function runInlineEditorChecks(page) {
 	const staleExport = await page.evaluate(() => document.querySelector('.advanced-mermaid-editor .advanced-mermaid-actions').hidden); assert.ok(staleExport);
 	await page.keyboard.press('Control+z');
 	await page.waitForFunction(() => !inlineFixture.view.state.doc.toString().includes('C[unclosed'));
-	await page.getByRole('button', { name: 'Render Now', exact: true }).click();
+	await page.getByRole('button', { name: 'Render now', exact: true }).click();
 	await page.waitForFunction(() => !document.querySelector('.advanced-mermaid-stale'), null, { timeout: 5000 }).catch(async error => { console.log('Inline editor recovery diagnostic:', await page.evaluate(() => ({ note: inlineFixture.view.state.doc.toString(), ui: document.querySelector('.advanced-mermaid-editor')?.textContent }))); throw error; });
 	await page.getByRole('tab', { name: 'SVG', exact: true }).click();
 	await page.waitForFunction(() => document.querySelector('textarea[aria-label="Canonical Pele SVG"]').value.startsWith('<svg'));

@@ -22,8 +22,8 @@ export function showDiagramError(host: HTMLElement, error: unknown, source: stri
 	host.createEl('p', { text: error instanceof ConfigurationError
 		? 'Correct the directive in the source block and try again.'
 		: 'Edit the source block to correct the diagram. Other diagrams can still render.' });
-	const button = host.createEl('button', { text: 'Copy Error', attr: { type: 'button' } });
-	owner.registerDomEvent(button, 'click', () => { void copy(diagnostic).catch(() => { button.textContent = 'Copy Unavailable'; button.title = 'Select and copy the error text.'; }); });
+	const button = host.createEl('button', { text: 'Copy error', attr: { type: 'button' } });
+	owner.registerDomEvent(button, 'click', () => { void copy(diagnostic).catch(() => { button.textContent = 'Copy unavailable'; button.title = 'Select and copy the error text.'; }); });
 	const details = host.createEl('details');
 	details.createEl('summary', { text: 'Technical details' });
 	details.createEl('pre', { text: error instanceof Error ? error.stack ?? diagnostic : diagnostic });

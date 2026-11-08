@@ -38,6 +38,7 @@ data.json
 /tasks/
 
 # Private planning, development notes, agent state, and local snapshots
+/.private/
 /.local/
 /.agents/
 /.codex/

@@ -12,7 +12,8 @@ try {
 		outdir: directory, bundle: true, platform: 'node', format: 'esm',
 		alias: { obsidian: resolve('tests/obsidian.ts') },
 	});
-	const result = spawnSync(process.execPath, ['--test', ...entries.map(name => join(directory, name.replace(/\.ts$/, '.js'))), resolve('scripts/public-policy.test.mjs')], { stdio: 'inherit' });
+	const scriptTests = (await readdir('scripts')).filter(name => name.endsWith('.test.mjs')).map(name => resolve('scripts', name));
+	const result = spawnSync(process.execPath, ['--test', ...entries.map(name => join(directory, name.replace(/\.ts$/, '.js'))), ...scriptTests], { stdio: 'inherit' });
 	process.exitCode = result.status ?? 1;
 } finally {
 	if (resolve(directory).startsWith(resolve(tmpdir()) + '\\') || resolve(directory).startsWith(resolve(tmpdir()) + '/')) {

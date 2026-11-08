@@ -81,6 +81,7 @@ export async function run(app: App): Promise<Record<string, unknown>> {
 		await renderNativeMermaid('sequenceDiagram\n Alice->>Bob: Hello', host, () => true); report.nativeSequence = !!host.querySelector('svg');
 	} catch (error) { report.nativeError = String(error); } finally { host.remove(); }
 	const settingsHost = root.createDiv();
+	// Legacy host probe preserves its original settings/leaf integration.
 	const tab = new AdvancedMermaidSettingTab(app, owner, settings, () => {}); tab.containerEl = settingsHost; tab.display();
 	report.settingsSections = settingsHost.querySelectorAll('.advanced-mermaid-type-settings').length;
 	tab.hide(); settingsHost.remove();

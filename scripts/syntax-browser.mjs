@@ -32,7 +32,7 @@ export async function runSyntaxChecks(page) {
 	const configured = await page.evaluate(() => syntaxFixture.view.state.doc.toString());
 	assert.match(configured, /config:\n/); assert.match(configured, /flowchart:\n/);
 	assert.match(configured, /rankSpacing: 50/); assert.ok(configured.startsWith('Before\n\n```pele\n---\n') && configured.endsWith('```\n\nAfter'));
-	await page.getByRole('button', { name: 'Render Now', exact: true }).click();
+	await page.getByRole('button', { name: 'Render now', exact: true }).click();
 	await page.waitForSelector('.advanced-mermaid-editor svg.pele');
 	await page.getByRole('button', { name: 'Insert configuration', exact: true }).click();
 	assert.equal(await page.evaluate(() => syntaxFixture.view.state.doc.toString()), configured);
@@ -72,7 +72,7 @@ export async function runSyntaxChecks(page) {
 	});
 	assert.equal(await page.evaluate(() => syntaxFixture.view.state.doc.toString()), beforeDraft);
 	assert.match(await page.locator('.advanced-mermaid-draft-status').textContent(), /Resolve the current draft/);
-	await page.getByRole('button', { name: 'Discard Changes', exact: true }).click();
+	await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
 	await page.getByRole('tab', { name: 'Mermaid', exact: true }).first().click();
 	assert.ok(await page.locator('.advanced-mermaid-syntax-selector').isVisible());
 	await page.evaluate(() => { const nested = syntaxFixture.nested(); nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert: '---\nconfig: []\n---\nsequenceDiagram' } }); });

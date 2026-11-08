@@ -41,6 +41,7 @@ export default class V02HostProbe extends Plugin {
 	}
 
 	async editors(path: string): Promise<Record<string, unknown>> {
+		// Legacy host probe preserves its original settings/leaf integration.
 		const beforeLeaf = this.app.workspace.activeLeaf;
 		const source = 'Before the v0.2.0 test.\n\n~~~mermaid\nflowchart LR\n A[Start] --> B[End]\n~~~\n\n```pele\nflowchart LR\n C[Other] --> D[Done]\n```\n\nAfter the v0.2.0 test.\n';
 		const file = await this.app.vault.create(path, source);
@@ -54,7 +55,7 @@ export default class V02HostProbe extends Plugin {
 			const parent = this.parents.get(path); if (!parent) throw new Error('Host CodeMirror view unavailable.');
 			const root = view.containerEl;
 			const bars = (): HTMLElement[] => Array.from(root.querySelectorAll<HTMLElement>('.advanced-mermaid-editor-mode'));
-			const mode = (index: number, live: boolean): void => { Array.from(bars()[index]!.querySelectorAll('button')).find(button => button.textContent === (live ? 'Live Editor' : 'Static Editor'))?.click(); };
+			const mode = (index: number, live: boolean): void => { Array.from(bars()[index]!.querySelectorAll('button')).find(button => button.textContent === (live ? 'Live editor' : 'Static editor'))?.click(); };
 			const choose = (id: string): void => { const select = root.querySelector<HTMLSelectElement>('[aria-label="Insert local override"]')!; select.value = id; select.dispatchEvent(new Event('change')); };
 			report.modeControls = bars().length;
 			mode(0, true); await pause(); report.mermaidInlineEditor = root.querySelectorAll('.advanced-mermaid-editor').length === 1;
@@ -75,7 +76,7 @@ export default class V02HostProbe extends Plugin {
 			nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert: '.pele { color: red; }' } });
 			const valid = view.editor.getValue(); mode(0, false); choose('display:fill');
 			report.invalidDraftProtected = !!root.querySelector('.advanced-mermaid-editor') && view.editor.getValue() === valid;
-			Array.from(widget.querySelectorAll('button')).find(button => button.textContent === 'Discard Changes')!.click(); mode(0, false); await pause();
+			Array.from(widget.querySelectorAll('button')).find(button => button.textContent === 'Discard changes')!.click(); mode(0, false); await pause();
 			mode(1, true); await pause(); report.advancedMermaidEditor = root.querySelectorAll('.advanced-mermaid-editor').length === 1;
 			mode(1, false); await view.save();
 			report.savedSourceOnly = (await this.app.vault.read(file)).includes('~~~mermaid') && !(await this.app.vault.read(file)).includes('<svg');
@@ -120,6 +121,7 @@ export default class V02HostProbe extends Plugin {
 	}
 
 	async panes(path: string): Promise<Record<string, unknown>> {
+		// Legacy host probe preserves its original settings/leaf integration.
 		const beforeLeaf = this.app.workspace.activeLeaf;
 		const file = await this.app.vault.create(path, '~~~mermaid\nflowchart LR\n A-->B\n~~~\n');
 		const first = this.app.workspace.getLeaf('tab'); await first.openFile(file);
@@ -128,7 +130,7 @@ export default class V02HostProbe extends Plugin {
 		await second.setViewState({ type: 'markdown', state: { file: path, mode: 'source', source: false }, active: true });
 		try {
 			const firstRoot = first.view.containerEl; const secondRoot = second.view.containerEl;
-			const click = (root: HTMLElement, live: boolean): void => { Array.from(root.querySelector('.advanced-mermaid-editor-mode')!.querySelectorAll('button')).find(button => button.textContent === (live ? 'Live Editor' : 'Static Editor'))!.click(); };
+			const click = (root: HTMLElement, live: boolean): void => { Array.from(root.querySelector('.advanced-mermaid-editor-mode')!.querySelectorAll('button')).find(button => button.textContent === (live ? 'Live editor' : 'Static editor'))!.click(); };
 			click(firstRoot, true); click(secondRoot, true); await pause();
 			const independent = firstRoot.querySelectorAll('.advanced-mermaid-editor').length === 1 && secondRoot.querySelectorAll('.advanced-mermaid-editor').length === 1;
 			click(firstRoot, false); await pause();

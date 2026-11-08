@@ -53,6 +53,7 @@ export class LiveEditor {
 	constructor(private readonly app: App, private readonly settings: () => AdvancedMermaidSettings, private readonly bridge: SourceBridge,
 		private readonly file: string, private readonly close: () => void) {
 		const doc = bridge.parent.dom.ownerDocument; const win = doc.defaultView!;
+		// Create a detached element in its owning document, including pop-outs.
 		this.element = doc.createElement('div'); this.element.className = 'advanced-mermaid-editor';
 		applyEditorStyle(this.element, settings().liveEditor.style);
 		const header = this.element.createDiv({ cls: 'advanced-mermaid-editor-header' });
@@ -75,16 +76,18 @@ export class LiveEditor {
 		this.preview = columns.createDiv({ cls: 'advanced-mermaid-editor-preview', attr: { role: 'tabpanel', 'aria-label': 'Diagram preview' } });
 		this.canonical = this.preview.createDiv();
 		this.native = this.preview.createDiv(); this.native.hidden = true;
+		// Pele is the renderer name.
 		this.output = this.preview.createEl('textarea', { cls: 'advanced-mermaid-svg-source', attr: { readonly: '', 'aria-label': 'Canonical Pele SVG' } }); this.output.hidden = true;
 		this.status = this.element.createDiv({ cls: 'advanced-mermaid-editor-status', attr: { role: 'status', 'aria-live': 'polite' } });
 		this.draftStatus = this.element.createDiv({ cls: 'advanced-mermaid-draft-status', attr: { role: 'status' } });
+		// Pele is the renderer name.
 		const details = this.element.createEl('details', { cls: 'advanced-mermaid-renderer-details' }); details.createEl('summary', { text: 'Renderer details' }); details.createEl('p', { text: 'Canonical: Pele 1.12.0. All copy/save actions export Pele, including during native comparison.' });
 		const footer = this.element.createDiv({ cls: 'advanced-mermaid-editor-footer' });
 		const draftActions = footer.createDiv({ cls: 'advanced-mermaid-draft-actions' });
-		this.button(draftActions, 'Copy Draft', () => { void win.navigator.clipboard.writeText(this.inputMode === 'css' ? this.css : this.nested.state.doc.toString()).catch(() => { this.draftStatus.textContent = 'Clipboard unavailable. Select and copy the source text.'; }); });
-		this.button(draftActions, 'Discard Changes', () => { this.cssDirty = false; this.conflict = false; this.invalid = false; this.sync(true); });
-		this.button(draftActions, 'Use Note Version', () => { this.cssDirty = false; this.conflict = false; this.sync(true); });
-		this.button(draftActions, 'Render Now', () => { if (this.flush()) this.scheduler.now(); });
+		this.button(draftActions, 'Copy draft', () => { void win.navigator.clipboard.writeText(this.inputMode === 'css' ? this.css : this.nested.state.doc.toString()).catch(() => { this.draftStatus.textContent = 'Clipboard unavailable. Select and copy the source text.'; }); });
+		this.button(draftActions, 'Discard changes', () => { this.cssDirty = false; this.conflict = false; this.invalid = false; this.sync(true); });
+		this.button(draftActions, 'Use note version', () => { this.cssDirty = false; this.conflict = false; this.sync(true); });
+		this.button(draftActions, 'Render now', () => { if (this.flush()) this.scheduler.now(); });
 		const endActions = footer.createDiv({ cls: 'advanced-mermaid-editor-end-actions' });
 		this.sourceBaseline = bridge.source();
 		try { this.css = styleRegion(this.sourceBaseline)?.css ?? ''; } catch { this.draftStatus.textContent = 'Repair the malformed style region in the Mermaid source. The saved note is retained.'; }
@@ -99,7 +102,7 @@ export class LiveEditor {
 			if (!update.docChanged || update.transactions.every(transaction => transaction.annotation(nestedOrigin))) return;
 			if (this.compositionRange) this.compositionRange.to = Math.max(this.compositionRange.to, update.state.selection.main.to);
 			if (this.inputMode === 'mermaid') {
-				if (this.conflict) { this.draftStatus.textContent = 'Draft retained. Use Note Version before applying further edits.'; return; }
+				if (this.conflict) { this.draftStatus.textContent = 'Draft retained. Use note version before applying further edits.'; return; }
 				bridge.forward(update); this.sourceBaseline = bridge.source(); this.syntax.refresh(); this.invalidatePreview();
 			} else { this.css = update.state.doc.toString(); this.cssDirty = this.css !== this.cssBaseline; this.validateCss(); }
 			if (!update.view.composing && !this.conflict && (this.visible || this.nested.hasFocus)) this.scheduler.schedule(settings().liveEditor.debounceMs);
@@ -280,6 +283,7 @@ export class LiveEditor {
 				this.native.textContent = this.settings().liveEditor.mermaidComparison ? 'Checking native Mermaid capabilities…' : 'Enable Mermaid comparison in the plugin settings.';
 				if (this.settings().liveEditor.mermaidComparison) {
 					await renderNativeMermaid(this.bridge.source(), this.native, () => !this.disposed && revision === this.outputRevision);
+					// Pele is the renderer name.
 					if (!this.disposed && revision === this.outputRevision) this.native.createEl('p', { text: 'Native comparison uses its own styles. Export actions always use the canonical Pele result.' });
 				}
 			}

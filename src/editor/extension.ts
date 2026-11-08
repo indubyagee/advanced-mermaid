@@ -92,11 +92,12 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 		constructor(readonly mode: 'static' | 'live' | 'rendered') { super(); }
 		eq(other: ModeWidget): boolean { return other.mode === this.mode && other.styleKey === this.styleKey; }
 		toDOM(view: EditorView): HTMLElement {
+			// Create a detached element in its owning document, including pop-outs.
 			const bar = view.dom.ownerDocument.createElement('div'); bar.className = 'advanced-mermaid-editor-mode'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'Diagram editor mode');
 			applyEditorStyle(bar, settings().liveEditor.style);
 			for (const event of ['pointerdown', 'mousedown', 'click', 'dblclick']) bar.addEventListener(event, evt => evt.stopPropagation());
 			for (const mode of ['rendered', 'live', 'static'] as const) {
-				const button = bar.createEl('button', { text: mode === 'static' ? 'Static Editor' : mode === 'live' ? 'Live Editor' : 'Rendered View', attr: { type: 'button', 'aria-pressed': String(this.mode === mode) } });
+				const button = bar.createEl('button', { text: mode === 'static' ? 'Static editor' : mode === 'live' ? 'Live editor' : 'Rendered view', attr: { type: 'button', 'aria-pressed': String(this.mode === mode) } });
 				button.addEventListener('click', () => { if (view.dom.contains(bar)) chooseMode(view, view.posAtDOM(bar), mode); });
 			}
 			return bar;

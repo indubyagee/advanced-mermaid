@@ -7,6 +7,7 @@ export const editorInfoField = StateField.define<{ file: { path: string }; edito
 export function parseYaml(source: string): unknown { return load(source, { schema: JSON_SCHEMA }); }
 export function stringifyYaml(value: unknown): string { return dump(value, { schema: JSON_SCHEMA, noRefs: true }); }
 export function loadMermaid(): Promise<unknown> {
+	// The fixture runs in both Node and browser environments.
 	const host = globalThis as unknown as { mermaid?: unknown };
 	return host.mermaid ? Promise.resolve(host.mermaid) : Promise.reject(new Error('Native Mermaid is not provided by this host fixture.'));
 }
@@ -163,6 +164,7 @@ if (typeof HTMLElement !== 'undefined') {
 	HTMLElement.prototype.empty = function (): void { this.replaceChildren(); };
 	HTMLElement.prototype.setText = function (text: string): void { this.textContent = text; };
 	HTMLElement.prototype.createEl = function (this: HTMLElement, tag: string, options?: { text?: string; cls?: string; attr?: Record<string, string> }): HTMLElement {
+		// Implements the host DOM helper in this test adapter.
 		const element = this.ownerDocument.createElement(tag);
 		if (options?.text) element.textContent = options.text;
 		if (options?.cls) element.className = options.cls;
@@ -171,9 +173,11 @@ if (typeof HTMLElement !== 'undefined') {
 		return element;
 	} as typeof HTMLElement.prototype.createEl;
 	HTMLElement.prototype.createDiv = function (this: HTMLElement, options?: { cls?: string; attr?: Record<string, string> }): HTMLDivElement {
+		// Implements the helper; calling itself would recurse.
 		return this.createEl('div', options);
 	};
 	HTMLElement.prototype.createSpan = function (this: HTMLElement, options?: { text?: string; cls?: string; attr?: Record<string, string> }): HTMLSpanElement {
+		// Implements the helper; calling itself would recurse.
 		return this.createEl('span', options);
 	};
 }

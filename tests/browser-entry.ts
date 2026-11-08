@@ -18,6 +18,7 @@ export const app = { vault: {
 }, workspace: { on: () => ({}) } } as unknown as App;
 
 export function diagram(source: string, data?: Partial<AdvancedMermaidSettings>, parent: HTMLElement = document.body): { child: AdvancedMermaidDiagram; host: HTMLElement; settings: AdvancedMermaidSettings } {
+	// Create a detached element in its owning document, including pop-outs.
 	const host = document.createElement('div');
 	host.className = 'fixture-diagram';
 	parent.append(host);

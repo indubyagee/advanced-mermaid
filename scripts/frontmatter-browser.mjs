@@ -104,5 +104,5 @@ export async function runFrontmatterChecks(page) {
 		await page.waitForFunction(() => frontmatterFixture.host.querySelector('.advanced-mermaid-svg-source').value.includes('Inline source'));
 		await page.evaluate(() => { frontmatterFixture.view.destroy(); frontmatterFixture.inline.destroy(); frontmatterFixture.host.remove(); delete window.frontmatterFixture; });
 	}
-	console.log('Frontmatter passed: 16 settings families, validation, persistence, scoped reset/undo, reading/layout, SVG/PNG exports, and authored overrides in both Live Editor fence languages.');
+	console.log('Frontmatter passed: 16 settings families, validation, persistence, scoped reset/undo, reading/layout, SVG/PNG exports, and authored overrides in both Live editor fence languages.');
 }

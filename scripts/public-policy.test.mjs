@@ -8,7 +8,7 @@ import { isPrivatePath, inspectText } from './public-policy.mjs';
 import { checkPublicTree, outgoingRefs } from './check-public.mjs';
 
 test('publication policy distinguishes internal documents from user guides and source', () => {
-	for (const path of ['tasks/plan.md', 'docs/architecture.md', 'docs/superpowers/specs/design.md', 'AGENTS.md', '.local/backup.md', '.env', '.env.production', 'vault.key', 'main.js', 'data.json']) assert.equal(isPrivatePath(path), true, path);
+	for (const path of ['.private/developer-release-notes.md', 'tasks/plan.md', 'docs/architecture.md', 'docs/superpowers/specs/design.md', 'AGENTS.md', '.local/backup.md', '.env', '.env.production', 'vault.key', 'main.js', 'data.json']) assert.equal(isPrivatePath(path), true, path);
 	for (const path of ['README.md', 'docs/settings-menu.md', 'docs/preset-classes.md', 'src/main.ts', 'tests/export.test.ts', '.env.example', '.env.sample']) assert.equal(isPrivatePath(path), false, path);
 });
 

@@ -14,6 +14,7 @@ export async function renderNativeMermaid(source: string, host: HTMLElement, cur
 		const api = loaded as NativeApi;
 		if (typeof api.mermaidAPI?.getConfig !== 'function') throw new Error('Native comparison is unavailable: this host cannot expose its renderer configuration for offline checks.');
 		const id = 'advanced-mermaid-native-' + (++nextId);
+		// Create a detached element in its owning document, including pop-outs.
 		const temporary = host.ownerDocument.createElement('div'); temporary.id = id + '-host'; host.append(temporary);
 		try {
 			// Preserve the host configuration. The preflight admits only plain text

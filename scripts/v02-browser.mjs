@@ -66,7 +66,7 @@ export async function runEditorModeChecks(page) {
 		const view = new fixture.EditorView({ parent: host, state: fixture.EditorState.create({ doc: source, extensions: [language, fixture.history(), fixture.editorInfoField, fixture.editorLivePreviewField, inline.extension] }) });
 		const pause = () => new Promise(resolve => setTimeout(resolve, 40));
 		const buttons = () => [...host.querySelectorAll('.advanced-mermaid-editor-mode')];
-		const staticMode = index => [...buttons()[index].querySelectorAll('button')].find(button => button.textContent === 'Static Editor').click();
+		const staticMode = index => [...buttons()[index].querySelectorAll('button')].find(button => button.textContent === 'Static editor').click();
 		const button = label => [...host.querySelectorAll('button')].find(element => element.textContent === label);
 		const choose = (id, theme = 'both') => { const select = host.querySelector('[aria-label="Insert local override"]'); const target = host.querySelector('[aria-label="Local style theme"]'); target.value = theme; select.value = id; select.dispatchEvent(new Event('change')); };
 		view.dispatch({ selection: { anchor: source.indexOf('flowchart') } }); view.focus(); await pause();
@@ -87,7 +87,7 @@ export async function runEditorModeChecks(page) {
 		const root = host.querySelector('.advanced-mermaid-editor'); const nested = fixture.EditorView.findFromDOM(root.querySelector('.cm-editor'));
 		[...root.querySelectorAll('button')].find(element => element.textContent === 'CSS').click(); nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert: '.pele { color: red; }' } });
 		choose('display:fill'); staticMode(0); const draftProtected = view.state.doc.toString() === existing && !!host.querySelector('.advanced-mermaid-editor');
-		button('Discard Changes').click(); staticMode(0); await pause();
+		button('Discard changes').click(); staticMode(0); await pause();
 		const staticSource = !host.querySelector('.advanced-mermaid-editor') && view.state.doc.toString().includes('~~~mermaid');
 		buttons()[1].querySelectorAll('button')[1].click(); await pause(); const oneWidget = host.querySelectorAll('.advanced-mermaid-editor').length === 1;
 		settings.liveEditor.enabled = false; inline.refresh(); const disabled = !host.querySelector('.advanced-mermaid-editor') && !host.querySelector('.advanced-mermaid-editor-mode');
