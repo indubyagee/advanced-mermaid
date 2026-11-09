@@ -1,6 +1,8 @@
 # Advanced Mermaid
 
-Render Mermaid-compatible diagrams locally with Pele 1.12.0 in dedicated `pele` code blocks.
+<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="indubyagee" data-color="#FFDD00" data-emoji="" data-font="Inter" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
+
+Render Mermaid-compatible diagrams locally with Pele 1.12.0 in `mermaid` or `pele` code blocks.
 Advanced Mermaid provides inline editing, theme-aware styles, reusable preset classes, and SVG/PNG export. See the [changelog](https://github.com/indubyagee/advanced-mermaid/blob/main/CHANGELOG.md) for version details.
 
 **Compatibility:** version 0.3.0 requires Obsidian 1.14.5 or newer and is desktop-only. Mobile loading is disabled for this release.
@@ -10,7 +12,7 @@ See the [settings menu guide](https://github.com/indubyagee/advanced-mermaid/blo
 ## Diagrams
 
 ````markdown
-```pele
+```mermaid
 flowchart LR
   A[Source] --> B[Diagram]
 ```
@@ -18,7 +20,7 @@ flowchart LR
 
 ![Live editor](docs/media/preview-dark-flowchart-short-1.png)
 
-Use diagrams in Reading view, rendered Live Preview blocks, and embeds. Source mode remains plain editable Markdown.
+Both `mermaid` and `pele` code blocks use Advanced Mermaid in Reading view, rendered Live Preview blocks, and embeds while the plugin is enabled. Existing `pele` blocks remain supported. Source mode remains plain editable Markdown.
 
 ## Display settings
 
@@ -77,11 +79,11 @@ Settings use Obsidian's native declarative pages/groups and appear in settings s
 
 ## Inline editor
 
-In Live Preview, the mode buttons appear in this order: **Rendered view**, **Live editor**, **Static editor**. Select **Live editor** above a complete top-level `pele` or `mermaid` fence, or use **Advanced Mermaid: Toggle inline editor**. **Static editor** focuses the original fenced Markdown. **Rendered view** is selected when neither editor is active; select it to exit either editor. Esc and toggling an active Live editor also return to Rendered view. The note cursor moves outside the fence so Live Preview does not immediately reopen source. A fence-only note gains one trailing newline if it has no existing position outside the fence. Explicit static/rendered choices suppress focused-block reopening for that block while its note pane is open. Cached Pele previews resume with the latest saved source on return. Backtick and tilde fences are supported; lists, quotes, and callouts retain ordinary presentation. One inline editor can be active in each pane. Inactive Mermaid blocks and Reading view keep Obsidian's native renderer. Source mode stays plain Markdown.
+In Live Preview, the mode buttons appear in this order: **Rendered view**, **Live editor**, **Static editor**. Select **Live editor** above a complete top-level `pele` or `mermaid` fence, or use **Advanced Mermaid: Toggle inline editor**. **Static editor** focuses the original fenced Markdown. **Rendered view** is selected when neither editor is active; select it to exit either editor. Esc and toggling an active Live editor also return to Rendered view. The note cursor moves outside the fence so Live Preview does not immediately reopen source. A fence-only note gains one trailing newline if it has no existing position outside the fence. Explicit static/rendered choices suppress focused-block reopening for that block while its note pane is open. Cached Pele previews resume with the latest saved source on return. Backtick and tilde fences are supported; lists, quotes, and callouts retain ordinary presentation. One inline editor can be active in each pane. Both fence languages use Advanced Mermaid in rendered blocks and Reading view. Source mode stays plain Markdown.
 
 The **Diagram** menu offers all 33 families supported by Pele, with 55 declaration choices including directions and C4/Railroad variants. Selecting **Flowchart TB** inserts `flowchart TB`, keeping existing frontmatter, comments and body statements. **Component** offers diagram-specific snippets, including classic `A["node"]` and expanded `A@{ shape: rect, label: process }` Flowchart nodes, and inserts at the source position or replaces selected body text. **Insert configuration** adds frontmatter examples for the selected family and fills missing keys while keeping authored values. Each action uses one parent-editor undo step. The menus follow manual declaration edits and are hidden in the CSS tab. See the [syntax controls guide](https://github.com/indubyagee/advanced-mermaid/blob/main/docs/live-editor-syntax.md) for examples, configuration compatibility, and source-preservation details.
 
-The **Local override** selector inserts display directives or registered style variables with valid current values. Style overrides offer Both themes, Light, and Dark targeting. Existing values are selected without replacement; each insertion is one parent-editor undo step. Resolve malformed comments or an invalid/conflicting CSS draft before inserting. Local Pele settings and presets affect inline previews/exports of `mermaid` fences; their native rendering follows Obsidian's own styles.
+The **Local override** selector inserts display directives or registered style variables with valid current values. Style overrides offer Both themes, Light, and Dark targeting. Existing values are selected without replacement; each insertion is one parent-editor undo step. Resolve malformed comments or an invalid/conflicting CSS draft before inserting. Local Pele settings and presets apply to rendered diagrams, inline previews, and exports of both fence languages.
 
 The source pane has **Mermaid** and **CSS** tabs; output has **Pele**, **Mermaid**, and read-only **SVG** tabs. The source excludes the enclosing fences. Mermaid edits enter the parent note immediately, with one parent undo history. CSS accepts a constrained variable language, validates immediately, and saves a valid draft after the configured delay. Only Mermaid text and visible comments persist:
 
@@ -140,7 +142,7 @@ Exports are unavailable for a failed diagram. An export failure keeps the valid 
 
 ## Diagram image privacy
 
-Advanced Mermaid disables images inside `pele` code blocks to prevent automatic network requests when a note is displayed. Image labels remain visible. There is currently no setting to enable diagram images.
+Advanced Mermaid disables images inside `pele` and `mermaid` code blocks to prevent automatic network requests when a note is displayed. Image labels remain visible. There is currently no setting to enable diagram images.
 
 Rendering and exporting introduce no remote services, telemetry, remote code loading, or font downloads. Clipboard writes and export files occur only after selecting an action. The source diagram remains unchanged.
 
@@ -152,7 +154,7 @@ Until the community directory listing is published, install a [published GitHub 
 2. Place all three files directly in `<Vault>/.obsidian/plugins/advanced-mermaid/`.
 3. Reload Obsidian and enable **Advanced Mermaid** under **Settings → Community plugins**.
 
-After the listing is published, open **Settings → Community plugins → Browse**, search for **Advanced Mermaid**, then select **Install** and **Enable**. Ordinary `mermaid` blocks keep Obsidian's native renderer unless you explicitly open their inline editor.
+After the listing is published, open **Settings → Community plugins → Browse**, search for **Advanced Mermaid**, then select **Install** and **Enable**. Both `mermaid` and `pele` blocks use the plugin's local renderer while it is enabled.
 
 Plugin-owned note directives and custom CSS variables use the `advanced-mermaid` namespace. When upgrading existing notes or CSS snippets, update their reserved prefixes to the examples in this guide. Installation does not rewrite notes. The `pele` and `mermaid` fence languages remain supported.
 
@@ -164,7 +166,7 @@ Advanced Mermaid uses the MIT license. Its bundled renderer, [Pele 1.12.0](https
 
 Windows acceptance against the exact 0.3.0 production artifacts passed on Obsidian 1.14.5 and 1.15.0, including settings persistence, editor modes, undo, draft recovery, native comparison, SVG/PNG clipboard and save actions, embeds, multiple panes, pop-outs, and unload/re-enable cleanup. macOS and Linux host behavior, mobile devices, touch, and IME behavior remain unverified. Mobile loading is disabled.
 
-- **No diagram:** verify the fence language is `pele`; inspect the displayed diagnostic.
+- **No diagram:** verify the fence language is `mermaid` or `pele`; inspect the displayed diagnostic.
 - **Height did not change:** check for a per-diagram override and use an accepted unit or `none`.
 - **Colors do not follow the theme:** check custom settings and source-defined styles.
 - **Copy failed:** keep the diagram window focused and try again; use selectable SVG source or save the file.

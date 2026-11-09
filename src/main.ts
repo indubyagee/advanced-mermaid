@@ -1,4 +1,4 @@
-import { Notice, Plugin } from 'obsidian';
+import { Notice, Plugin, type MarkdownPostProcessorContext } from 'obsidian';
 import { normalizeSettings, isFutureSettingsSchema, type AdvancedMermaidSettings } from './settings';
 import { AdvancedMermaidDiagram } from './rendering/diagram';
 import { AdvancedMermaidSettingTab } from './ui/settings-tab';
@@ -30,7 +30,7 @@ export default class AdvancedMermaidPlugin extends Plugin {
 		this.addCommand({ id: 'render-inline-diagram', name: 'Render inline diagram', editorCheckCallback: (checking, editor) => this.inline?.render(checking, editor) ?? false });
 		this.addCommand({ id: 'recover-inline-drafts', name: 'Recover inline drafts', callback: () => new RecoveryModal(this.app).open() });
 		this.addSettingTab(new AdvancedMermaidSettingTab(this.app, this, this.settings, () => this.settingsChanged()));
-		this.registerMarkdownCodeBlockProcessor('pele', (source, element, context) => {
+		const renderDiagram = (source: string, element: HTMLElement, context: MarkdownPostProcessorContext): void => {
 			const info = context.getSectionInfo(element);
 			const child = new AdvancedMermaidDiagram(element, source, () => this.settings, (diagram, loaded) => {
 				if (loaded) this.diagrams.add(diagram);
@@ -40,7 +40,10 @@ export default class AdvancedMermaidPlugin extends Plugin {
 			this.blocks.set(child, block);
 			this.syncOwnership(child, block);
 			context.addChild(child);
-		});
+		};
+		this.registerMarkdownCodeBlockProcessor('pele', renderDiagram);
+		// Run before Obsidian's built-in Mermaid processor consumes the code block.
+		this.registerMarkdownCodeBlockProcessor('mermaid', renderDiagram, -1);
 		this.register(observeOwnership(() => { for (const [child, block] of this.blocks) this.syncOwnership(child, block); }));
 		this.registerEvent(this.app.workspace.on('css-change', () => {
 			for (const child of this.diagrams) child.refreshTheme();

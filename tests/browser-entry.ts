@@ -27,8 +27,8 @@ export function diagram(source: string, data?: Partial<AdvancedMermaidSettings>,
 	child.load();
 	return { child, host, settings };
 }
-export { EditorState } from '@codemirror/state';
-export { EditorView } from '@codemirror/view';
+export { Compartment, EditorState, StateField } from '@codemirror/state';
+export { Decoration, EditorView, WidgetType } from '@codemirror/view';
 export { history, undo, redo } from '@codemirror/commands';
 export { Language, defineLanguageFacet } from '@codemirror/language';
 export { parser as markdownParser } from '@lezer/markdown';
@@ -40,3 +40,4 @@ export { recoveryDrafts } from '../src/editor/drafts';
 export { renderNativeMermaid } from '../src/rendering/mermaid-adapter';
 export { default as AdvancedMermaidPlugin } from '../src/main';
 export { setInlineOwner } from '../src/editor/ownership';
+export { diagramFences } from '../src/editor/fences';

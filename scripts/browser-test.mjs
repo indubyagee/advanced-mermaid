@@ -12,6 +12,7 @@ import { runPresetChecks, runEditorModeChecks } from './v02-browser.mjs';
 import { runEditorInteractionChecks, runNavigationChecks } from './v021-browser.mjs';
 import { runEditorStyleChecks } from './editor-style-browser.mjs';
 import { runRendererOwnershipChecks } from './renderer-ownership-browser.mjs';
+import { runMermaidPreviewChecks } from './mermaid-preview-browser.mjs';
 import { runZoomStyleChecks } from './zoom-style-browser.mjs';
 import { runFrontmatterChecks } from './frontmatter-browser.mjs';
 import { runSyntaxChecks } from './syntax-browser.mjs';
@@ -29,6 +30,7 @@ try {
 	const page = await browser.newPage({ viewport: { width: 1000, height: 800 } });
 	page.on('pageerror', error => console.error('Browser error:', error));
 	await page.goto(`http://127.0.0.1:${server.address().port}`);
+	await runMermaidPreviewChecks(page);
 	await runSyntaxChecks(page);
 	await runFrontmatterChecks(page);
 	const sourceBudget = await page.evaluate(() => {

@@ -7,6 +7,7 @@ import { sourceBridge } from './source-bridge';
 import { LiveEditor } from './live-editor';
 import { setInlineOwner } from './ownership';
 import { applyEditorStyle } from '../styles/editor-style';
+import { createRenderedPreviews } from './rendered-preview';
 
 interface Active { range: FenceRange; id: number }
 const open = StateEffect.define<number | null>();
@@ -21,6 +22,7 @@ export interface InlineExtension {
 
 export function createInlineExtension(app: App, settings: () => AdvancedMermaidSettings): InlineExtension {
 	const views = new Set<EditorView>(); const editors = new Map<EditorView, LiveEditor>();
+	const previews = createRenderedPreviews(app, settings);
 	const staticBlocks = StateField.define<readonly FenceRange[]>({
 		create: () => [],
 		update(previous, transaction) {
@@ -123,9 +125,15 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 		}
 	}
 	const decorate = (current: EditorState): DecorationSet => {
-		if (!settings().liveEditor.enabled || !current.field(editorLivePreviewField, false)) return Decoration.none;
+		if (!current.field(editorLivePreviewField, false)) return Decoration.none;
 		const active = current.field(state);
-		const ranges = diagramFences(current).map(range => Decoration.widget({ block: true, side: -1, widget: new ModeWidget(active?.range.from === range.from ? 'live' : current.selection.ranges.some(selection => selection.from <= range.to && selection.to >= range.from) ? 'static' : 'rendered') }).range(range.from));
+		const fences = diagramFences(current);
+		const ranges = settings().liveEditor.enabled ? fences.map(range => Decoration.widget({ block: true, side: -1, widget: new ModeWidget(active?.range.from === range.from ? 'live' : current.selection.ranges.some(selection => selection.from <= range.to && selection.to >= range.from) ? 'static' : 'rendered') }).range(range.from)) : [];
+		for (const range of fences) {
+			if (range.language !== 'mermaid' || active?.range.from === range.from || current.selection.ranges.some(selection => selection.from <= range.to && selection.to >= range.from)) continue;
+			const widget = previews.widget(current.sliceDoc(range.bodyFrom, range.bodyTo), current.field(editorInfoField, false)?.file?.path ?? '');
+			ranges.push(Decoration.replace({ block: true, widget }).range(range.from, range.to));
+		}
 		if (active) ranges.push(Decoration.replace({ block: true, widget: new InlineWidget(active.id) }).range(active.range.from, active.range.to));
 		return Decoration.set(ranges, true);
 	};
@@ -175,8 +183,8 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 			return true;
 		},
 		render(checking = false, context) { const view = focused(context); const editor = view && editors.get(view); if (!editor) return false; if (!checking) editor.renderNow(); return true; },
-		refresh() { for (const view of views) { editors.get(view)?.flush(); view.dispatch({ effects: refresh.of(null) }); } },
-		destroy() { for (const editor of editors.values()) editor.destroy(); editors.clear(); views.clear(); },
+		refresh() { for (const view of views) { editors.get(view)?.flush(); view.dispatch({ effects: refresh.of(null) }); } previews.refresh(); },
+		destroy() { for (const editor of editors.values()) editor.destroy(); editors.clear(); previews.destroy(); views.clear(); },
 		openAt(file, line, element) {
 			if (!settings().liveEditor.enabled) return false;
 			for (const view of views) {

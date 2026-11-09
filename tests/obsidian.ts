@@ -32,7 +32,7 @@ export class Component extends MarkdownRenderChild { constructor() { super(undef
 export class Plugin extends Component {
 	data: unknown = null;
 	extensions: unknown[] = [];
-	processor?: (source: string, element: HTMLElement, context: unknown) => void;
+	processors = new Map<string, { handler: (source: string, element: HTMLElement, context: unknown) => void; sortOrder: number }>();
 	constructor(readonly app: unknown, readonly manifest: unknown) { super(); }
 	loadData(): Promise<unknown> { return Promise.resolve(this.data); }
 	saveData(data: unknown): Promise<void> { this.data = data; return Promise.resolve(); }
@@ -40,7 +40,10 @@ export class Plugin extends Component {
 	addCommand(_command: unknown): void {}
 	addSettingTab(_tab: unknown): void {}
 	registerEvent(_event: unknown): void {}
-	registerMarkdownCodeBlockProcessor(_language: string, processor: (source: string, element: HTMLElement, context: unknown) => void): void { this.processor = processor; }
+	registerMarkdownCodeBlockProcessor(language: string, handler: (source: string, element: HTMLElement, context: unknown) => void, sortOrder = 0): void {
+		this.processors.set(language, { handler, sortOrder });
+		this.register(() => { this.processors.delete(language); });
+	}
 }
 export class Notice { constructor(readonly message: string) {} }
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Render both `mermaid` and `pele` code blocks with Advanced Mermaid, sharing display settings, styles, exports, and inline editor handoff.
+- Apply custom settings and local overrides to rendered `mermaid` blocks in Live Preview, including when the optional inline editor is disabled.
+
 ## 0.3.0 — 2026-11-07
 
 - Add Live Editor diagram selection for all 33 Pele families, diagram-specific component snippets at the source selection, and frontmatter configuration generation with authored-value preservation and parent undo/redo.
