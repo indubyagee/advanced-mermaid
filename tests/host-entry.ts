@@ -5,7 +5,6 @@ import { syntaxTree } from '@codemirror/language';
 import { undo, redo } from '@codemirror/commands';
 import { createInlineExtension } from '../src/editor/extension';
 import { normalizeSettings } from '../src/settings';
-import { renderNativeMermaid } from '../src/rendering/mermaid-adapter';
 import { diagramFences } from '../src/editor/fences';
 import { AdvancedMermaidSettingTab } from '../src/ui/settings-tab';
 class ProbeOwner extends Plugin {}
@@ -26,7 +25,7 @@ export async function run(app: App): Promise<Record<string, unknown>> {
 	const file = await app.vault.create(path, source);
 	const owner = new ProbeOwner(app, { id: 'advanced-mermaid-probe', name: 'Advanced Mermaid probe', version: '0.0.0', minAppVersion: '1.14.5', description: 'In-memory host probe', author: 'Local', isDesktopOnly: true });
 	owner.load();
-	const settings = normalizeSettings(null); settings.liveEditor.mermaidComparison = true;
+	const settings = normalizeSettings(null);
 	const inline = createInlineExtension(app, () => settings);
 	let parent: EditorView | undefined;
 	owner.registerEditorExtension([inline.extension, EditorView.updateListener.of(update => { if (update.state.field(editorInfoField, false)?.file?.path === path) parent = update.view; })]);
@@ -75,11 +74,6 @@ export async function run(app: App): Promise<Record<string, unknown>> {
 			report.closedWithoutLoss = !root.querySelector('.advanced-mermaid-editor') && view.editor.getValue().includes('After the diagram.');
 		}
 	}
-	const host = root.createDiv();
-	try {
-		await renderNativeMermaid('flowchart LR\n A[Start] --> B[End]', host, () => true); report.nativeFlowchart = !!host.querySelector('svg');
-		await renderNativeMermaid('sequenceDiagram\n Alice->>Bob: Hello', host, () => true); report.nativeSequence = !!host.querySelector('svg');
-	} catch (error) { report.nativeError = String(error); } finally { host.remove(); }
 	const settingsHost = root.createDiv();
 	// Legacy host probe preserves its original settings/leaf integration.
 	const tab = new AdvancedMermaidSettingTab(app, owner, settings, () => {}); tab.containerEl = settingsHost; tab.display();

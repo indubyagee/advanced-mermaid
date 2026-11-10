@@ -1,9 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeSettings } from '../src/settings';
+import { normalizeSettings, SETTINGS_SCHEMA_VERSION } from '../src/settings';
 import { decodeLocalStyle, encodeLocalStyle, parseStyleCss, LocalStyleError, frontmatterEnd } from '../src/styles/local-codec';
 import { checkDiagramSource, MAX_DIAGRAM_SOURCE_LENGTH } from '../src/rendering/source-budget';
-import { safeMermaidSource } from '../src/rendering/mermaid-source';
 import { Language, defineLanguageFacet } from '@codemirror/language';
 import { EditorState } from '@codemirror/state';
 import { parser } from '@lezer/markdown';
@@ -13,7 +12,7 @@ void test('v3 migration preserves display, distinct element defaults, fonts and 
 	const input = { schemaVersion: 2, alignment: 'right', maxWidth: 'wide', maxHeight: '30vh', fillAvailable: false,
 		theme: { foreground: '#123', nodeFill: '#456', nodeBorderWidth: '0px', labelSize: '12pt', font: 'Arial' } };
 	const original = JSON.stringify(input); const settings = normalizeSettings(input);
-	assert.equal(settings.schemaVersion, 4); assert.equal(settings.maxHeight, '30vh'); assert.equal(settings.fillAvailable, false);
+	assert.equal(settings.schemaVersion, SETTINGS_SCHEMA_VERSION); assert.equal(settings.maxHeight, '30vh'); assert.equal(settings.fillAvailable, false);
 	assert.deepEqual(settings.style.global.colors.text, { light: '#123', dark: '#123' });
 	assert.deepEqual(settings.style.global.elements.nodeFill, { light: '#456', dark: '#456' });
 	assert.equal(settings.style.global.colors.surface, undefined);
@@ -96,9 +95,4 @@ void test('both fence languages retain their delimiters and exclude nested or in
 	for (const range of ranges) assert.equal(state.sliceDoc(range.bodyFrom, range.bodyTo), 'flowchart LR\n A-->B');
 	assert.ok(state.sliceDoc(ranges[0]!.from, ranges[0]!.to).startsWith('```mermaid'));
 	assert.ok(state.sliceDoc(ranges[1]!.from, ranges[1]!.to).startsWith('~~~pele'));
-});
-
-void test('native preflight accepts ordinary local diagrams and rejects resource/config/callback syntax before render', () => {
-	for (const source of ['flowchart LR\n A[Start] --> B[End]', 'sequenceDiagram\n participant Alice\n Alice->>Bob: Hello Ω']) assert.equal(safeMermaidSource(source), source.split('\n').map(line => line.trim()).join('\n'));
-	for (const source of ['flowchart LR\n A@{ img: "https://example.com" }', 'flowchart LR\n click A callback', '%%{init:{}}%%\nflowchart LR\n A-->B', 'flowchart LR\n A[<img src=x>]', 'mindmap\n root(Test)', '---\nconfig: x\n---\nflowchart LR\n A-->B']) assert.throws(() => safeMermaidSource(source));
 });

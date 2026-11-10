@@ -5,7 +5,7 @@ import { COLOR_TOKENS, ELEMENT_CONTROLS, type StyleProfile, type ThemeMode } fro
 export function activeTheme(element: HTMLElement): ThemeMode {
 	return element.ownerDocument.body.classList.contains('theme-dark') ? 'dark' : 'light';
 }
-export function applyStyle(element: HTMLElement, settings: AdvancedMermaidSettings, profile: StyleProfile): void {
+export function applyStyle(element: HTMLElement, settings: Pick<AdvancedMermaidSettings, 'theme' | 'style'>, profile: StyleProfile): void {
 	applyTheme(element, settings.theme);
 	element.dataset.followTheme = String(settings.style.followObsidianTheme);
 	const mode = activeTheme(element);

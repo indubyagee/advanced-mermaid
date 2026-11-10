@@ -36,11 +36,11 @@ export async function runPresetChecks(page) {
 		}
 		const ordered = fixture.diagram('flowchart LR\n A[First]\n class A One\n class A Two', { presets: [{ alias: 'One', fill: '#ff0000' }, { alias: 'Two', fill: '#0000ff' }] });
 		const lastWins = getComputedStyle(ordered.host.querySelector('.pele-node rect')).fill; ordered.child.unload(); ordered.host.remove();
-		const empty = fixture.diagram('flowchart LR\n A[First]:::ALT1'); empty.settings.presets = []; empty.child.updateSettings(); const noResurrection = getComputedStyle(empty.host.querySelector('.pele-node rect')).fill !== 'rgb(45, 70, 70)'; empty.child.unload(); empty.host.remove();
-		const textOverride = fixture.diagram('flowchart LR\n A[First]:::ALT1', { schemaVersion: 4, style: { global: { colors: {}, elements: { nodeText: { light: '#ff0000' } } } } });
+		const empty = fixture.diagram('flowchart LR\n A[First]:::PRESET3'); empty.settings.presets = []; empty.child.updateSettings(); const noResurrection = getComputedStyle(empty.host.querySelector('.pele-node rect')).fill !== 'rgb(45, 70, 70)'; empty.child.unload(); empty.host.remove();
+		const textOverride = fixture.diagram('flowchart LR\n A[First]:::PRESET3', { schemaVersion: 4, style: { global: { colors: {}, elements: { nodeText: { light: '#ff0000' } } } } });
 		const explicitText = getComputedStyle(textOverride.host.querySelector('.pele-label')).fill; textOverride.child.unload(); textOverride.host.remove();
 		const staleHost = document.body.createDiv(); const staleSettings = fixture.normalizeSettings(null);
-		const stale = new fixture.DiagramController(staleHost, 'flowchart LR\n A[Cached]:::ALT1', () => staleSettings, fixture.app, '', { keepLastValid: true }); stale.load();
+		const stale = new fixture.DiagramController(staleHost, 'flowchart LR\n A[Cached]:::PRESET3', () => staleSettings, fixture.app, '', { keepLastValid: true }); stale.load();
 		const cached = getComputedStyle(staleHost.querySelector('.pele-node rect')).fill; stale.setSource('flowchart LR\n A[unclosed');
 		const stalePalette = staleHost.classList.contains('advanced-mermaid-stale') && getComputedStyle(staleHost.querySelector('.pele-node rect')).fill === cached;
 		stale.destroy(); staleHost.remove();

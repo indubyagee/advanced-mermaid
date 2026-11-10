@@ -4,7 +4,7 @@ export interface ControllerOptions { boundary?: HTMLElement; keepLastValid?: boo
 import { Component, type App } from 'obsidian';
 import { mount, type Mounted, type RenderResult } from 'pele';
 import { labelPixels, type AdvancedMermaidSettings } from '../settings';
-import { resolveDisplay } from './overrides';
+import { resolveDisplay, type ResolvedDisplaySettings } from './overrides';
 import { applyStyle, activeTheme } from '../styles/apply';
 import { showDiagramError } from '../ui/diagram-error';
 import { DiagramActions, type ExportRequest } from '../ui/diagram-actions';
@@ -14,6 +14,7 @@ import { isDiagramCategory } from '../styles/registry';
 import { applyPresetClasses } from '../styles/preset-classes';
 import type { PresetClass } from '../styles/presets';
 import { applyZoomStyle } from '../styles/zoom-style';
+import { applyExportButtonStyle } from '../styles/editor-style';
 import { checkDiagramSource } from './source-budget';
 import { originalSourceError, resolveFrontmatter } from '../styles/frontmatter';
 
@@ -31,7 +32,7 @@ export class DiagramController extends Component {
 	private blocked = false;
 	private disposed = false;
 	private layout!: DiagramLayout;
-	private display?: AdvancedMermaidSettings;
+	private display?: ResolvedDisplaySettings;
 	private presets: PresetClass[] = [];
 
 	constructor(readonly containerEl: HTMLElement, private source: string,
@@ -50,15 +51,16 @@ export class DiagramController extends Component {
 
 		this.containerEl.addClass('advanced-mermaid');
 		this.register(registerSvgPreparation(this.containerEl, svg => applyPresetClasses(svg, this.presets, this.containerEl.dataset.category ?? '')));
-		const viewport = this.containerEl.createDiv({ cls: 'advanced-mermaid-viewport' });
+		const layout = this.containerEl.createDiv({ cls: 'advanced-mermaid-layout' });
+		const viewport = layout.createDiv({ cls: 'advanced-mermaid-viewport' });
 		this.host = viewport.createDiv({ cls: 'advanced-mermaid-mount' });
 		for (const event of ['click', 'dblclick', 'pointerdown'] as const) this.registerDomEvent(this.host, event, evt => {
 			if (evt.target instanceof this.containerEl.ownerDocument.defaultView!.Element && evt.target.closest('.pele-zoom')) evt.stopPropagation();
 		});
-		this.controls = this.containerEl.createDiv({ cls: 'advanced-mermaid-actions' });
-		this.feedback = this.containerEl.createDiv({ cls: 'advanced-mermaid-error', attr: { role: 'status' } });
+		this.controls = layout.createDiv({ cls: 'advanced-mermaid-actions' });
+		this.feedback = layout.createDiv({ cls: 'advanced-mermaid-error', attr: { role: 'status' } });
 		this.feedback.hidden = true;
-		this.layout = new DiagramLayout(this.containerEl, this.host, this, () => this.diagram?.zoom?.refresh(), this.options.boundary);
+		this.layout = new DiagramLayout(this.containerEl, layout, this.host, this, () => this.diagram?.zoom?.refresh(), this.options.boundary);
 		this.actions = new DiagramActions(this.app, this, this.controls, this.sourcePath, () => this.captureExport());
 		const view = this.containerEl.ownerDocument.defaultView!;
 		let frame: number | undefined;
@@ -87,7 +89,9 @@ export class DiagramController extends Component {
 			const configured = resolveFrontmatter(this.source, settings.style.diagrams);
 			lineOffset = configured.lineOffset;
 			applyStyle(this.containerEl, settings, resolved.profile);
-			applyZoomStyle(this.containerEl, settings.liveEditor.style.zoom);
+			const editorStyle = settings.liveEditor.style;
+			applyZoomStyle(this.containerEl, editorStyle.zoom);
+			applyExportButtonStyle(this.controls, editorStyle);
 			this.containerEl.dataset.category = resolved.category ?? 'other';
 			this.containerEl.dataset.align = settings.alignment;
 			this.host.hidden = false;
@@ -100,7 +104,8 @@ export class DiagramController extends Component {
 					// a small diagram is enlarged. Retain room to zoom in from fit.
 					get maxScale() {
 						const intrinsic = Number(host.querySelector('svg.pele')?.getAttribute('width'));
-						return Math.max(3, intrinsic > 0 ? 8 * (Number.parseFloat(host.style.width) || intrinsic) / intrinsic : 3);
+						const fittedWidth = Number.parseFloat(host.style.getPropertyValue('--advanced-mermaid-fitted-width'));
+						return Math.max(3, intrinsic > 0 ? 8 * (fittedWidth || intrinsic) / intrinsic : 3);
 					},
 				}, images: false, responsive: false, autoDirection: false,
 				maxWidth: Number.MAX_SAFE_INTEGER,

@@ -11,6 +11,19 @@ export async function runInlineSettingsChecks(page) {
 		const open = name => row(name).querySelector('button').click();
 		const back = () => tab.containerEl.querySelector('button[aria-label="Back"]').click();
 		const edit = (label, value) => { const input = tab.containerEl.querySelector(`input[aria-label="${label}"]`); input.value = value; input.dispatchEvent(new Event('input')); };
+		const width = tab.containerEl.querySelector('[aria-label="Diagram width"]');
+		const widthOptions = [...width.options].map(option => option.textContent);
+		const widthRanges = ['Normal', 'Wide', 'Maximum'].map(name => {
+			const slider = tab.containerEl.querySelector(`[aria-label="${name} line width slider"]`);
+			return [slider.min, slider.max, slider.step, slider.value];
+		});
+		edit('Normal line width', '100'); edit('Wide line width slider', '75'); edit('Maximum line width', '70');
+		edit('Normal line width', '101'); edit('Maximum line width', '70.5');
+		const validWidths = { ...settings.diagramWidths };
+		tab.containerEl.querySelector('[aria-label="Reset Normal line width"]').click();
+		const widthReset = settings.diagramWidths.normalRem === 40;
+		const widthDefaults = width.value === 'normal' && !row('Fill available space').querySelector('input').checked;
+		const comparisonRemoved = !row('Enable Mermaid comparison');
 		open('Editor style settings');
 		edit('Source font size', '21'); const fontSize = settings.liveEditor.fontSizePx;
 		tab.containerEl.querySelector('[aria-label="Reset Source font size"]').click(); const fontReset = settings.liveEditor.fontSizePx === null;
@@ -43,9 +56,12 @@ export async function runInlineSettingsChecks(page) {
 		const example = [...tab.containerEl.querySelectorAll('details')].find(section => section.querySelector('summary')?.textContent === 'Show example');
 		example.open = true; await new Promise(resolve => setTimeout(resolve, 30)); const preview = example.querySelectorAll('svg.pele').length;
 		back(); const destroyed = !tab.containerEl.querySelector('svg.pele'); tab.hide(); tab.containerEl.remove();
-		return { colorRows, paired, rgba, independent, globalReset, undoScope, sparse, retained, typeReset, preview, destroyed, fontSize, fontReset, presetSaved, invalidRetained };
+		return { widthOptions, widthRanges, validWidths, widthReset, widthDefaults, comparisonRemoved, colorRows, paired, rgba, independent, globalReset, undoScope, sparse, retained, typeReset, preview, destroyed, fontSize, fontReset, presetSaved, invalidRetained };
 	});
 	assert.equal(result.colorRows, 11); assert.equal(result.rgba, '#ff000080'); assert.equal(result.fontSize, 21); assert.equal(result.preview, 1);
-	for (const key of ['paired', 'independent', 'globalReset', 'undoScope', 'sparse', 'retained', 'typeReset', 'destroyed', 'fontReset', 'presetSaved', 'invalidRetained']) assert.equal(result[key], true, key);
+	assert.deepEqual(result.widthOptions, ['Normal', 'Wide', 'Maximum', 'Full pane']);
+	assert.deepEqual(result.widthRanges, [['20', '100', '1', '40'], ['20', '100', '1', '50'], ['70', '96', '1', '88']]);
+	assert.deepEqual(result.validWidths, { normalRem: 100, wideRem: 75, maximumPercent: 70 });
+	for (const key of ['widthReset', 'widthDefaults', 'comparisonRemoved', 'paired', 'independent', 'globalReset', 'undoScope', 'sparse', 'retained', 'typeReset', 'destroyed', 'fontReset', 'presetSaved', 'invalidRetained']) assert.equal(result[key], true, key);
 	console.log('Inline settings passed: native definitions/pages, paired colors, resets/undo, sparse type profiles, numeric inheritance, atomic presets and example cleanup.');
 }

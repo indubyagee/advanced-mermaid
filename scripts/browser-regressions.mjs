@@ -23,7 +23,7 @@ export async function runPostTestChecks(page) {
 			results.push({ sizes, bubbled });
 			item.child.unload(); item.host.remove();
 		}
-		const stretched = fixture.diagram('flowchart LR\n A-->B', { maxHeight: '25vh', maintainAspectRatio: false });
+		const stretched = fixture.diagram('flowchart LR\n A-->B', { maxHeight: '25vh', maintainAspectRatio: false, fillAvailable: true });
 		await wait();
 		const svg = stretched.host.querySelector('svg.pele');
 		const stretch = { width: svg.getBoundingClientRect().width, height: svg.getBoundingClientRect().height, ratio: svg.getAttribute('preserveAspectRatio') };
@@ -44,32 +44,43 @@ export async function runPostTestChecks(page) {
 		const pane = document.body.createDiv({ cls: 'markdown-preview-view' });
 		pane.style.cssText = 'width:min(1200px, calc(100vw - 80px));padding:20px;box-sizing:border-box;';
 		const line = pane.createDiv(); line.style.cssText = 'width:600px;max-width:100%;margin:auto;';
-		const item = fixture.diagram('flowchart LR\n A-->B', undefined, line);
+		const paragraph = line.createEl('p', { text: 'Readable note text' });
+		const textBefore = paragraph.getBoundingClientRect();
+		const item = fixture.diagram('flowchart LR\n A-->B', { fillAvailable: true }, line);
+		const layout = item.host.querySelector('.advanced-mermaid-layout');
 		const results = [];
 		for (const width of ['normal', 'wide', 'maximum', 'none']) {
 			item.settings.maxWidth = width; item.child.updateSettings();
 			await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-			const bounds = item.host.getBoundingClientRect(), box = pane.getBoundingClientRect();
-			results.push({ width: bounds.width, inside: bounds.left >= box.left + 19 && bounds.right <= box.right - 19 });
+			const bounds = layout.getBoundingClientRect(), box = pane.getBoundingClientRect();
+			const svg = layout.querySelector('svg.pele').getBoundingClientRect();
+			const text = paragraph.getBoundingClientRect();
+			results.push({ width: bounds.width, svgWidth: svg.width, centered: Math.abs(bounds.left + bounds.right - box.left - box.right) < .1,
+				inside: bounds.left >= box.left + 19 && bounds.right <= box.right - 19, textStable: text.x === textBefore.x && text.width === textBefore.width });
 		}
-		globalThis.resizeFixture = { item, pane };
+		globalThis.resizeFixture = { item, pane, layout };
 		return results;
 	});
-	assert.deepEqual(widths.map(value => value.width), [700, 1000, 1160, 1160]);
-	assert.ok(widths.every(value => value.inside));
+	for (const [index, expected] of [640, 800, 1020.8, 1160].entries()) {
+		const width = widths[index];
+		assert.ok(Math.abs(width.width - expected) < .05, JSON.stringify(width));
+		assert.ok(Math.abs(width.svgWidth - expected) < .05, JSON.stringify(width));
+		assert.ok(width.inside && width.centered && width.textStable, JSON.stringify(width));
+	}
 	await page.setViewportSize({ width: 800, height: 800 });
-	await page.waitForFunction(() => resizeFixture.item.host.getBoundingClientRect().width <= 680);
+	await page.waitForFunction(() => resizeFixture.layout.getBoundingClientRect().width === 680);
 	const narrow = await page.evaluate(() => {
-		const { item, pane } = resizeFixture;
-		const width = item.host.getBoundingClientRect().width;
+		const { item, pane, layout } = resizeFixture;
+		item.settings.maxWidth = 'wide'; item.child.updateSettings();
+		const width = layout.getBoundingClientRect().width;
 		item.child.unload(); pane.remove(); delete globalThis.resizeFixture;
 		return width;
 	});
-	assert.equal(narrow, 680);
+	assert.ok(Math.abs(narrow - 598.4) < .05);
 	await page.setViewportSize({ width: 1000, height: 800 });
 
 	const theme = await page.evaluate(async () => {
-		const source = 'flowchart LR\n subgraph GROUP[Group]\n A[Default] -->|label| B[Palette]:::ALT1\n B-->C[Authored]:::ALT2\n end\n style C fill:#123456,color:#abcdef,stroke:#654321,stroke-width:5px';
+		const source = 'flowchart LR\n subgraph GROUP[Group]\n A[Default] -->|label| B[Palette]:::PRESET3\n B-->C[Authored]:::PRESET4\n end\n style C fill:#123456,color:#abcdef,stroke:#654321,stroke-width:5px';
 		const item = fixture.diagram(source, { theme: { background: '#112233', text: '#eeeeee', nodeFill: '#224466', nodeBorder: '#abcdef', nodeText: '#fefefe',
 			line: '#fedcba', edgeLabelFill: '#334455', edgeLabelText: '#aabbcc', edgeLabelBorder: '#778899', subgraphFill: '#445566', subgraphBorder: '#ccbbaa', subgraphText: '#ffffff',
 			nodeBorderWidth: '2px', edgeWidth: '3px', edgeLabelBorderWidth: '2px', subgraphBorderWidth: '4px' } });
@@ -111,8 +122,8 @@ export async function runPostTestChecks(page) {
 	assert.deepEqual(theme.corner, [17, 34, 51, 255]);
 	assert.ok(theme.after > theme.before, `Measured size did not increase: ${JSON.stringify({ before: theme.before, after: theme.after, font: theme.measuredFont })}`); assert.equal(theme.measuredFont, '32px'); assert.notEqual(theme.reset, computed.node.fill);
 	const palette = await page.evaluate(() => {
-		const names = ['DEFAULT', 'ALT', 'ALT1', 'ALT2', 'ALT3', 'ALT4', 'ALT5', 'ALT6'];
-		const item = fixture.diagram('flowchart LR\n subgraph GROUP[Group]\n' + names.map((name, i) => ` N${i}[${name}]:::${name}`).join('\n') + '\n end\n class GROUP ALT');
+		const names = ['PRESET1', 'PRESET2', 'PRESET3', 'PRESET4', 'PRESET5', 'PRESET6', 'PRESET7', 'PRESET8'];
+		const item = fixture.diagram('flowchart LR\n subgraph GROUP[Group]\n' + names.map((name, i) => ` N${i}[${name}]:::${name}`).join('\n') + '\n end\n class GROUP PRESET2');
 		const colors = names.map((_, i) => getComputedStyle(item.host.querySelector(`.pele-node[data-id="N${i}"] rect`)).fill);
 		const group = getComputedStyle(item.host.querySelector('.pele-cluster rect'));
 		const result = { colors, group: group.fill, opacity: group.fillOpacity };

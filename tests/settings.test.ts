@@ -4,6 +4,32 @@ import { render, PeleError } from 'pele';
 import { DEFAULT_SETTINGS, normalizeSettings, parseMaxHeight, validThemeValue } from '../src/settings';
 import { ConfigurationError, resolveDisplay } from '../src/rendering/overrides';
 
+void test('schema 5 defaults to normal width and preserves explicitly saved presets and fill', () => {
+	const fresh = normalizeSettings(null);
+	assert.equal(fresh.schemaVersion, 5);
+	assert.equal(fresh.maxWidth, 'normal');
+	assert.equal(fresh.fillAvailable, false);
+	assert.deepEqual(fresh.diagramWidths, { normalRem: 40, wideRem: 50, maximumPercent: 88 });
+	assert.equal(normalizeSettings({ schemaVersion: 4, maxWidth: 'auto', fillAvailable: true }).maxWidth, 'normal');
+	assert.equal(normalizeSettings({ schemaVersion: 4, maxWidth: 'auto', fillAvailable: true }).fillAvailable, true);
+	for (const maxWidth of ['normal', 'wide', 'maximum', 'none']) {
+		assert.equal(normalizeSettings({ schemaVersion: 4, maxWidth, fillAvailable: false }).maxWidth, maxWidth);
+	}
+	assert.deepEqual(normalizeSettings({ schemaVersion: 4, liveEditor: { mermaidComparison: true } }).liveEditor, fresh.liveEditor);
+});
+
+void test('diagram widths validate integer ranges independently and round-trip', () => {
+	const input = { diagramWidths: { normalRem: 20, wideRem: 100, maximumPercent: 96 } };
+	const settings = normalizeSettings(input);
+	assert.deepEqual(settings.diagramWidths, input.diagramWidths);
+	assert.deepEqual(normalizeSettings(settings), settings);
+	assert.deepEqual(normalizeSettings({ diagramWidths: { normalRem: '60', wideRem: 101, maximumPercent: 70 } }).diagramWidths,
+		{ normalRem: 40, wideRem: 50, maximumPercent: 70 });
+	assert.deepEqual(normalizeSettings({ diagramWidths: { normalRem: 19, wideRem: 70.5, maximumPercent: 97 } }).diagramWidths, DEFAULT_SETTINGS.diagramWidths);
+	settings.diagramWidths.normalRem = 100;
+	assert.equal(normalizeSettings(null).diagramWidths.normalRem, 40);
+});
+
 void test('invalid saved data falls back and does not reuse mutable defaults', () => {
 	for (const value of [null, [], 'bad', { alignment: 'middle', maxHeight: '-1px' }]) {
 		assert.deepEqual(normalizeSettings(value), DEFAULT_SETTINGS);

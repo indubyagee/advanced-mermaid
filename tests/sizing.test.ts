@@ -4,10 +4,33 @@ import { DEFAULT_SETTINGS, normalizeSettings, labelPixels, validThemeValue } fro
 import { fitDiagram } from '../src/rendering/sizing';
 import { resolveDisplay } from '../src/rendering/overrides';
 
-void test('orientation defaults enlarge proportionally and square uses landscape limits', () => {
-	assert.deepEqual(fitDiagram({ width: 200, height: 100 }, 1200, 800, 16, { ...DEFAULT_SETTINGS }), { width: 700, height: 350, containerWidth: 700, portrait: false });
-	assert.equal(fitDiagram({ width: 100, height: 400 }, 1200, 800, 16, { ...DEFAULT_SETTINGS }).height, 400);
-	assert.equal(fitDiagram({ width: 100, height: 100 }, 1200, 800, 16, { ...DEFAULT_SETTINGS }).width, 700);
+void test('normal defaults to intrinsic size and scales down oversized diagrams', () => {
+	assert.deepEqual(fitDiagram({ width: 200, height: 100 }, 1200, 800, 16, DEFAULT_SETTINGS), { width: 200, height: 100, containerWidth: 640, portrait: false });
+	assert.deepEqual(fitDiagram({ width: 1000, height: 500 }, 1200, 800, 16, DEFAULT_SETTINGS, 40), { width: 600, height: 300, containerWidth: 640, portrait: false });
+	assert.equal(fitDiagram({ width: 100, height: 500 }, 1200, 800, 16, DEFAULT_SETTINGS).height, 400);
+});
+
+void test('width presets use configured rem and pane percentages before reserving the zoom rail', () => {
+	const intrinsic = { width: 200, height: 100 };
+	const settings = { ...DEFAULT_SETTINGS, fillAvailable: true, diagramWidths: { normalRem: 30, wideRem: 70, maximumPercent: 80 } };
+	for (const [maxWidth, wide, narrow] of [['normal', 480, 240], ['wide', 960, 240], ['maximum', 960, 240], ['none', 1200, 300]] as const) {
+		for (const [paneWidth, expected] of [[1200, wide], [300, narrow]] as const) {
+			const fitted = fitDiagram(intrinsic, paneWidth, 800, 16, { ...settings, maxWidth }, 40);
+			assert.equal(fitted.containerWidth, expected, maxWidth);
+			assert.ok(Math.abs(fitted.width - (expected - 40)) < 0.001, maxWidth);
+		}
+	}
+	assert.equal(fitDiagram(intrinsic, 1200, 800, 20, settings).containerWidth, 600);
+});
+
+void test('authored orientation and full pane directives override the saved width', () => {
+	const settings = { ...DEFAULT_SETTINGS, maxWidth: 'wide' } as const;
+	const auto = resolveDisplay('%% advanced-mermaid: max-width=auto fill=true\nflowchart LR', settings);
+	assert.equal(fitDiagram({ width: 100, height: 100 }, 1200, 800, 16, auto).width, 640);
+	assert.deepEqual(fitDiagram({ width: 100, height: 400 }, 1200, 800, 16, auto), { width: 100, height: 400, containerWidth: 1200, portrait: true });
+	const full = resolveDisplay('%% advanced-mermaid: max-width=none\nflowchart LR', settings);
+	assert.equal(fitDiagram({ width: 100, height: 100 }, 1200, 800, 16, full).containerWidth, 1200);
+	assert.equal(settings.maxWidth, 'wide');
 });
 
 void test('limits are monotonic, pane-bounded, and independent of editing history', () => {
@@ -36,7 +59,7 @@ void test('legacy settings retain height, text color, and no-enlargement after r
 });
 
 void test('independent fitting fills bounded dimensions and unlimited height stays proportional', () => {
-	const settings = { ...DEFAULT_SETTINGS, maintainAspectRatio: false, maxHeight: '10rem' };
+	const settings = { ...DEFAULT_SETTINGS, maintainAspectRatio: false, maxHeight: '10rem', maxWidth: 'none', fillAvailable: true } as const;
 	assert.equal(fitDiagram({ width: 200, height: 100 }, 300, 800, 20, settings).height, 200);
 	assert.equal(fitDiagram({ width: 200, height: 100 }, 300, 800, 20, settings).width, 300);
 	assert.equal(fitDiagram({ width: 200, height: 100 }, 300, 800, 20, { ...settings, maxHeight: 'none' }).height, 150);

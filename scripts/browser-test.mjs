@@ -5,7 +5,7 @@ import { createServer } from 'node:http';
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import { runPostTestChecks } from './browser-regressions.mjs';
-import { runInlineEditorChecks, runNativeChecks } from './inline-editor-browser.mjs';
+import { runInlineEditorChecks } from './inline-editor-browser.mjs';
 import { runInlineSettingsChecks } from './inline-settings-browser.mjs';
 import { runInlineLayoutChecks } from './inline-layout-browser.mjs';
 import { runPresetChecks, runEditorModeChecks } from './v02-browser.mjs';
@@ -229,7 +229,6 @@ try {
 	await runInlineLayoutChecks(page, 'Minimal');
 	if (!process.argv.includes('--inline')) {
 		await runInlineSettingsChecks(page);
-		await runNativeChecks(page);
 		await runPostTestChecks(page);
 	}
 } finally {

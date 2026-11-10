@@ -30,12 +30,23 @@
 .advanced-mermaid-number-row input[type="number"] { width: 85px; }
 .advanced-mermaid-number-row input[type="range"] { max-width: 150px; min-width: 70px; }
 .advanced-mermaid-preset-source {
-	width: 100%; min-width: 180px; min-height: 180px; font-family: var(--font-monospace); resize: vertical;
+	width: 100%;
+	min-width: 180px;
+	min-height: 180px;
+	font-family: var(--font-monospace);
+	resize: vertical;
 }
 .advanced-mermaid-editor-mode, .advanced-mermaid-override-selector {
-	display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 6px 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: center;
+	padding: 6px 0;
 }
-.advanced-mermaid-override-selector { font-family: var(--font-interface); font-size: var(--font-ui-small); }
+.advanced-mermaid-override-selector {
+	font-family: var(--font-interface);
+	font-size: var(--font-ui-small);
+}
 .advanced-mermaid-override-selector select { max-width: 100%; }
 .advanced-mermaid-settings [aria-invalid="true"],.advanced-mermaid-color-input [aria-invalid="true"] {
 	border-color: var(--text-error);
@@ -83,20 +94,36 @@
 .advanced-mermaid[data-category="treeView"] .pele-tree-file[data-advanced-mermaid-preset~="text"] > text { fill: var(--advanced-mermaid-tree-file-text,var(--pele-node-text,var(--pele-palette-text))); }
 .advanced-mermaid[data-category="treeView"] .pele-tree-dir[data-advanced-mermaid-preset~="text"] > text { fill: var(--advanced-mermaid-tree-directory-text,var(--pele-node-text,var(--pele-palette-text))); }
 
-/* Display layout: center by default, with alignment selected on the host.
-   The mount supplies sizing; the SVG fills it without theme-imposed caps. */
-.advanced-mermaid-viewport { display: flex; justify-content: center; align-items: flex-start; min-width: 0; min-height: max(96px, calc(3 * var(--input-height, 28px) + 10px)); padding-inline-end: 40px; box-sizing: border-box; }
+/* The SVG fits independently of the mount used by Pele for zoom and pan. */
+.advanced-mermaid-layout { position: relative; box-sizing: border-box; }
+.advanced-mermaid-viewport {
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	min-width: 0;
+	min-height: max(96px, calc(3 * var(--input-height, 28px) + 10px));
+	padding-inline-end: 40px;
+	box-sizing: border-box;
+}
 .advanced-mermaid[data-align="left"] .advanced-mermaid-viewport { justify-content: flex-start; }
 .advanced-mermaid[data-align="right"] .advanced-mermaid-viewport { justify-content: flex-end; }
-.advanced-mermaid-mount { min-width: 0; max-width: 100%; position: relative; }
+.advanced-mermaid-mount {
+	min-width: 0; max-width: 100%; position: relative;
+	width: var(--advanced-mermaid-fitted-width, auto);
+	height: var(--advanced-mermaid-fitted-height, auto);
+}
 .advanced-mermaid-mount > svg.pele {
 	display: block;
-	width: 100%;
-	height: 100%;
+	width: var(--advanced-mermaid-fitted-width, 100%);
+	height: var(--advanced-mermaid-fitted-height, 100%);
 	max-width: none;
 	max-height: none;
 	background-color: var(--pele-bg);
 }
+:is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid) .advanced-mermaid-viewport { padding-inline-end: 0; }
+:is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid) .advanced-mermaid-viewport > .advanced-mermaid-mount { width: 100%; min-height: inherit; }
+:is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid)[data-align="center"] .advanced-mermaid-viewport svg.pele { margin-inline: auto; }
+:is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid)[data-align="right"] .advanced-mermaid-viewport svg.pele { margin-inline-start: auto; }
 /* Keep hidden controls hidden even when other rules assign a display mode. */
 .advanced-mermaid [hidden], .advanced-mermaid-editor [hidden] { display: none !important; }
 /* Render errors retain readable, wrapping details for long source messages. */
@@ -118,13 +145,26 @@
 	max-width: none;
 }
 .advanced-mermaid-snapshot > svg.pele { max-width: none !important; max-height: none !important; }
-/* Export disclosure: wrap format actions and suppress an empty status line. */
-.advanced-mermaid-export { position: relative; max-width: 100%; text-align: end; }
+/* Export disclosure and actions share the menu's resolved theme colors. */
+.advanced-mermaid-export {
+	--advanced-mermaid-export-button-text: var(--advanced-mermaid-export-button-text-light);
+	--advanced-mermaid-export-button-background: var(--advanced-mermaid-export-button-background-light);
+	--advanced-mermaid-export-button-border: 1px solid var(--advanced-mermaid-export-button-border-light);
+	position: relative; max-width: 100%; text-align: end;
+}
+.theme-dark .advanced-mermaid-export {
+	--advanced-mermaid-export-button-text: var(--advanced-mermaid-export-button-text-dark);
+	--advanced-mermaid-export-button-background: var(--advanced-mermaid-export-button-background-dark);
+	--advanced-mermaid-export-button-border: 1px solid var(--advanced-mermaid-export-button-border-dark);
+}
 .advanced-mermaid-export summary {
 	cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
 	text-align: center; vertical-align: middle; padding: 4px 8px; min-height: 28px;
-	box-sizing: border-box; font-size: var(--font-ui-small, 13px);
-	border: 1px solid var(--background-modifier-border); border-radius: var(--radius-s, 4px);
+	box-sizing: border-box;
+	color: var(--advanced-mermaid-export-button-text, inherit);
+	background-color: var(--advanced-mermaid-export-button-background, transparent);
+	border: var(--advanced-mermaid-export-button-border, 1px solid var(--background-modifier-border));
+	border-radius: var(--advanced-mermaid-button-radius, var(--radius-s, 4px));
 }
 .advanced-mermaid-export summary::marker { content: ''; }
 .advanced-mermaid-export summary::-webkit-details-marker { display: none; }
@@ -136,7 +176,24 @@
 .advanced-mermaid .pele-zoom .pele-zoom-reset { display: grid !important; }
 /* Reserve a rail beside the SVG. Keeping controls out of its paint area also
    avoids Pele shrinking small diagrams to make room for overlaid buttons. */
-.advanced-mermaid .pele-zoom { top: 0 !important; right: auto !important; left: calc(100% + 8px) !important; }
+.advanced-mermaid .pele-zoom {
+	--pele-zoom-top: 0;
+	--pele-zoom-right: auto;
+	--pele-zoom-left: calc(100% + 8px);
+}
+:is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid) .pele-zoom {
+	--pele-zoom-top: auto;
+	--pele-zoom-bottom: 8px;
+	--pele-zoom-left: 8px;
+}
+:is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid)[data-align="left"] .pele-zoom {
+	--pele-zoom-left: auto;
+	--pele-zoom-right: 8px;
+}
+:is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid) :is(.pele-zoom, .pele-zoom button) {
+	background-image: none;
+	box-shadow: none;
+}
 .advanced-mermaid-export-options { display: flex; flex-wrap: wrap; gap: var(--size-4-1, 4px); padding: var(--size-4-2, 8px); }
 .advanced-mermaid-export-status { font-size: var(--font-smallest); overflow-wrap: anywhere; }
 .advanced-mermaid-export-status:empty { display: none; }
@@ -210,7 +267,11 @@
 	gap: 16px;
 }
 .advanced-mermaid-editor[data-layout="stacked"] .advanced-mermaid-editor-columns { grid-template-columns: minmax(0, 1fr); }
-.advanced-mermaid-editor-source, .advanced-mermaid-editor-preview { min-width: 0; max-width: 100%; overflow: auto; }
+.advanced-mermaid-editor-source, .advanced-mermaid-editor-preview {
+	min-width: 0;
+	max-width: 100%;
+	overflow: auto;
+}
 /* Bound CodeMirror's height and scroll its source in a monospace font. */
 .advanced-mermaid-editor-source > .cm-editor {
 	min-height: 180px;
@@ -244,34 +305,76 @@ div.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scr
 	--advanced-mermaid-source-background: var(--advanced-mermaid-source-background-light, var(--background-primary, #fff));
 	--advanced-mermaid-active-button-text: var(--advanced-mermaid-active-button-text-light, var(--text-on-accent, #fff));
 	--advanced-mermaid-inactive-button-text: var(--advanced-mermaid-inactive-button-text-light, var(--text-normal, #222));
-	--advanced-mermaid-export-button-text: var(--advanced-mermaid-export-button-text-light, var(--advanced-mermaid-inactive-button-text));
 	--advanced-mermaid-active-button-background: var(--advanced-mermaid-active-button-background-light, var(--interactive-accent, #5b7bd5));
 	--advanced-mermaid-inactive-button-background: var(--advanced-mermaid-inactive-button-background-light, var(--interactive-normal, #f3f3f3));
-	--advanced-mermaid-export-button-background: var(--advanced-mermaid-export-button-background-light, var(--advanced-mermaid-inactive-button-background));
+	--advanced-mermaid-active-button-border: 1px solid var(--advanced-mermaid-active-button-border-light);
+	--advanced-mermaid-inactive-button-border: 1px solid var(--advanced-mermaid-inactive-button-border-light);
 }
 .theme-dark .advanced-mermaid-editor, .theme-dark .advanced-mermaid-editor-mode {
 	--advanced-mermaid-source-text: var(--advanced-mermaid-source-text-dark, var(--text-normal, #ddd));
 	--advanced-mermaid-source-background: var(--advanced-mermaid-source-background-dark, var(--background-primary, #222));
 	--advanced-mermaid-active-button-text: var(--advanced-mermaid-active-button-text-dark, var(--text-on-accent, #fff));
 	--advanced-mermaid-inactive-button-text: var(--advanced-mermaid-inactive-button-text-dark, var(--text-normal, #ddd));
-	--advanced-mermaid-export-button-text: var(--advanced-mermaid-export-button-text-dark, var(--advanced-mermaid-inactive-button-text));
 	--advanced-mermaid-active-button-background: var(--advanced-mermaid-active-button-background-dark, var(--interactive-accent, #5b7bd5));
 	--advanced-mermaid-inactive-button-background: var(--advanced-mermaid-inactive-button-background-dark, var(--interactive-normal, #333));
-	--advanced-mermaid-export-button-background: var(--advanced-mermaid-export-button-background-dark, var(--advanced-mermaid-inactive-button-background));
+	--advanced-mermaid-active-button-border: 1px solid var(--advanced-mermaid-active-button-border-dark);
+	--advanced-mermaid-inactive-button-border: 1px solid var(--advanced-mermaid-inactive-button-border-dark);
 }
-.advanced-mermaid-editor button, .advanced-mermaid-editor select, .advanced-mermaid-editor .advanced-mermaid-export summary, .advanced-mermaid-editor-mode button {
-	font-size: var(--advanced-mermaid-button-font-size, var(--font-ui-small, 13px));
-	color: var(--advanced-mermaid-inactive-button-text);
-	background: var(--advanced-mermaid-inactive-button-background);
+.advanced-mermaid-editor button,
+	.advanced-mermaid-editor select,
+		.advanced-mermaid-editor .advanced-mermaid-export summary,
+			.advanced-mermaid-editor-mode button {
+				font-size: var(--advanced-mermaid-button-font-size, var(--font-ui-small, 13px));
+				color: var(--advanced-mermaid-inactive-button-text);
+				background: var(--advanced-mermaid-inactive-button-background);
+			}
+.advanced-mermaid-editor button, .advanced-mermaid-editor .advanced-mermaid-export summary, .advanced-mermaid-editor-mode button,
+.advanced-mermaid-actions .advanced-mermaid-export button {
+	height: auto;
+	min-height: var(--input-height, 28px);
+	max-width: 100%;
+	line-height: 1.3;
+	white-space: normal;
+	overflow-wrap: anywhere;
 }
-.advanced-mermaid-editor button, .advanced-mermaid-editor .advanced-mermaid-export summary, .advanced-mermaid-editor-mode button {
-	height: auto; min-height: var(--input-height, 28px); max-width: 100%; line-height: 1.3; white-space: normal; overflow-wrap: anywhere;
+:is(.advanced-mermaid-editor, .advanced-mermaid-editor-mode) :is(button, .advanced-mermaid-export summary) {
+	border: var(--advanced-mermaid-inactive-button-border, 0); background-image: none; box-shadow: none;
+}
+:is(.advanced-mermaid-editor, .advanced-mermaid-editor-mode) button,
+.advanced-mermaid-actions .advanced-mermaid-export button {
+	border-radius: var(--advanced-mermaid-button-radius, var(--button-radius, var(--radius-s, 4px)));
+}
+/* Draw the dropdown indicator in the same color as its text. */
+.advanced-mermaid-editor select {
+	appearance: none;
+	border: var(--advanced-mermaid-inactive-button-border, 0);
+	border-radius: var(--advanced-mermaid-button-radius, var(--input-radius, var(--radius-s, 4px)));
+	box-shadow: none;
+	padding-inline: 0.75em 28px;
+	background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+	background-position: right 15px center, right 10px center;
+	background-size: 5px 5px;
+	background-repeat: no-repeat;
+}
+.advanced-mermaid-editor select:dir(rtl) { background-position: left 10px center, left 15px center; }
+:is(.advanced-mermaid-editor, .advanced-mermaid-editor-mode) :is(button, select, summary):focus-visible {
+	box-shadow: none; outline: 2px solid var(--interactive-accent, #5b7bd5); outline-offset: 2px;
 }
 .advanced-mermaid-editor button[aria-selected="true"], .advanced-mermaid-editor-mode button[aria-pressed="true"] {
 	color: var(--advanced-mermaid-active-button-text); background: var(--advanced-mermaid-active-button-background);
+	border: var(--advanced-mermaid-active-button-border, 0);
 }
-.advanced-mermaid-editor .advanced-mermaid-export :is(button, summary) {
-	color: var(--advanced-mermaid-export-button-text); background: var(--advanced-mermaid-export-button-background);
+.advanced-mermaid-actions .advanced-mermaid-export :is(button, summary) {
+	font-size: var(--advanced-mermaid-button-font-size, var(--font-ui-small, 13px));
+	appearance: none;
+	background-image: none;
+	box-shadow: none;
+}
+.advanced-mermaid-actions .advanced-mermaid-export button,
+.advanced-mermaid-editor .advanced-mermaid-export summary {
+	color: var(--advanced-mermaid-export-button-text, var(--advanced-mermaid-inactive-button-text, var(--text-normal, #222)));
+	background-color: var(--advanced-mermaid-export-button-background, var(--advanced-mermaid-inactive-button-background, var(--interactive-normal, #f3f3f3)));
+	border: var(--advanced-mermaid-export-button-border, 0);
 }
 /* Pele supplies its zoom buttons with inline font/background declarations. */
 .advanced-mermaid .pele-zoom button { font-size: var(--advanced-mermaid-button-font-size, var(--font-ui-small, 13px)) !important; }
@@ -324,11 +427,20 @@ body:not(.theme-dark) .advanced-mermaid-editor[data-source-color-light="true"] .
    one control in that space-separated list. Category guards scope each mapping
    to its diagram type and translate settings into Pele 1.12.0 semantic tokens. */
 /* Sequence participants, notes, and activation bars use distinct fill tokens. */
-.advanced-mermaid[data-style-controls~="sequenceParticipantFill"][data-category="sequence"] .pele-actor { --_s: var(--pele-palette-fill, var(--advanced-mermaid-sequence-participant-fill)); }
-.advanced-mermaid[data-style-controls~="sequenceNoteFill"][data-category="sequence"] .pele-notes { --_a: var(--advanced-mermaid-sequence-note-fill); }
-.advanced-mermaid[data-style-controls~="sequenceActivationFill"][data-category="sequence"] .pele-activations { --_s: var(--advanced-mermaid-sequence-activation-fill); }
+.advanced-mermaid[data-style-controls~="sequenceParticipantFill"][data-category="sequence"] .pele-actor {
+	--_s: var(--pele-palette-fill, var(--advanced-mermaid-sequence-participant-fill));
+}
+.advanced-mermaid[data-style-controls~="sequenceNoteFill"][data-category="sequence"] .pele-notes {
+	--_a: var(--advanced-mermaid-sequence-note-fill);
+}
+.advanced-mermaid[data-style-controls~="sequenceActivationFill"][data-category="sequence"] .pele-activations {
+	--_s: var(--advanced-mermaid-sequence-activation-fill);
+}
 /* Composite states use an opaque cluster fill. */
-.advanced-mermaid[data-style-controls~="stateCompositeFill"][data-category="state"] .pele-state-composite { --_a: var(--pele-palette-fill, var(--advanced-mermaid-state-composite-fill)); --pele-cluster-opacity: 1; }
+.advanced-mermaid[data-style-controls~="stateCompositeFill"][data-category="state"] .pele-state-composite {
+	--_a: var(--pele-palette-fill, var(--advanced-mermaid-state-composite-fill));
+	--pele-cluster-opacity: 1;
+}
 /* Tree labels and guides expose SVG fill and stroke controls directly. */
 .advanced-mermaid[data-style-controls~="treeFileText"][data-category="treeView"] .pele-tree-file { fill: var(--advanced-mermaid-tree-file-text); }
 .advanced-mermaid[data-style-controls~="treeDirectoryText"][data-category="treeView"] .pele-tree-dir { fill: var(--advanced-mermaid-tree-directory-text); }

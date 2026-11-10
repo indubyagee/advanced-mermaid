@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizeColor } from '../src/styles/colors';
 import { decodePresets, encodePresets, defaultPresets, validatePresets, PresetTextError } from '../src/styles/presets';
-import { normalizeSettings, isFutureSettingsSchema } from '../src/settings';
+import { normalizeSettings, isFutureSettingsSchema, SETTINGS_SCHEMA_VERSION } from '../src/settings';
 
 void test('literal colors normalize RGB, HSL, short hex and alpha without evaluating CSS', () => {
 	for (const [source, expected] of [
@@ -34,20 +34,27 @@ void test('invalid preset drafts report issues and cannot partly replace a libra
 	assert.deepEqual(decodePresets('preset:\n  - alias: A\n    width: 0px'), [{ alias: 'A', width: 0 }]);
 });
 
-void test('schema 4 seeds the original palette once and preserves empty libraries and existing settings', () => {
+void test('settings seed the built-in palette only when a preset library is absent', () => {
 	const legacy = normalizeSettings({ schemaVersion: 3, maxHeight: 'none', style: { global: { colors: { text: { dark: '#abc' } } } }, liveEditor: { fontSizePx: 17 } });
-	assert.equal(legacy.schemaVersion, 4); assert.equal(legacy.presets.length, 8);
-	assert.equal(legacy.presets[2]?.fill, '#2d4646'); assert.equal(legacy.maxHeight, 'none');
+	assert.equal(legacy.schemaVersion, SETTINGS_SCHEMA_VERSION);
+	assert.deepEqual(legacy.presets, defaultPresets());
+	assert.equal(legacy.presets.length, 42);
+	assert.deepEqual(legacy.presets[2], { alias: 'PRESET3', fill: '#2d4646', stroke: '#608f94', text: '#ffffff' });
+	assert.deepEqual(legacy.presets.slice(-2), [{ alias: 'YES', width: 2 }, { alias: 'NO', fill: '#00000000' }]);
+	assert.deepEqual(decodePresets(encodePresets(legacy.presets)), legacy.presets);
+	assert.equal(legacy.maxHeight, 'none');
 	assert.equal(legacy.style.global.colors.text?.dark, '#abc'); assert.equal(legacy.liveEditor.fontSizePx, 17);
 	assert.deepEqual(normalizeSettings(legacy), legacy);
 	assert.deepEqual(normalizeSettings({ schemaVersion: 4, presets: [] }).presets, []);
+	const savedPresets = [{ alias: 'ALT1', fill: '#123456' }];
+	assert.deepEqual(normalizeSettings({ schemaVersion: 4, presets: savedPresets }).presets, savedPresets);
 	const changed = normalizeSettings(null); changed.presets[0]!.fill = '#ff0000';
 	assert.deepEqual(normalizeSettings(null).presets, defaultPresets());
 });
 
 void test('the persistence guard recognizes newer schemas without modifying their data', () => {
-	const future = { schemaVersion: 5, presets: [], newSetting: { retained: true } }; const original = JSON.stringify(future);
+	const future = { schemaVersion: SETTINGS_SCHEMA_VERSION + 1, presets: [], newSetting: { retained: true } }; const original = JSON.stringify(future);
 	assert.equal(isFutureSettingsSchema(future), true); normalizeSettings(future);
 	assert.equal(JSON.stringify(future), original);
-	for (const saved of [null, {}, { schemaVersion: 3 }, { schemaVersion: 4 }, { schemaVersion: '5' }]) assert.equal(isFutureSettingsSchema(saved), false);
+	for (const saved of [null, {}, { schemaVersion: 4 }, { schemaVersion: SETTINGS_SCHEMA_VERSION }, { schemaVersion: String(SETTINGS_SCHEMA_VERSION + 1) }]) assert.equal(isFutureSettingsSchema(saved), false);
 });

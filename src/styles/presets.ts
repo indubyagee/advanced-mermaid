@@ -7,11 +7,55 @@ export const PRESET_CATEGORIES = ['flowchart', 'state', 'agentflow', 'mindmap', 
 /** New arrays and entries prevent settings sessions from sharing mutable defaults. */
 export function defaultPresets(): PresetClass[] {
 	return [
-		['DEFAULT', '#808080', '#202020', '#000000'], ['ALT', '#151515', '#505050', '#ffffff'],
-		['ALT1', '#2D4646', '#608F94', '#ffffff'], ['ALT2', '#32411E', '#69823C', '#ffffff'],
-		['ALT3', '#501E1E', '#B24C4C', '#ffffff'], ['ALT4', '#46375A', '#886FAD', '#ffffff'],
-		['ALT5', '#6E5A28', '#DAB352', '#ffffff'], ['ALT6', '#5A3250', '#915082', '#ffffff'],
-	].map(([alias, fill, stroke, text]) => ({ alias: alias!, fill: fill!.toLowerCase(), stroke: stroke!.toLowerCase(), text: text! }));
+		{ alias: 'PRESET1', fill: '#808080', stroke: '#202020', text: '#000000' },
+		{ alias: 'PRESET2', fill: '#151515', stroke: '#505050', text: '#ffffff' },
+		{ alias: 'PRESET3', fill: '#2d4646', stroke: '#608f94', text: '#ffffff' },
+		{ alias: 'PRESET4', fill: '#32411e', stroke: '#69823c', text: '#ffffff' },
+		{ alias: 'PRESET5', fill: '#501e1e', stroke: '#b24c4c', text: '#ffffff' },
+		{ alias: 'PRESET6', fill: '#46375a', stroke: '#886fad', text: '#ffffff' },
+		{ alias: 'PRESET7', fill: '#6e5a28', stroke: '#dab352', text: '#ffffff' },
+		{ alias: 'PRESET8', fill: '#5a3250', stroke: '#915082', text: '#ffffff' },
+
+		{ alias: 'CATEGORY1', fill: '#22466dff', stroke: '#71a5d9ff', text: '#ffffffff' },
+		{ alias: 'CATEGORY2', fill: '#67401fff', stroke: '#d79860ff', text: '#ffffffff' },
+		{ alias: 'CATEGORY3', fill: '#254f3dff', stroke: '#72b898ff', text: '#ffffffff' },
+		{ alias: 'CATEGORY4', fill: '#4e386cff', stroke: '#b396deff', text: '#ffffffff' },
+		{ alias: 'CATEGORY5', fill: '#5c4d20ff', stroke: '#c9ae56ff', text: '#ffffffff' },
+		{ alias: 'CATEGORY6', fill: '#6a3834ff', stroke: '#d68c82ff', text: '#ffffffff' },
+		{ alias: 'CATEGORY7', fill: '#1d4f58ff', stroke: '#68b7c2ff', text: '#ffffffff' },
+		{ alias: 'CATEGORY8', fill: '#623653ff', stroke: '#cf88b6ff', text: '#ffffffff' },
+
+		{ alias: 'HIGHLIGHT', fill: '#603060', stroke: '#805080' },
+
+		{ alias: 'PRIMARYHIGHLIGHT', fill: '#30606040', stroke: '#508080' },
+		{ alias: 'SECONDARYHIGHLIGHT', fill: '#60303040', stroke: '#805050' },
+		{ alias: 'TERTIARYHIGHLIGHT', fill: '#60603040', stroke: '#808050' },
+		{ alias: 'PRIMARYNOTE', fill: '#00000000', stroke: '#306060' },
+		{ alias: 'SECONDARYNOTE', fill: '#00000000', stroke: '#603030' },
+		{ alias: 'TERTIARYNOTE', fill: '#00000000', stroke: '#606030' },
+
+		{ alias: 'NOTE', fill: '#20202040', stroke: '#505050' },
+		{ alias: 'SUBNOTE', fill: '#00000000', stroke: '#202020' },
+
+		{ alias: 'SUCCESS', fill: '#32411eff', stroke: '#69823cff', text: '#ffffffff' },
+		{ alias: 'WARNING', fill: '#6e5a28ff', stroke: '#dab352ff', text: '#ffffffff' },
+		{ alias: 'FAILURE', fill: '#501e1eff', stroke: '#b24c4cff', text: '#ffffffff' },
+		{ alias: 'PENDING', fill: '#42434eff', stroke: '#9a9bacff', text: '#e9ebf0ff' },
+		{ alias: 'ACTIVE', fill: '#163d63ff', stroke: '#68aae9ff', text: '#ffffffff' },
+		{ alias: 'BLOCKED', fill: '#5b341dff', stroke: '#dd955aff', text: '#ffffffff' },
+		{ alias: 'DONE', fill: '#36464aff', stroke: '#8fa6aaff', text: '#f2f6f6ff' },
+		{ alias: 'MILESTONE', fill: '#4c365fff', stroke: '#d1adeaff', text: '#fff4ffff' },
+		{ alias: 'DANGER', fill: '#740c22ff', stroke: '#ff7c92ff', text: '#ffffffff' },
+		{ alias: 'INPUT', fill: '#1c4356ff', stroke: '#75bdd8ff', text: '#f1faffff' },
+		{ alias: 'OUTPUT', fill: '#512844ff', stroke: '#d892c2ff', text: '#fff2faff' },
+		{ alias: 'DECISION', fill: '#362d63ff', stroke: '#ae9cebff', text: '#f6f2ffff' },
+		{ alias: 'GROUP', fill: '#242b33ff', stroke: '#748799ff', text: '#e8eef4ff' },
+		{ alias: 'REFERENCE', fill: '#2b3a53ff', stroke: '#98afdaff', text: '#eef4ffff' },
+		{ alias: 'MUTED', fill: '#34363aff', stroke: '#80858dff', text: '#c7ccd3ff' },
+
+		{ alias: 'YES', width: 2 },
+		{ alias: 'NO', fill: '#00000000' },
+	];
 }
 
 export function validPresetAlias(alias: string): boolean {

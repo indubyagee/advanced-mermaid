@@ -2,6 +2,8 @@ import { isAlignment, type AdvancedMermaidSettings } from '../settings';
 import { isWidthPreset, parseHeightSetting } from '../display-settings';
 import { frontmatterEnd } from '../styles/local-codec';
 
+export type ResolvedDisplaySettings = Omit<AdvancedMermaidSettings, 'maxWidth'> & { maxWidth: AdvancedMermaidSettings['maxWidth'] | 'auto' };
+
 export class ConfigurationError extends Error {
 	constructor(message: string, readonly line: number) {
 		super(message);
@@ -10,8 +12,8 @@ export class ConfigurationError extends Error {
 }
 
 /** Read a reserved comment without removing lines or interpreting Pele's YAML. */
-export function resolveDisplay(source: string, settings: AdvancedMermaidSettings): AdvancedMermaidSettings {
-	const result = { ...settings };
+export function resolveDisplay(source: string, settings: AdvancedMermaidSettings): ResolvedDisplaySettings {
+	const result: ResolvedDisplaySettings = { ...settings };
 	const lines = source.split(/\r?\n/);
 	const offset = frontmatterEnd(source, false);
 	let index = source.slice(0, offset).split('\n').length - 1;
@@ -35,7 +37,7 @@ export function resolveDisplay(source: string, settings: AdvancedMermaidSettings
 				if (!isAlignment(value)) throw new ConfigurationError('Alignment must be left, center, or right.', index + 1);
 				result.alignment = value;
 			} else if (key === 'max-width') {
-				if (!isWidthPreset(value)) throw new ConfigurationError('Width must be normal, wide, maximum, none, or auto.', index + 1);
+				if (value !== 'auto' && !isWidthPreset(value)) throw new ConfigurationError('Width must be normal, wide, maximum, none, or auto.', index + 1);
 				result.maxWidth = value;
 			} else if (key === 'aspect-ratio' || key === 'fill') {
 				if (value !== 'true' && value !== 'false') throw new ConfigurationError(`${key} must be true or false.`, index + 1);

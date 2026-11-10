@@ -8,7 +8,6 @@ import { encodeLocalStyle, styleRegion, parseStyleCss, decodeLocalStyle } from '
 import { nestedOrigin, type SourceBridge } from './source-bridge';
 import { retainDraft } from './drafts';
 import { PreviewScheduler } from './preview-scheduler';
-import { renderNativeMermaid } from '../rendering/mermaid-adapter';
 import { sourceLanguage } from './languages';
 import { overrideOptions, overrideValue, type OverrideOption } from './override-options';
 import { insertDisplayOverride, insertStyleOverride, type StyleTarget } from './override-insertion';
@@ -25,7 +24,6 @@ export class LiveEditor {
 	private readonly preview: HTMLElement;
 	private readonly canonical: HTMLElement;
 	private readonly output: HTMLTextAreaElement;
-	private readonly native: HTMLElement;
 	private readonly status: HTMLElement;
 	private readonly draftStatus: HTMLElement;
 	private readonly controller: DiagramController;
@@ -40,7 +38,7 @@ export class LiveEditor {
 	private conflict = false;
 	private disposed = false;
 	private inputMode: 'mermaid' | 'css' = 'mermaid';
-	private outputMode = 'pele';
+	private outputMode: 'pele' | 'svg' = 'pele';
 	private outputRevision = 0;
 	private readonly resize: ResizeObserver;
 	private readonly intersection: IntersectionObserver;
@@ -60,7 +58,7 @@ export class LiveEditor {
 		const sources = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Source format' } });
 		for (const mode of ['mermaid', 'css'] as const) this.tab(sources, mode === 'css' ? 'CSS' : 'Mermaid', () => this.selectInput(mode), mode === 'mermaid');
 		const outputs = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Preview format' } });
-		for (const mode of ['pele', 'mermaid', 'svg']) this.tab(outputs, mode === 'svg' ? 'SVG' : mode === 'pele' ? 'Pele' : 'Mermaid', () => { this.outputMode = mode; void this.showOutput(); }, mode === 'pele');
+		for (const mode of ['pele', 'svg'] as const) this.tab(outputs, mode === 'svg' ? 'SVG' : 'Pele', () => { this.outputMode = mode; void this.showOutput(); }, mode === 'pele');
 		this.syntax = new DiagramSyntaxSelector(this.element.createDiv(), () => this.bridge.source(), {
 			diagram: diagram => this.insertSyntax(source => initializeDiagram(source, diagram)),
 			component: component => this.insertSyntax(source => {
@@ -75,13 +73,12 @@ export class LiveEditor {
 		this.applySourceFontSize();
 		this.preview = columns.createDiv({ cls: 'advanced-mermaid-editor-preview', attr: { role: 'tabpanel', 'aria-label': 'Diagram preview' } });
 		this.canonical = this.preview.createDiv();
-		this.native = this.preview.createDiv(); this.native.hidden = true;
 		// Pele is the renderer name.
 		this.output = this.preview.createEl('textarea', { cls: 'advanced-mermaid-svg-source', attr: { readonly: '', 'aria-label': 'Canonical Pele SVG' } }); this.output.hidden = true;
 		this.status = this.element.createDiv({ cls: 'advanced-mermaid-editor-status', attr: { role: 'status', 'aria-live': 'polite' } });
 		this.draftStatus = this.element.createDiv({ cls: 'advanced-mermaid-draft-status', attr: { role: 'status' } });
 		// Pele is the renderer name.
-		const details = this.element.createEl('details', { cls: 'advanced-mermaid-renderer-details' }); details.createEl('summary', { text: 'Renderer details' }); details.createEl('p', { text: 'Canonical: Pele 1.12.0. All copy/save actions export Pele, including during native comparison.' });
+		const details = this.element.createEl('details', { cls: 'advanced-mermaid-renderer-details' }); details.createEl('summary', { text: 'Renderer details' }); details.createEl('p', { text: 'Uses Pele 1.12.0.' });
 		const footer = this.element.createDiv({ cls: 'advanced-mermaid-editor-footer' });
 		const draftActions = footer.createDiv({ cls: 'advanced-mermaid-draft-actions' });
 		this.button(draftActions, 'Copy draft', () => { void win.navigator.clipboard.writeText(this.inputMode === 'css' ? this.css : this.nested.state.doc.toString()).catch(() => { this.draftStatus.textContent = 'Clipboard unavailable. Select and copy the source text.'; }); });
@@ -161,7 +158,6 @@ export class LiveEditor {
 	}
 	private invalidatePreview(): void {
 		this.controller.invalidate(); this.outputRevision++; this.output.value = '';
-		if (this.outputMode === 'mermaid') this.native.textContent = 'Updating native comparison…';
 	}
 	flush(): boolean {
 		this.element.ownerDocument.defaultView!.clearTimeout(this.cssTimer);
@@ -263,7 +259,7 @@ export class LiveEditor {
 		const layout = this.settings().liveEditor.layout; const width = this.element.getBoundingClientRect().width;
 		this.element.dataset.layout = layout === 'stacked' || width < (layout === 'auto' ? 768 : 496) ? 'stacked' : 'side-by-side';
 		this.controller.settingsChanged(); this.bridge.parent.requestMeasure();
-		if (this.outputMode !== 'pele') void this.showOutput();
+		if (this.outputMode === 'svg') void this.showOutput();
 	}
 	renderNow(): void { if (this.flush()) this.scheduler.now(); }
 	focus(): void { if (!this.disposed) this.nested.focus(); }
@@ -271,23 +267,22 @@ export class LiveEditor {
 	hasFocus(): boolean { return this.element.contains(this.element.ownerDocument.activeElement); }
 	private render(): void {
 		if (this.disposed || this.conflict || !this.flush()) return;
-		this.controller.setSource(this.bridge.source()); if (this.outputMode !== 'pele') void this.showOutput();
+		this.controller.setSource(this.bridge.source()); if (this.outputMode === 'svg') void this.showOutput();
 	}
 	private async showOutput(): Promise<void> {
 		const revision = ++this.outputRevision;
-		this.canonical.hidden = this.outputMode !== 'pele'; this.native.hidden = this.outputMode !== 'mermaid'; this.output.hidden = this.outputMode !== 'svg';
-		for (const button of Array.from(this.element.querySelectorAll('button'))) if (/^(Copy|Save) (SVG|PNG)$/.test(button.textContent ?? '')) button.textContent = button.textContent.replace(/^(Copy|Save) /, '$1 Pele ');
-		try {
-			if (this.outputMode === 'svg') { this.output.value = ''; const snapshot = await this.controller.snapshot(); if (!this.disposed && revision === this.outputRevision) this.output.value = snapshot.svg; }
-			if (this.outputMode === 'mermaid') {
-				this.native.textContent = this.settings().liveEditor.mermaidComparison ? 'Checking native Mermaid capabilities…' : 'Enable Mermaid comparison in the plugin settings.';
-				if (this.settings().liveEditor.mermaidComparison) {
-					await renderNativeMermaid(this.bridge.source(), this.native, () => !this.disposed && revision === this.outputRevision);
-					// Pele is the renderer name.
-					if (!this.disposed && revision === this.outputRevision) this.native.createEl('p', { text: 'Native comparison uses its own styles. Export actions always use the canonical Pele result.' });
-				}
+		const showSvg = this.outputMode === 'svg';
+		this.canonical.hidden = showSvg;
+		this.output.hidden = !showSvg;
+		if (showSvg) {
+			this.output.value = '';
+			try {
+				const snapshot = await this.controller.snapshot();
+				if (!this.disposed && revision === this.outputRevision) this.output.value = snapshot.svg;
+			} catch (error) {
+				if (!this.disposed && revision === this.outputRevision) this.output.value = String(error);
 			}
-		} catch (error) { if (!this.disposed && revision === this.outputRevision) { this.output.value = String(error); this.native.textContent = String(error); } }
+		}
 		this.bridge.parent.requestMeasure();
 	}
 	destroy(): void {

@@ -37,7 +37,6 @@ export { createInlineExtension } from '../src/editor/extension';
 export { normalizeSettings } from '../src/settings';
 export { DiagramController } from '../src/rendering/controller';
 export { recoveryDrafts } from '../src/editor/drafts';
-export { renderNativeMermaid } from '../src/rendering/mermaid-adapter';
 export { default as AdvancedMermaidPlugin } from '../src/main';
 export { setInlineOwner } from '../src/editor/ownership';
 export { diagramFences } from '../src/editor/fences';

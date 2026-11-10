@@ -6,11 +6,6 @@ export const editorLivePreviewField = StateField.define<boolean>({ create: () =>
 export const editorInfoField = StateField.define<{ file: { path: string }; editor?: unknown }>({ create: () => ({ file: { path: 'InlineEditor.md' } }), update: value => value });
 export function parseYaml(source: string): unknown { return load(source, { schema: JSON_SCHEMA }); }
 export function stringifyYaml(value: unknown): string { return dump(value, { schema: JSON_SCHEMA, noRefs: true }); }
-export function loadMermaid(): Promise<unknown> {
-	// The fixture runs in both Node and browser environments.
-	const host = globalThis as unknown as { mermaid?: unknown };
-	return host.mermaid ? Promise.resolve(host.mermaid) : Promise.reject(new Error('Native Mermaid is not provided by this host fixture.'));
-}
 export class MarkdownRenderChild {
 	private cleanup: (() => void)[] = [];
 	constructor(readonly containerEl: HTMLElement) {}

@@ -49,16 +49,16 @@ proportions. Exports always use the intrinsic, undistorted layout.
 %% advanced-mermaid: max-width=wide max-height=auto fill=true
 flowchart LR
  subgraph GROUP[Palette group]
-  A[Default gray]:::DEFAULT -->|normal| B[Alternate gray]:::ALT
-  B --> C[Cyan]:::ALT1
-  C --> D[Green]:::ALT2
-  D --> E[Red]:::ALT3
-  E --> F[Purple]:::ALT4
-  F --> G[Yellow]:::ALT5
-  G --> H[Magenta]:::ALT6
-  H --> I[Authored color]:::ALT1
+  A[Default gray]:::PRESET1 -->|normal| B[Alternate gray]:::PRESET2
+  B --> C[Cyan]:::PRESET3
+  C --> D[Green]:::PRESET4
+  D --> E[Red]:::PRESET5
+  E --> F[Purple]:::PRESET6
+  F --> G[Yellow]:::PRESET7
+  G --> H[Magenta]:::PRESET8
+  H --> I[Authored color]:::PRESET3
  end
- class GROUP ALT
+ class GROUP PRESET2
  style I fill:#123456,color:#ffffff,stroke:#abcdef,stroke-width:3px
 ```
 

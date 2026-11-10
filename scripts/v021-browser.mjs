@@ -84,32 +84,70 @@ export async function runEditorInteractionChecks(page) {
 }
 
 export async function runNavigationChecks(page) {
-	for (const mode of ['markdown-source-view mod-cm6', 'markdown-preview-view']) for (const fillAvailable of [false, true]) {
+	for (const mode of ['cm-scroller', 'markdown-preview-view']) for (const fillAvailable of [false, true]) {
 		await page.evaluate(({ mode, fillAvailable }) => {
-			const parent = document.body.createDiv({ cls: mode }); parent.style.width = '600px';
+			const parent = document.body.createDiv({ cls: mode + ' navigation-fixture' });
+			parent.style.cssText = 'width:600px;--interactive-accent:#5b7bd5;';
+			parent.createEl('style', { text: `
+				.navigation-fixture .pele-zoom, .navigation-fixture button, .navigation-fixture button:is(:hover, :focus-visible) {
+					box-shadow: 0 1px 2px #666;
+					background-image: linear-gradient(#eee, #ccc);
+				}
+			` });
 			const item = fixture.diagram('flowchart LR\n A[Small]', { fillAvailable }, parent);
 			window.navigation = { parent, item };
 		}, { mode, fillAvailable });
 		try {
 			const host = page.locator('.fixture-diagram').last();
+			const assertCorner = async side => {
+				const insets = await host.evaluate((element, side) => {
+					const viewport = element.querySelector('.advanced-mermaid-viewport').getBoundingClientRect();
+					const controls = element.querySelector('.pele-zoom').getBoundingClientRect();
+					const horizontal = side === 'left' ? controls.left - viewport.left : viewport.right - controls.right;
+					return { horizontal, bottom: viewport.bottom - controls.bottom };
+				}, side);
+				assert.ok(Math.abs(insets.horizontal - 8) < 1 && Math.abs(insets.bottom - 8) < 1, JSON.stringify({ mode, side, insets }));
+			};
 			for (const label of ['Zoom In', 'Zoom Out', 'Reset Zoom']) assert.equal(await host.getByRole('button', { name: label, exact: true }).isVisible(), true, mode + ': ' + label);
-			assert.equal(await host.getByRole('button', { name: 'Zoom In', exact: true }).isEnabled(), true, 'Enlarged small diagrams can zoom beyond their fitted scale');
-			const original = await host.locator('svg.pele').getAttribute('viewBox');
-			await host.getByRole('button', { name: 'Zoom In', exact: true }).click();
-			const zoomed = await host.locator('svg.pele').getAttribute('viewBox'); assert.notEqual(zoomed, original);
-			const bounds = await host.locator('svg.pele').boundingBox();
-			await page.mouse.move(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2); await page.mouse.down(); await page.mouse.move(bounds.x + bounds.width / 2 + 35, bounds.y + bounds.height / 2 + 10, { steps: 4 }); await page.mouse.up();
-			const panned = await host.locator('svg.pele').getAttribute('viewBox');
+			const zoomIn = host.getByRole('button', { name: 'Zoom In', exact: true });
+			assert.equal(await zoomIn.isEnabled(), true, 'Enlarged small diagrams can zoom beyond their fitted scale');
+			await zoomIn.hover();
+			assert.ok(await host.locator('.pele-zoom').evaluate(zoom => [zoom, ...zoom.querySelectorAll('button')].every(element => {
+				const style = getComputedStyle(element);
+				return style.backgroundImage === 'none' && style.boxShadow === 'none';
+			})), 'The zoom tool stays flat on hover in ' + mode);
+			await assertCorner('left');
+			const svg = host.locator('svg.pele');
+			const original = await svg.getAttribute('viewBox');
+			const fitted = await svg.boundingBox();
+			await zoomIn.click();
+			await page.keyboard.press('Tab');
+			assert.ok(await host.getByRole('button', { name: 'Zoom Out', exact: true }).evaluate(button => {
+				const style = getComputedStyle(button);
+				return button.matches(':focus-visible') && style.outlineStyle === 'solid' && style.outlineWidth === '2px' && style.boxShadow === 'none';
+			}), 'Keyboard focus stays visible on the flat zoom controls');
+			const zoomed = await svg.getAttribute('viewBox'); assert.notEqual(zoomed, original);
+			const bounds = await svg.boundingBox();
+			const viewport = await host.locator('.advanced-mermaid-viewport').boundingBox();
+			assert.ok(Math.abs(bounds.x - viewport.x) < 1 && Math.abs(bounds.width - viewport.width) < 1 && Math.abs(bounds.height - viewport.height) < 1, 'Zoom fills the rendered viewport');
+			const x = bounds.x + bounds.width * (fillAvailable ? .5 : .2);
+			const y = bounds.y + bounds.height / 2;
+			if (!fillAvailable) assert.ok(x < fitted.x, 'Start the drag outside the fitted SVG');
+			await page.mouse.move(x, y); await page.mouse.down(); await page.mouse.move(x + 35, y + 10, { steps: 4 }); await page.mouse.up();
+			const panned = await svg.getAttribute('viewBox');
 			assert.notEqual(panned, zoomed, 'Mouse drag pans');
-			await host.locator('svg.pele').focus(); await page.keyboard.press('ArrowRight');
-			assert.notEqual(await host.locator('svg.pele').getAttribute('viewBox'), panned, 'Arrow keys pan');
-			await host.getByRole('button', { name: 'Reset Zoom', exact: true }).click(); assert.equal(await host.locator('svg.pele').getAttribute('viewBox'), original);
+			await svg.focus(); await page.keyboard.press('ArrowRight');
+			assert.notEqual(await svg.getAttribute('viewBox'), panned, 'Arrow keys pan');
+			await host.getByRole('button', { name: 'Reset Zoom', exact: true }).click(); assert.equal(await svg.getAttribute('viewBox'), original);
 			assert.equal(await host.getByRole('button', { name: 'Reset Zoom', exact: true }).isVisible(), true);
-			assert.equal(await host.evaluate(element => {
-				const svg = element.querySelector('svg.pele').getBoundingClientRect(); const rail = element.querySelector('.pele-zoom').getBoundingClientRect();
-				return rail.left >= svg.right && rail.right <= element.getBoundingClientRect().right + 1;
-			}), true, 'Navigation stays beside the diagram within its pane');
+			await assertCorner('left');
+			await page.evaluate(() => { navigation.item.settings.alignment = 'left'; navigation.item.child.updateSettings(); });
+			await assertCorner('right');
+			await host.getByRole('button', { name: 'Zoom In', exact: true }).click();
+			await assertCorner('right');
+			await page.evaluate(() => navigation.item.child.setInlineOwned(false, '%% advanced-mermaid: align=right\nflowchart LR\n A[Small]'));
+			await assertCorner('left');
 		} finally { await page.evaluate(() => { navigation.item.child.unload(); navigation.parent.remove(); delete window.navigation; }); }
 	}
-	console.log('Navigation checks passed: small rendered diagrams in source/reading surfaces, full zoom stack, pointer pan, keyboard pan, reset and non-overlapping controls.');
+	console.log('Navigation checks passed: matching zoom corners and full viewports in Reading view and Live Preview, local alignment, pointer and keyboard pan, and reset.');
 }

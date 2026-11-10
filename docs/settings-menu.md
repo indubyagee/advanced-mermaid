@@ -20,10 +20,13 @@ Controls are indexed by Obsidian's settings search. **Editor layout** controls t
 | Control | New-configuration default | Behavior |
 | --- | --- | --- |
 | Alignment | Center | Places the diagram left, center, or right. |
-| Diagram width | By orientation | Normal (700px), Wide (1000px), Maximum (1400px), or Full pane. By orientation uses Normal for landscape/square diagrams and Full pane for portrait diagrams. Width remains bounded by the pane. |
+| Diagram width | Normal | Choose Normal, Wide, Maximum, or Full pane. Full pane uses 100% of usable pane width. The Live Editor uses the preview column as its boundary. |
+| Normal line width | 40 rem | Whole number from 20 to 100. Maximum line width caps the result. |
+| Wide line width | 50 rem | Whole number from 20 to 100. Maximum line width caps the result. |
+| Maximum line width | 88% | Whole percentage from 70 to 96 of usable pane width. Applies to Normal, Wide, and Maximum. |
 | Maximum height | By orientation | Short (30vh), Medium (50vh), Tall (75vh), None, or Custom. By orientation uses None for landscape/square diagrams and Medium for portrait diagrams. |
 | Maintain aspect ratio | On | Fits proportionally within the size limits. Turning it off allows independent width/height fitting when both dimensions are bounded. |
-| Fill available space | On | Allows smaller diagrams to enlarge to the selected limits. Older configurations may migrate with this disabled to preserve their size. |
+| Fill available space | Off | Enable to enlarge smaller diagrams up to the selected limits. Explicitly saved choices carry forward. |
 
 Custom heights accept positive decimal lengths in `vh`, `px`, or `rem`, such as `50vh`, `400px`, or `30rem`. Percentages, expressions, zero, negative, and unitless values are rejected. The reset icon beside maximum height restores orientation defaults.
 
@@ -102,7 +105,6 @@ Defaults below describe a new configuration with **Follow Obsidian theme** enabl
 | Enable inline editor | On | Enables inline editing for eligible top-level `pele` and `mermaid` fences in Live Preview. |
 | Show line numbers | On | Shows source line numbers. |
 | Wrap source | Off | Wraps long source lines. |
-| Enable Mermaid comparison | Off | Opts into local native comparison, available only after supported-source, host-configuration, and output checks pass. |
 | Open editor | Manual | Choose Manual or Focused block activation. |
 | Editor layout | Auto | Choose Auto, Side by side, or Stacked. Narrow panes can force stacking even when Side by side is selected. |
 | Preview delay | 250 milliseconds | Accepts whole numbers from 100 to 1000. Source edits save immediately; this controls delayed preview work. |
@@ -110,18 +112,22 @@ Defaults below describe a new configuration with **Follow Obsidian theme** enabl
 
 ### Editor style settings
 
+Live Editor buttons use flat styling with distinct selected states and visible keyboard focus.
+
 | Control | Default | Behavior |
 | --- | --- | --- |
 | Source font size | Empty; inherit vault text size | Unchanged 8–40 px integer input, slider, and inheritance reset. Applies to Mermaid and CSS source. |
 | Source font color | Inherit | Paired light/dark pickers, literal text fields, and independent resets. Custom text color also colors syntax tokens; reset restores syntax highlighting. |
 | Source background color | Inherit | Paired controls for the source background and line-number gutter. |
-| Button font size | Empty; inherit interface size | 8–40 px integer input, slider, and reset for all Live editor buttons, mode choices, and Export. |
+| Button font size | Empty; inherit interface size | 8–40 px integer input, slider, and reset for editor buttons and export controls. |
+| Button corner radius | Empty; inherit theme radius | 0–32 px slider and input for Active, Inactive, and Export buttons and Live editor dropdowns. |
 | Button font colors → Active buttons / Inactive buttons / Export button | Inherit | One pair of light/dark color controls per row. Export inherits inactive colors unless separately overridden. |
 | Button background colors → Active buttons / Inactive buttons / Export button | Inherit | Same controls for button backgrounds. |
+| Button border colors → Active buttons / Inactive buttons / Export button | Inherit | Adds a 1 px border for each configured theme. Export inherits the inactive border if set. |
 | Zoom → Use global styles | Off | Bypasses dedicated Zoom colors without deleting them. Uses the normal inherited diagram/editor colors. Custom Zoom rows are hidden while enabled. |
 | Zoom → Border color / Font color / Background color | Obsidian interface colors | Dedicated light/dark pickers, text inputs, and resets override all diagram and editor colors on the Zoom controls in every Pele view. |
 
-All color fields accept hex, RGB/RGBA and HSL/HSLA with alpha. Empty values inherit independently by theme; invalid drafts retain the saved value. These preferences update open editors and are independent of diagram styles. The page uses Obsidian's usual settings back navigation and search. Close Editor and its settings are no longer displayed; old Close color values remain stored but inactive.
+Live editor dropdowns use the inactive button font, background, and border colors. **Export** and its copy and save buttons use the Export colors, shared button font size, and corner radius in all views. All color fields accept hex, RGB/RGBA and HSL/HSLA with alpha. Empty values inherit independently by theme; invalid drafts retain the saved value. These preferences update open editors and are independent of diagram styles. The page uses Obsidian's usual settings back navigation and search. Close Editor and its settings are no longer displayed; old Close color values remain stored but inactive.
 
 Reading view, source mode, and fences nested inside lists, quotes, or callouts do not become inline editors. See the [inline editor guide](https://github.com/indubyagee/advanced-mermaid/blob/main/README.md#inline-editor) for commands, draft recovery, and comparison limitations.
 
@@ -129,7 +135,7 @@ Reading view, source mode, and fences nested inside lists, quotes, or callouts d
 
 Select an alias to edit or delete it, or select **Create** for a new entry. The form and **Edit preset text** dialog save a complete validated library. Deletion is confirmed; renaming/deleting does not rewrite notes. The generated code block always reflects saved settings. See [preset classes](https://github.com/indubyagee/advanced-mermaid/blob/main/docs/preset-classes.md) for the restricted text format, class syntax in all six supported families, alpha, order, and text-only applicability.
 
-Settings schema 4 seeds the original eight classes when a library is absent. An explicit empty library stays empty after reload. Existing display/style/editor settings and newer-schema overwrite protection remain.
+The plugin uses the 42 built-in classes when a vault has no saved preset library. An explicit empty library stays empty after reload. Existing display/style/editor settings and newer-schema overwrite protection remain.
 
 ## Local overrides and example
 

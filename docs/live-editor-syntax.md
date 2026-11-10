@@ -26,6 +26,6 @@ Each action is a single step in the parent note's undo history. Note text outsid
 
 Templates provide editable Mermaid configuration values. The fields for families with project variable tables follow those tables, excluding newer syntax unsupported by the pinned renderer. Additional families use the [Mermaid 12.1 configuration schema](https://github.com/mermaid-js/mermaid/blob/mermaid%4012.1.0/packages/mermaid/src/schemas/config.schema.yaml). Treemap's `config.treemap` fields are consumed by Pele even though that namespace is absent from the pinned Mermaid schema. Info has no diagram-specific configuration fields and receives a general theme example.
 
-Pele 1.12.0 supports a subset of Mermaid configuration and uses its own layout and CSS-based appearance. A valid generated key may have no visible effect; Mermaid theme/look/layout choices do not select a different Pele renderer. Use **Local override** for the plugin's supported local display and style controls. Native Mermaid comparison continues to exclude frontmatter, as described in the main guide. See [Pele compatibility](https://pele.run/compatibility) for renderer differences.
+Pele 1.12.0 supports a subset of Mermaid configuration and uses its own layout and CSS-based appearance. Some generated keys have no visible effect. Use **Local override** for the plugin's display and style controls. [Pele compatibility](https://pele.run/compatibility)
 
 Mobile loading is disabled. macOS and Linux host behavior remains unverified.

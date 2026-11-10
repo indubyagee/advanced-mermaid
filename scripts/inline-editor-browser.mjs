@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readHostArchive } from './host-assets.mjs';
 
 export async function runInlineEditorChecks(page) {
 	const profiles = await page.evaluate(async () => {
@@ -104,6 +103,10 @@ export async function runInlineEditorChecks(page) {
 	await page.waitForFunction(() => !document.querySelector('.advanced-mermaid-stale'), null, { timeout: 5000 }).catch(async error => { console.log('Inline editor recovery diagnostic:', await page.evaluate(() => ({ note: inlineFixture.view.state.doc.toString(), ui: document.querySelector('.advanced-mermaid-editor')?.textContent }))); throw error; });
 	await page.getByRole('tab', { name: 'SVG', exact: true }).click();
 	await page.waitForFunction(() => document.querySelector('textarea[aria-label="Canonical Pele SVG"]').value.startsWith('<svg'));
+	assert.deepEqual(await page.getByRole('tablist', { name: 'Preview format' }).getByRole('tab').allTextContents(), ['Pele', 'SVG']);
+	assert.deepEqual(await page.getByRole('tablist', { name: 'Source format' }).getByRole('tab').allTextContents(), ['Mermaid', 'CSS']);
+	await page.getByRole('tab', { name: 'Pele', exact: true }).click();
+	await page.locator('.advanced-mermaid-editor svg.pele').waitFor({ state: 'visible' });
 	await page.getByRole('tab', { name: 'CSS', exact: true }).click();
 	await content.click(); await page.keyboard.press('Control+A'); await page.keyboard.type('.pele { invalid: draft; }');
 	await page.evaluate(() => {
@@ -123,30 +126,4 @@ export async function runInlineEditorChecks(page) {
 	await page.evaluate(() => { inlineFixture.view.destroy(); inlineFixture.inline.destroy(); inlineFixture.host.remove(); });
 	assert.equal(await page.locator('.advanced-mermaid-editor').count(), 0);
 	console.log('Inline editor browser checks passed: profiles, theme modes, semantic adapters, scoped exports, one widget, source mapping, parent history, CSS drafts, stale recovery, SVG view and cleanup.');
-}
-
-/** Exercise the exact installed host Mermaid asset without copying it into the plugin. */
-export async function runNativeChecks(page) {
-	let archive;
-	archive = await readHostArchive();
-	if (!archive) { console.log('Host comparison probe skipped; set ADVANCED_MERMAID_OBSIDIAN_ASAR to opt in.'); return; }
-	const header = JSON.parse(archive.subarray(16, 16 + archive.readUInt32LE(12)).toString());
-	const asset = header.files.lib?.files?.['mermaid.min.js'];
-	if (!asset) { console.log('Native comparison asset probe skipped: the supplied Obsidian archive has no standalone Mermaid asset.'); return; }
-	const start = 8 + archive.readUInt32LE(4) + Number(asset.offset);
-	const script = archive.subarray(start, start + asset.size).toString();
-	const requests = []; page.on('request', request => requests.push(request.url()));
-	await page.addScriptTag({ content: script });
-	const result = await page.evaluate(async () => {
-		const host = document.body.createDiv(); const values = [];
-		const before = JSON.stringify(mermaid.mermaidAPI.getConfig());
-		for (const source of ['flowchart LR\n A[Start] --> B[End]', 'sequenceDiagram\n Alice->>Bob: Hello']) {
-			await fixture.renderNativeMermaid(source, host, () => true); values.push(!!host.querySelector('svg'));
-		}
-		let rejected = false; try { await fixture.renderNativeMermaid('flowchart LR\n A@{img: "https://invalid.example/x.png"}', host, () => true); } catch { rejected = true; }
-		host.remove(); return { values, rejected, before, after: JSON.stringify(mermaid.mermaidAPI.getConfig()) };
-	});
-	assert.ok(result.values.every(Boolean) && result.rejected); assert.deepEqual(requests, []);
-	assert.equal(result.before, result.after, 'Native comparison changed the shared host configuration');
-	console.log('Installed Obsidian Mermaid asset comparison passed: Flowchart, Sequence, preflight resource rejection, no network requests. Shared current-config equality:', result.before === result.after);
 }

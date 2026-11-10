@@ -5,9 +5,10 @@ form or select **Edit preset text** to edit the whole library. Both editors save
 only complete, valid entries. Cancel leaves the saved library alone; deletion
 requires confirmation. A renamed alias is not updated in notes.
 
-The eight original classes are seeded during migration. Each class has an alias
-and optional text, fill, stroke, and stroke-width values. Colors stay fixed across
-themes. Empty fields inherit, and widths accept 0–20 px, including fractions.
+The 42 built-in classes are used when a vault has no saved preset library.
+Each class has an alias and optional text, fill, stroke, and stroke-width values.
+Colors stay fixed across themes. Empty fields inherit, and widths accept 0–20 px,
+including fractions. `YES` sets a 2 px stroke width and `NO` uses a transparent fill.
 If several classes match an element, later library entries override only the
 properties they define.
 
@@ -30,8 +31,7 @@ Use `preset: []` for an empty library; it remains empty after reload.
 
 Aliases contain 1–64 letters, digits, underscores or hyphens, beginning with a
 letter or underscore. They are case-sensitive and unique. Renderer names such as
-`pele-*`, `theme-*` and lowercase `default` are reserved. Uppercase `DEFAULT`
-remains an ordinary explicit preset.
+`pele-*`, `theme-*` and lowercase `default` are reserved.
 
 ## Assigning classes
 
@@ -62,5 +62,5 @@ node/subgraph text colors also retain their existing precedence over preset text
 Preset colors, alpha and widths use the same preparation for live previews and
 self-contained SVG/PNG exports. Raw SVG source references local fonts as before.
 
-For a `mermaid` fence, presets apply while the inline editor renders the block and to its
-Pele exports. Inactive blocks and Reading view use Obsidian's native styling.
+Presets apply to `mermaid` and `pele` fences in Reading view, rendered Live Preview,
+the Live Editor preview, and Pele exports.

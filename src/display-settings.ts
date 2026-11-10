@@ -1,16 +1,17 @@
 export const WIDTH_PRESETS = {
-	auto: 'By orientation',
-	normal: 'Normal (700 px)',
-	wide: 'Wide (1000 px)',
-	maximum: 'Maximum (1400 px)',
+	normal: 'Normal',
+	wide: 'Wide',
+	maximum: 'Maximum',
 	none: 'Full pane'
 } as const;
 export type WidthPreset = keyof typeof WIDTH_PRESETS;
-export const WIDTH_LIMITS = {
-	normal: 700,
-	wide: 1000,
-	maximum: 1400
+export const DIAGRAM_WIDTH_RANGES = {
+	normalRem: { min: 20, max: 100, fallback: 40, unit: 'rem' },
+	wideRem: { min: 20, max: 100, fallback: 50, unit: 'rem' },
+	maximumPercent: { min: 70, max: 96, fallback: 88, unit: '%' },
 } as const;
+export type DiagramWidths = Record<keyof typeof DIAGRAM_WIDTH_RANGES, number>;
+
 export const HEIGHT_PRESETS = {
 	auto: 'By orientation',
 	short: 'Short (30vh)',
