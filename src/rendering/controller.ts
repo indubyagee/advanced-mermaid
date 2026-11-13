@@ -60,7 +60,7 @@ export class DiagramController extends Component {
 		this.controls = layout.createDiv({ cls: 'advanced-mermaid-actions' });
 		this.feedback = layout.createDiv({ cls: 'advanced-mermaid-error', attr: { role: 'status' } });
 		this.feedback.hidden = true;
-		this.layout = new DiagramLayout(this.containerEl, layout, this.host, this, () => this.diagram?.zoom?.refresh(), this.options.boundary);
+		this.layout = new DiagramLayout(this.containerEl, layout, this.host, this, () => this.diagram?.zoom?.refresh(), this.app, this.options.boundary);
 		this.actions = new DiagramActions(this.app, this, this.controls, this.sourcePath, () => this.captureExport());
 		const view = this.containerEl.ownerDocument.defaultView!;
 		let frame: number | undefined;

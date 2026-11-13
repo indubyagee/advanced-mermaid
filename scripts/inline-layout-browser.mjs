@@ -106,6 +106,7 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 		const originalSizes = await page.evaluate(() => {
 			const source = layoutFixture.host.querySelector('.advanced-mermaid-editor-source');
 			const sizes = { source: getComputedStyle(source.querySelector('.cm-content')).fontSize,
+				inherited: getComputedStyle(source).fontSize,
 				parent: getComputedStyle(layoutFixture.view.scrollDOM).fontSize,
 				preview: getComputedStyle(layoutFixture.host.querySelector('svg.pele text')).fontSize };
 			const tab = new fixture.AdvancedMermaidSettingTab(fixture.app, {}, layoutFixture.settings, () => layoutFixture.inline.refresh());
@@ -114,7 +115,8 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 			return sizes;
 		});
 		const fontSize = page.getByRole('spinbutton', { name: 'Source font size', exact: true });
-		assert.equal(await fontSize.inputValue(), '');
+		assert.equal(await fontSize.inputValue(), '10');
+		assert.equal(originalSizes.source, '10px');
 		await fontSize.fill('22');
 		await page.waitForFunction(() => getComputedStyle(document.querySelector('.advanced-mermaid-editor-source .cm-content')).fontSize === '22px');
 		await page.locator('.advanced-mermaid-editor-source').scrollIntoViewIfNeeded();
@@ -146,7 +148,7 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 		await page.getByRole('tab', { name: 'CSS', exact: true }).click();
 		assert.equal(await page.locator('.advanced-mermaid-editor-source .cm-content').evaluate(element => getComputedStyle(element).fontSize), '22px');
 		await fontSize.fill('');
-		await page.waitForFunction(size => getComputedStyle(document.querySelector('.advanced-mermaid-editor-source .cm-content')).fontSize === size, originalSizes.source);
+		await page.waitForFunction(size => getComputedStyle(document.querySelector('.advanced-mermaid-editor-source .cm-content')).fontSize === size, originalSizes.inherited);
 		assert.equal(await fontSize.getAttribute('aria-invalid'), 'false');
 		assert.equal(await page.evaluate(() => layoutFixture.settings.liveEditor.fontSizePx), null);
 		await page.getByRole('tab', { name: 'Mermaid', exact: true }).first().click();

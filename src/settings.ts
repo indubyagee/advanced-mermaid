@@ -8,7 +8,7 @@ import { normalizeStyleSettings, normalizeLiveEditor, type StyleSettings, type L
 import { boundedNumber, isStyleRecord } from './styles/validate';
 import { defaultPresets, validatePresets, type PresetClass } from './styles/presets';
 
-export const SETTINGS_SCHEMA_VERSION = 5;
+export const SETTINGS_SCHEMA_VERSION = 6;
 
 export function isFutureSettingsSchema(value: unknown): boolean {
 	return isStyleRecord(value) && typeof value.schemaVersion === 'number' && value.schemaVersion > SETTINGS_SCHEMA_VERSION;
@@ -33,7 +33,7 @@ export const DEFAULT_SETTINGS: Readonly<AdvancedMermaidSettings> = {
 	schemaVersion: SETTINGS_SCHEMA_VERSION,
 	presets: defaultPresets(),
 	alignment: 'center',
-	maxWidth: 'normal',
+	maxWidth: 'default',
 	diagramWidths: normalizeDiagramWidths(undefined),
 	maxHeight: 'auto',
 	maintainAspectRatio: true,

@@ -41,6 +41,8 @@ export async function runPostTestChecks(page) {
 
 	await page.setViewportSize({ width: 1600, height: 800 });
 	const widths = await page.evaluate(async () => {
+		fixture.app.plugins.manifests['obsidian-minimal-settings'] = { id: 'obsidian-minimal-settings' };
+		fixture.app.plugins.plugins['obsidian-minimal-settings'] = { settings: { lineWidth: 40, lineWidthWide: 50, maxWidth: 88 } };
 		const pane = document.body.createDiv({ cls: 'markdown-preview-view' });
 		pane.style.cssText = 'width:min(1200px, calc(100vw - 80px));padding:20px;box-sizing:border-box;';
 		const line = pane.createDiv(); line.style.cssText = 'width:600px;max-width:100%;margin:auto;';
@@ -74,6 +76,8 @@ export async function runPostTestChecks(page) {
 		item.settings.maxWidth = 'wide'; item.child.updateSettings();
 		const width = layout.getBoundingClientRect().width;
 		item.child.unload(); pane.remove(); delete globalThis.resizeFixture;
+		delete fixture.app.plugins.manifests['obsidian-minimal-settings'];
+		delete fixture.app.plugins.plugins['obsidian-minimal-settings'];
 		return width;
 	});
 	assert.ok(Math.abs(narrow - 598.4) < .05);

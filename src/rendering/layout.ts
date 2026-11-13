@@ -1,6 +1,8 @@
-import type { Component } from 'obsidian';
+import type { App, Component } from 'obsidian';
+import { availableWidthPreset } from '../display-settings';
 import type { ResolvedDisplaySettings } from './overrides';
 import { fitDiagram, type Dimensions } from './sizing';
+import { minimalThemeWidths } from './minimal-settings';
 
 /** Size one block within its own pane without changing the note's reading width. */
 export class DiagramLayout {
@@ -11,7 +13,7 @@ export class DiagramLayout {
 	private readonly observer: ResizeObserver;
 
 	constructor(private readonly root: HTMLElement, private readonly layout: HTMLElement, private readonly host: HTMLElement,
-		owner: Component, private readonly resized: () => void, private readonly boundary?: HTMLElement) {
+		owner: Component, private readonly resized: () => void, private readonly app: App, private readonly boundary?: HTMLElement) {
 		const view = root.ownerDocument.defaultView!;
 		const schedule = (): void => {
 			if (this.frame !== undefined) return;
@@ -19,8 +21,16 @@ export class DiagramLayout {
 		};
 		this.observer = new view.ResizeObserver(schedule);
 		this.observer.observe(root);
+		// Minimal Theme Settings publishes vault-wide widths in the main window.
+		const minimalChanges = new MutationObserver(schedule);
+		minimalChanges.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] });
 		owner.registerDomEvent(view, 'resize', schedule);
-		owner.register(() => { this.observer.disconnect(); if (this.frame !== undefined) view.cancelAnimationFrame(this.frame); this.clear(); });
+		owner.register(() => {
+			minimalChanges.disconnect();
+			this.observer.disconnect();
+			if (this.frame !== undefined) view.cancelAnimationFrame(this.frame);
+			this.clear();
+		});
 	}
 
 	update(intrinsic: Dimensions, settings: ResolvedDisplaySettings): void {
@@ -59,11 +69,18 @@ export class DiagramLayout {
 		const rem = Number.parseFloat(view.getComputedStyle(root.ownerDocument.documentElement).fontSize) || 16;
 		const viewportStyle = view.getComputedStyle(host.parentElement!);
 		const navigationSpace = (Number.parseFloat(viewportStyle.paddingLeft) || 0) + (Number.parseFloat(viewportStyle.paddingRight) || 0);
-		const box = fitDiagram(intrinsic, paneWidth, view.innerHeight, rem, settings, navigationSpace);
+		const diagramWidths = minimalThemeWidths(this.app);
+		const requested = settings.maxWidth === 'auto' ? (intrinsic.height > intrinsic.width ? 'none' : 'normal') : settings.maxWidth;
+		const maxWidth = availableWidthPreset(requested, !!diagramWidths);
+		const display = { ...settings, maxWidth, diagramWidths: diagramWidths ?? settings.diagramWidths };
+		const textWidth = Math.min(paneWidth, root.clientWidth);
+		const box = fitDiagram(intrinsic, paneWidth, view.innerHeight, rem, display, navigationSpace, textWidth);
 		// Leave the outer block at the host theme's readable line width.
 		layout.style.width = `${box.containerWidth}px`;
 		layout.style.removeProperty('left');
-		const centered = paneLeft + (paneWidth - box.containerWidth) / 2;
+		const column = maxWidth === 'default' || maxWidth === 'full';
+		const left = column ? root.getBoundingClientRect().left + root.clientLeft : paneLeft;
+		const centered = left + ((column ? textWidth : paneWidth) - box.containerWidth) / 2;
 		layout.style.left = `${centered - layout.getBoundingClientRect().left}px`;
 		root.dataset.orientation = box.portrait ? 'portrait' : 'landscape';
 		// Keep the fitted size available when Pele temporarily expands the SVG for zoom.

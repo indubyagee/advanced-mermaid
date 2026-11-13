@@ -20,13 +20,30 @@
 	position: relative;
 	min-width: 0;
 }
-.advanced-mermaid-settings .setting-item-control, .advanced-mermaid-settings.setting-item .setting-item-control { flex-wrap: wrap; gap: 6px; }
-.advanced-mermaid-color-pair { display: flex; flex-wrap: wrap; gap: 8px; }
-.advanced-mermaid-color-input { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
-.advanced-mermaid-control-label { font-size: var(--font-ui-smaller); max-width: 140px; }
+.advanced-mermaid-settings .setting-item-control,
+	.advanced-mermaid-settings.setting-item .setting-item-control {
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+.advanced-mermaid-color-pair {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.advanced-mermaid-color-input {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	flex-wrap: wrap;
+}
+.advanced-mermaid-control-label {
+	font-size: var(--font-ui-smaller);
+	max-width: 140px;
+}
 .advanced-mermaid-color-input input[type="text"] { width: 110px; }
 .advanced-mermaid-color-input input[type="color"] { width: 30px; height: 28px; padding: 2px; }
 .advanced-mermaid-color-input button { padding: 3px 6px; }
+
 .advanced-mermaid-number-row input[type="number"] { width: 85px; }
 .advanced-mermaid-number-row input[type="range"] { max-width: 150px; min-width: 70px; }
 .advanced-mermaid-preset-source {
@@ -36,23 +53,27 @@
 	font-family: var(--font-monospace);
 	resize: vertical;
 }
-.advanced-mermaid-editor-mode, .advanced-mermaid-override-selector {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
-	align-items: center;
-	padding: 6px 0;
-}
+.advanced-mermaid-editor-mode,
+	.advanced-mermaid-override-selector {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		align-items: center;
+		padding: 6px 0;
+	}
 .advanced-mermaid-override-selector {
 	font-family: var(--font-interface);
 	font-size: var(--font-ui-small);
 }
 .advanced-mermaid-override-selector select { max-width: 100%; }
-.advanced-mermaid-settings [aria-invalid="true"],.advanced-mermaid-color-input [aria-invalid="true"] {
-	border-color: var(--text-error);
-}
+.advanced-mermaid-settings [aria-invalid="true"],
+	.advanced-mermaid-color-input [aria-invalid="true"] {
+		border-color: var(--text-error);
+	}
+
 /* A custom subgraph fill uses its full opacity instead of the default tint. */
 .advanced-mermaid-custom-cluster-fill { --pele-cluster-opacity: 1; }
+
 /* Set defaults on semantic groups. Authored inline styles and shape attributes
    continue to take precedence over inherited values. Pele's internal --_s,
    --_a, --_b, and --_m tokens supply surface, alternate surface, border, and

@@ -10,7 +10,12 @@ export { createPng } from '../src/export/png';
 export { render } from 'pele';
 
 export const saved = new Map<string, string | ArrayBuffer>();
-export const app = { vault: {
+export const app = { plugins: { manifests: {}, plugins: {} }, vault: {
+	configDir: '.fixture-config',
+	adapter: { read: (path: string) => {
+		const data = saved.get(path);
+		return typeof data === 'string' ? Promise.resolve(data) : Promise.reject(new Error('Fixture file missing.'));
+	} },
 	getAllFolders: () => [new TFolder('attachments'), new TFolder('notes'), new TFolder('notes/nested')],
 	getAbstractFileByPath: (path: string) => ['attachments', 'notes', 'notes/nested'].includes(path) ? new TFolder(path) : saved.has(path) ? {} : null,
 	create: (path: string, data: string) => { saved.set(path, data); return Promise.resolve(); },

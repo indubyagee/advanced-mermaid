@@ -33,7 +33,7 @@ export async function runMermaidPreviewChecks(page) {
 	try {
 		const previews = page.locator('.advanced-mermaid-rendered-preview');
 		assert.equal(await previews.count(), 2, 'Rendered Live Preview must use Advanced Mermaid without invoking its Markdown processor');
-		assert.equal(await page.locator('.advanced-mermaid-rendered-preview[data-rendered-live-preview]').count(), 2);
+		await page.waitForFunction(() => document.querySelectorAll('.advanced-mermaid-rendered-preview[data-rendered-live-preview]').length === 2);
 		assert.equal(await page.locator('.fixture-native-mermaid').count(), 0, 'The built-in widget must not render over Advanced Mermaid');
 		const initial = await page.evaluate(() => [...mermaidPreviewFixture.host.querySelectorAll('.advanced-mermaid-rendered-preview')].map(host => ({ align: host.dataset.align, text: getComputedStyle(host.querySelector('.pele-label')).fill })));
 		assert.deepEqual(initial, [{ align: 'right', text: 'rgb(18, 52, 86)' }, { align: 'left', text: 'rgb(171, 205, 239)' }]);
@@ -59,11 +59,12 @@ export async function runMermaidPreviewChecks(page) {
 			await assertZoomCorners([alignment === 'left' ? 'right' : 'left', 'right']);
 		}
 		const width = await page.evaluate(async () => {
+			fixture.app.plugins.manifests['obsidian-minimal-settings'] = { id: 'obsidian-minimal-settings' };
+			fixture.app.plugins.plugins['obsidian-minimal-settings'] = { settings: { lineWidth: 40, lineWidthWide: 50, maxWidth: 80 } };
 			const { plugin, view, host } = mermaidPreviewFixture;
 			const text = host.querySelector('.cm-line');
 			const before = text.getBoundingClientRect();
 			plugin.settings.maxWidth = 'maximum';
-			plugin.settings.diagramWidths.maximumPercent = 80;
 			plugin.inline.refresh();
 			await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 			const after = text.getBoundingClientRect();
@@ -115,6 +116,7 @@ export async function runMermaidPreviewChecks(page) {
 		});
 		assert.deepEqual(updated, ['rgb(36, 104, 172)', 'rgb(16, 32, 48)']);
 		await assertZoomCorners(['right', 'left']);
+		await checkMinimalWidths(page);
 		const exportMenus = page.locator('.advanced-mermaid-rendered-preview .advanced-mermaid-export, .reading-export-fixture .advanced-mermaid-export');
 		const assertExportStyles = async (text, background, border) => {
 			const menus = await exportMenus.evaluateAll(menus => menus.map(menu => [...menu.querySelectorAll('summary, button')].map(control => {
@@ -152,4 +154,90 @@ export async function runMermaidPreviewChecks(page) {
 		});
 		await theme.evaluate(style => style.remove());
 	}
+}
+
+async function checkMinimalWidths(page) {
+	const selectWidth = preset => page.evaluate(preset => {
+		const { plugin, reading } = mermaidPreviewFixture;
+		plugin.settings.maxWidth = preset;
+		plugin.inline.refresh();
+		reading.child.settingsChanged();
+	}, preset);
+	const expectWidth = (fraction = 1, rem = null, column = false, native = false) => page.waitForFunction(({ fraction, rem, column, native }) => {
+		const { view, host, reading } = mermaidPreviewFixture;
+		const panes = [
+			[view.scrollDOM, host.querySelector('.advanced-mermaid-rendered-preview .advanced-mermaid-layout')],
+			[reading.pane, reading.pane.querySelector('.advanced-mermaid-layout')],
+		];
+		const rootSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+		return panes.every(([pane, layout]) => {
+			const { paddingLeft, paddingRight } = getComputedStyle(pane);
+			const usableWidth = pane.clientWidth - parseFloat(paddingLeft) - parseFloat(paddingRight);
+			const expected = column ? Math.min(usableWidth, layout.parentElement.clientWidth) : Math.min(usableWidth * fraction, rem === null ? Infinity : rootSize * rem);
+			const svg = layout.querySelector('svg.pele');
+			const intrinsic = Number(svg.getAttribute('width'));
+			const actual = svg.getBoundingClientRect().width;
+			const fitted = native ? Math.min(intrinsic, expected) : expected;
+			return Math.abs(layout.getBoundingClientRect().width - expected) < .05 && Math.abs(actual - fitted) < .05;
+		});
+	}, { fraction, rem, column, native }, { timeout: 3000 });
+	try {
+		await page.evaluate(() => {
+			delete fixture.app.plugins.manifests['obsidian-minimal-settings'];
+			delete fixture.app.plugins.plugins['obsidian-minimal-settings'];
+			mermaidPreviewFixture.plugin.settings.fillAvailable = true;
+		});
+		await selectWidth('default');
+		await expectWidth(1, null, true, true);
+		await selectWidth('full');
+		await expectWidth(1, null, true);
+		await page.evaluate(() => {
+			fixture.saved.set(`${fixture.app.vault.configDir}/plugins/obsidian-minimal-settings/data.json`, JSON.stringify({ lineWidth: 28, lineWidthWide: 42, maxWidth: 94 }));
+			fixture.app.plugins.manifests['obsidian-minimal-settings'] = { id: 'obsidian-minimal-settings' };
+		});
+		await selectWidth('normal');
+		await expectWidth(1, null, true, true);
+		await selectWidth('full');
+		await expectWidth(1, null, true);
+		await selectWidth('normal');
+		await page.evaluate(() => {
+			fixture.app.plugins.plugins['obsidian-minimal-settings'] = { settings: { lineWidth: 28, lineWidthWide: 42, maxWidth: 94 } };
+			document.body.classList.add('minimal-theme');
+		});
+		await expectWidth(.94, 28);
+		await selectWidth('wide');
+		await expectWidth(.94, 42);
+		await selectWidth('maximum');
+		await expectWidth(.94);
+		await page.evaluate(() => {
+			fixture.app.plugins.plugins['obsidian-minimal-settings'].settings.maxWidth = 73;
+			document.body.style.setProperty('--max-width', '73%');
+		});
+		await expectWidth(.73);
+		await selectWidth('wide');
+		await expectWidth(.73, 42);
+		await selectWidth('none');
+		await expectWidth(1);
+		await selectWidth('default');
+		await expectWidth(1, null, true, true);
+		await selectWidth('maximum');
+		await page.evaluate(() => {
+			delete fixture.app.plugins.plugins['obsidian-minimal-settings'];
+			document.body.classList.remove('minimal-theme');
+		});
+		await expectWidth(1, null, true, true);
+		await page.evaluate(() => { delete fixture.app.plugins.manifests['obsidian-minimal-settings']; });
+		await selectWidth('full');
+		await expectWidth(1, null, true);
+	} finally {
+		await page.evaluate(() => {
+			document.body.classList.remove('minimal-theme');
+			document.body.style.removeProperty('--max-width');
+			delete fixture.app.plugins.manifests['obsidian-minimal-settings'];
+			delete fixture.app.plugins.plugins['obsidian-minimal-settings'];
+			fixture.saved.delete(`${fixture.app.vault.configDir}/plugins/obsidian-minimal-settings/data.json`);
+			mermaidPreviewFixture.plugin.settings.fillAvailable = false;
+		});
+	}
+	console.log('Diagram widths passed in Reading view and Live Preview with MTS installed, disabled, enabled and absent, plus native Default and text-column Full.');
 }

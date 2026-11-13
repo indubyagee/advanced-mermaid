@@ -1,10 +1,17 @@
 export const WIDTH_PRESETS = {
+	default: 'Default',
 	normal: 'Normal',
 	wide: 'Wide',
 	maximum: 'Maximum',
-	none: 'Full pane'
+	none: 'Full Pane'
 } as const;
-export type WidthPreset = keyof typeof WIDTH_PRESETS;
+export const NATIVE_WIDTH_PRESETS = { default: 'Default', full: 'Full' } as const;
+export type WidthPreset = keyof typeof WIDTH_PRESETS | keyof typeof NATIVE_WIDTH_PRESETS;
+
+export function availableWidthPreset(value: WidthPreset, minimalEnabled: boolean): WidthPreset {
+	if (minimalEnabled) return value === 'full' ? 'none' : value;
+	return value === 'none' || value === 'full' ? 'full' : 'default';
+}
 export const DIAGRAM_WIDTH_RANGES = {
 	normalRem: { min: 20, max: 100, fallback: 40, unit: 'rem' },
 	wideRem: { min: 20, max: 100, fallback: 50, unit: 'rem' },
@@ -21,7 +28,7 @@ export const HEIGHT_PRESETS = {
 } as const;
 
 export function isWidthPreset(value: unknown): value is WidthPreset {
-	return typeof value === 'string' && Object.prototype.hasOwnProperty.call(WIDTH_PRESETS, value);
+	return value === 'full' || typeof value === 'string' && Object.prototype.hasOwnProperty.call(WIDTH_PRESETS, value);
 }
 
 /** Concrete lengths remain compatible with previously saved height settings. */

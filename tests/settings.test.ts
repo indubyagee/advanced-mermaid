@@ -4,15 +4,15 @@ import { render, PeleError } from 'pele';
 import { DEFAULT_SETTINGS, normalizeSettings, parseMaxHeight, validThemeValue } from '../src/settings';
 import { ConfigurationError, resolveDisplay } from '../src/rendering/overrides';
 
-void test('schema 5 defaults to normal width and preserves explicitly saved presets and fill', () => {
+void test('schema 6 defaults to native width and preserves explicitly saved presets and fill', () => {
 	const fresh = normalizeSettings(null);
-	assert.equal(fresh.schemaVersion, 5);
-	assert.equal(fresh.maxWidth, 'normal');
+	assert.equal(fresh.schemaVersion, 6);
+	assert.equal(fresh.maxWidth, 'default');
 	assert.equal(fresh.fillAvailable, false);
 	assert.deepEqual(fresh.diagramWidths, { normalRem: 40, wideRem: 50, maximumPercent: 88 });
-	assert.equal(normalizeSettings({ schemaVersion: 4, maxWidth: 'auto', fillAvailable: true }).maxWidth, 'normal');
+	assert.equal(normalizeSettings({ schemaVersion: 4, maxWidth: 'auto', fillAvailable: true }).maxWidth, 'default');
 	assert.equal(normalizeSettings({ schemaVersion: 4, maxWidth: 'auto', fillAvailable: true }).fillAvailable, true);
-	for (const maxWidth of ['normal', 'wide', 'maximum', 'none']) {
+	for (const maxWidth of ['default', 'full', 'normal', 'wide', 'maximum', 'none']) {
 		assert.equal(normalizeSettings({ schemaVersion: 4, maxWidth, fillAvailable: false }).maxWidth, maxWidth);
 	}
 	assert.deepEqual(normalizeSettings({ schemaVersion: 4, liveEditor: { mermaidComparison: true } }).liveEditor, fresh.liveEditor);

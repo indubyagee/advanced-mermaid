@@ -13,16 +13,25 @@ export async function runInlineSettingsChecks(page) {
 		const edit = (label, value) => { const input = tab.containerEl.querySelector(`input[aria-label="${label}"]`); input.value = value; input.dispatchEvent(new Event('input')); };
 		const width = tab.containerEl.querySelector('[aria-label="Diagram width"]');
 		const widthOptions = [...width.options].map(option => option.textContent);
-		const widthRanges = ['Normal', 'Wide', 'Maximum'].map(name => {
-			const slider = tab.containerEl.querySelector(`[aria-label="${name} line width slider"]`);
-			return [slider.min, slider.max, slider.step, slider.value];
-		});
-		edit('Normal line width', '100'); edit('Wide line width slider', '75'); edit('Maximum line width', '70');
-		edit('Normal line width', '101'); edit('Maximum line width', '70.5');
-		const validWidths = { ...settings.diagramWidths };
-		tab.containerEl.querySelector('[aria-label="Reset Normal line width"]').click();
-		const widthReset = settings.diagramWidths.normalRem === 40;
-		const widthDefaults = width.value === 'normal' && !row('Fill available space').querySelector('input').checked;
+		const widthDefaults = width.value === 'default' && !row('Fill available space').querySelector('input').checked;
+		// Native settings can reuse definitions indexed before MTS was installed.
+		const definitions = tab.settingItems;
+		const getDefinitions = tab.getSettingDefinitions;
+		tab.getSettingDefinitions = () => definitions;
+		fixture.app.plugins.manifests['obsidian-minimal-settings'] = { id: 'obsidian-minimal-settings' };
+		tab.update();
+		const disabledWidthOptions = [...tab.containerEl.querySelector('[aria-label="Diagram width"]').options].map(option => option.textContent);
+		fixture.app.plugins.plugins['obsidian-minimal-settings'] = { settings: { lineWidth: 40, lineWidthWide: 50, maxWidth: 88 } };
+		tab.update();
+		const mtsWidth = tab.containerEl.querySelector('[aria-label="Diagram width"]');
+		const enabledWidthOptions = [...mtsWidth.options].map(option => option.textContent);
+		mtsWidth.value = 'wide'; mtsWidth.dispatchEvent(new Event('change'));
+		const widthSaved = fixture.normalizeSettings(settings).maxWidth === 'wide';
+		delete fixture.app.plugins.plugins['obsidian-minimal-settings']; tab.update();
+		const legacySelection = tab.containerEl.querySelector('[aria-label="Diagram width"]').value === 'default' && settings.maxWidth === 'wide';
+		delete fixture.app.plugins.manifests['obsidian-minimal-settings'];
+		const widthControlsRemoved = !row('Normal line width') && !row('Wide line width') && !row('Maximum line width');
+		tab.getSettingDefinitions = getDefinitions;
 		const comparisonRemoved = !row('Enable Mermaid comparison');
 		open('Editor style settings');
 		edit('Source font size', '21'); const fontSize = settings.liveEditor.fontSizePx;
@@ -56,12 +65,12 @@ export async function runInlineSettingsChecks(page) {
 		const example = [...tab.containerEl.querySelectorAll('details')].find(section => section.querySelector('summary')?.textContent === 'Show example');
 		example.open = true; await new Promise(resolve => setTimeout(resolve, 30)); const preview = example.querySelectorAll('svg.pele').length;
 		back(); const destroyed = !tab.containerEl.querySelector('svg.pele'); tab.hide(); tab.containerEl.remove();
-		return { widthOptions, widthRanges, validWidths, widthReset, widthDefaults, comparisonRemoved, colorRows, paired, rgba, independent, globalReset, undoScope, sparse, retained, typeReset, preview, destroyed, fontSize, fontReset, presetSaved, invalidRetained };
+		return { widthOptions, disabledWidthOptions, enabledWidthOptions, widthSaved, legacySelection, widthControlsRemoved, widthDefaults, comparisonRemoved, colorRows, paired, rgba, independent, globalReset, undoScope, sparse, retained, typeReset, preview, destroyed, fontSize, fontReset, presetSaved, invalidRetained };
 	});
 	assert.equal(result.colorRows, 11); assert.equal(result.rgba, '#ff000080'); assert.equal(result.fontSize, 21); assert.equal(result.preview, 1);
-	assert.deepEqual(result.widthOptions, ['Normal', 'Wide', 'Maximum', 'Full pane']);
-	assert.deepEqual(result.widthRanges, [['20', '100', '1', '40'], ['20', '100', '1', '50'], ['70', '96', '1', '88']]);
-	assert.deepEqual(result.validWidths, { normalRem: 100, wideRem: 75, maximumPercent: 70 });
-	for (const key of ['widthReset', 'widthDefaults', 'comparisonRemoved', 'paired', 'independent', 'globalReset', 'undoScope', 'sparse', 'retained', 'typeReset', 'destroyed', 'fontReset', 'presetSaved', 'invalidRetained']) assert.equal(result[key], true, key);
+	assert.deepEqual(result.widthOptions, ['Default', 'Full']);
+	assert.deepEqual(result.disabledWidthOptions, ['Default', 'Full']);
+	assert.deepEqual(result.enabledWidthOptions, ['Default', 'Normal', 'Wide', 'Maximum', 'Full Pane']);
+	for (const key of ['widthSaved', 'legacySelection', 'widthControlsRemoved', 'widthDefaults', 'comparisonRemoved', 'paired', 'independent', 'globalReset', 'undoScope', 'sparse', 'retained', 'typeReset', 'destroyed', 'fontReset', 'presetSaved', 'invalidRetained']) assert.equal(result[key], true, key);
 	console.log('Inline settings passed: native definitions/pages, paired colors, resets/undo, sparse type profiles, numeric inheritance, atomic presets and example cleanup.');
 }

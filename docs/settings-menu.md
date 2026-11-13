@@ -20,17 +20,16 @@ Controls are indexed by Obsidian's settings search. **Editor layout** controls t
 | Control | New-configuration default | Behavior |
 | --- | --- | --- |
 | Alignment | Center | Places the diagram left, center, or right. |
-| Diagram width | Normal | Choose Normal, Wide, Maximum, or Full pane. Full pane uses 100% of usable pane width. The Live Editor uses the preview column as its boundary. |
-| Normal line width | 40 rem | Whole number from 20 to 100. Maximum line width caps the result. |
-| Wide line width | 50 rem | Whole number from 20 to 100. Maximum line width caps the result. |
-| Maximum line width | 88% | Whole percentage from 70 to 96 of usable pane width. Applies to Normal, Wide, and Maximum. |
+| Diagram width | Default | With Minimal Theme Settings enabled, choose Default, Normal, Wide, Maximum, or Full Pane. When absent or disabled, choose Default or Full. Default preserves native sizing. Full fills the text column, and Full Pane uses the usable pane width. The Live editor uses its preview column as the boundary. |
 | Maximum height | By orientation | Short (30vh), Medium (50vh), Tall (75vh), None, or Custom. By orientation uses None for landscape/square diagrams and Medium for portrait diagrams. |
 | Maintain aspect ratio | On | Fits proportionally within the size limits. Turning it off allows independent width/height fitting when both dimensions are bounded. |
-| Fill available space | Off | Enable to enlarge smaller diagrams up to the selected limits. Explicitly saved choices carry forward. |
+| Fill available space | Off | Enable to enlarge smaller diagrams up to the selected limits. Default width retains native sizing. |
 
 Custom heights accept positive decimal lengths in `vh`, `px`, or `rem`, such as `50vh`, `400px`, or `30rem`. Percentages, expressions, zero, negative, and unitless values are rejected. The reset icon beside maximum height restores orientation defaults.
 
 A diagram's `%% advanced-mermaid:` comment overrides the corresponding global display values. Changing global settings does not rewrite these comments.
+
+Normal, Wide, and Maximum use the active values selected in Minimal Theme Settings. Configure those values in that plugin. Saved MTS presets use Default while MTS is absent or disabled, and saved Full Pane selections use Full.
 
 ## Styles
 
@@ -116,7 +115,7 @@ Live Editor buttons use flat styling with distinct selected states and visible k
 
 | Control | Default | Behavior |
 | --- | --- | --- |
-| Source font size | Empty; inherit vault text size | Unchanged 8–40 px integer input, slider, and inheritance reset. Applies to Mermaid and CSS source. |
+| Source font size | 10 px | 8–40 px integer input and slider. Reset or leave empty to inherit the vault text size. Applies to Mermaid and CSS source. |
 | Source font color | Inherit | Paired light/dark pickers, literal text fields, and independent resets. Custom text color also colors syntax tokens; reset restores syntax highlighting. |
 | Source background color | Inherit | Paired controls for the source background and line-number gutter. |
 | Button font size | Empty; inherit interface size | 8–40 px integer input, slider, and reset for editor buttons and export controls. |

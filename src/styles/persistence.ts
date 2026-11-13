@@ -56,7 +56,7 @@ export function normalizeLiveEditor(value: unknown): LiveEditorSettings {
 		layout: data.layout === 'side-by-side' || data.layout === 'stacked' ? data.layout : 'auto',
 		debounceMs: typeof data.debounceMs === 'number' && Number.isInteger(data.debounceMs) && data.debounceMs >= 100 && data.debounceMs <= 1000 ? data.debounceMs : 250,
 		lineNumbers: data.lineNumbers !== false, wrapSource: data.wrapSource === true,
-		fontSizePx: isEditorFontSize(data.fontSizePx) ? data.fontSizePx : null,
+		fontSizePx: data.fontSizePx === undefined ? 10 : isEditorFontSize(data.fontSizePx) ? data.fontSizePx : null,
 		style: normalizeEditorStyle(data.style),
 	};
 }

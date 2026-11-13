@@ -57,7 +57,7 @@ export class PluginSettingTab {
 	settingItems: SettingDefinitionItem[] = [];
 	private path: string[] = [];
 	private disposers: (() => void)[] = [];
-	constructor(_app: unknown, _plugin: unknown) {}
+	constructor(readonly app: unknown, _plugin: unknown) {}
 	getSettingDefinitions(): SettingDefinitionItem[] { return []; }
 	display(): void { this.update(); }
 	/** A fixture renderer for public definitions; native navigation/search need host tests. */

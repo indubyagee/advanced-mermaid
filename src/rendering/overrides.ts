@@ -29,7 +29,7 @@ export function resolveDisplay(source: string, settings: AdvancedMermaidSettings
 		const seen = new Set<string>();
 		for (const assignment of assignments) {
 			const match = /^(align|max-height|max-width|aspect-ratio|fill)=([^=]+)$/.exec(assignment);
-			if (!match) throw new ConfigurationError('Use align=left|center|right, max-width=normal|wide|maximum|none|auto, max-height=30vh|medium|none|auto, aspect-ratio=true|false, or fill=true|false.', index + 1);
+			if (!match) throw new ConfigurationError('Use align=left|center|right, max-width=default|full|normal|wide|maximum|none|auto, max-height=30vh|medium|none|auto, aspect-ratio=true|false, or fill=true|false.', index + 1);
 			const [, key, value] = match;
 			if (seen.has(key!)) throw new ConfigurationError(`Remove the repeated ${key} setting.`, index + 1);
 			seen.add(key!);
@@ -37,7 +37,7 @@ export function resolveDisplay(source: string, settings: AdvancedMermaidSettings
 				if (!isAlignment(value)) throw new ConfigurationError('Alignment must be left, center, or right.', index + 1);
 				result.alignment = value;
 			} else if (key === 'max-width') {
-				if (value !== 'auto' && !isWidthPreset(value)) throw new ConfigurationError('Width must be normal, wide, maximum, none, or auto.', index + 1);
+				if (value !== 'auto' && !isWidthPreset(value)) throw new ConfigurationError('Width must be default, full, normal, wide, maximum, none, or auto.', index + 1);
 				result.maxWidth = value;
 			} else if (key === 'aspect-ratio' || key === 'fill') {
 				if (value !== 'true' && value !== 'false') throw new ConfigurationError(`${key} must be true or false.`, index + 1);

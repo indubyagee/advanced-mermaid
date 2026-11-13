@@ -2,8 +2,32 @@
 
 ## Unreleased
 
+### Added
+
 - Render both `mermaid` and `pele` code blocks with Advanced Mermaid, sharing display settings, styles, exports, and inline editor handoff.
+- Add Default and Full diagram width options, with Normal, Wide, Maximum, and Full Pane available when Minimal Theme Settings is enabled.
+- Add separate light and dark border colors for active, inactive, and Export buttons, plus a shared button corner-radius setting from 0–32 px.
+- Expand the built-in preset library to 42 classes, including `PRESET1`–`PRESET8`, `CATEGORY1`–`CATEGORY8`, highlights, notes, statuses, and diagram roles. Existing saved libraries, including empty ones, are preserved.
+
+### Changed
+
+- Default the Live Editor source font size to 10 px, preserving saved sizes and the option to inherit the vault text size.
 - Apply custom settings and local overrides to rendered `mermaid` blocks in Live Preview, including when the optional inline editor is disabled.
+- Use active Minimal Theme Settings (MTS) values for Normal, Wide, and Maximum. Default preserves native width, Full uses the text column, and Full Pane uses the usable pane width.
+- Default to native diagram width with **Fill available space** off. Preserve explicitly saved fill choices and migrate saved orientation-based global widths to Default. Local `max-width=auto` overrides remain available.
+- Fit diagrams to their usable pane or Live Editor preview column without changing the note's reading width. In Reading view and rendered Live Preview, zoom and pan use the diagram block; zoom controls appear at the bottom right for left-aligned diagrams and at the bottom left for centered or right-aligned diagrams.
+- Use flat styling for Live Editor buttons and dropdowns. Apply Export colors, button font size, and corner radius to Export and its copy and save controls across views.
+- Document development builds, validation commands, width inheritance, and the distinction between Unreleased behavior and 0.3.0 host acceptance.
+
+### Fixed
+
+- Treat disabled MTS as absent in Reading view, Live Preview, and settings. Offer only Default and Full, and ignore saved MTS width values.
+- Refresh the diagram width choices when settings reopen after MTS is enabled or disabled, including cached settings definitions.
+
+### Removed
+
+- Remove native Mermaid comparison from the Live Editor. Pele and read-only SVG previews remain available.
+- Remove the separate Normal, Wide, and Maximum line-width controls. Configure those values in MTS.
 
 ## 0.3.0 — 2026-11-07
 

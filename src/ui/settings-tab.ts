@@ -23,7 +23,7 @@ export class AdvancedMermaidSettingTab extends PluginSettingTab {
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		const definitions: SettingDefinitionItem[] = [
-			{ type: 'group', heading: 'Display settings', items: displayDefinitions(this.settings, this.changed) },
+			{ type: 'group', heading: 'Display settings', items: displayDefinitions(this.app, this.settings, this.changed) },
 			{ type: 'group', heading: 'Live editor settings', items: liveEditorDefinitions(this.settings, this.changed, () => this.update()) },
 			{ type: 'group', heading: 'Style settings', items: [
 				rowDefinition('Follow Obsidian theme', 'Use Obsidian colors for inherited values. Turning this off retains overrides and local fonts.', row => row.addToggle(input => input.setValue(this.settings.style.followObsidianTheme).onChange(value => { this.settings.style.followObsidianTheme = value; this.changed(); }))),

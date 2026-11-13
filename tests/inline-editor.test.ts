@@ -27,14 +27,15 @@ void test('v3 untrusted profiles and editor preferences normalize independently'
 	assert.equal(settings.maxHeight, '50vh'); assert.equal(settings.style.diagrams.flowchart?.useGlobal, false);
 	assert.deepEqual(Object.keys(settings.style.diagrams), ['flowchart']);
 });
-void test('inline source font size defaults to inheritance and round-trips valid pixel sizes', () => {
-	assert.equal(normalizeSettings(null).liveEditor.fontSizePx, null);
-	for (const size of [8, 16, 22, 40]) {
+void test('inline source font size defaults to 10 px and round-trips valid pixel sizes and inheritance', () => {
+	assert.equal(normalizeSettings(null).liveEditor.fontSizePx, 10);
+	assert.equal(normalizeSettings({ liveEditor: {} }).liveEditor.fontSizePx, 10);
+	for (const size of [null, 8, 10, 16, 22, 40]) {
 		const settings = normalizeSettings({ liveEditor: { fontSizePx: size } });
 		assert.equal(settings.liveEditor.fontSizePx, size);
 		assert.equal(normalizeSettings(JSON.parse(JSON.stringify(settings))).liveEditor.fontSizePx, size);
 	}
-	for (const size of [undefined, null, 7, 41, 12.5, NaN, Infinity, '22', '22px', {}, true]) {
+	for (const size of [7, 41, 12.5, NaN, Infinity, '22', '22px', {}, true]) {
 		assert.equal(normalizeSettings({ liveEditor: { fontSizePx: size } }).liveEditor.fontSizePx, null);
 	}
 });

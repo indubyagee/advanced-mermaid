@@ -4,15 +4,17 @@ import { DEFAULT_SETTINGS, normalizeSettings, labelPixels, validThemeValue } fro
 import { fitDiagram } from '../src/rendering/sizing';
 import { resolveDisplay } from '../src/rendering/overrides';
 
-void test('normal defaults to intrinsic size and scales down oversized diagrams', () => {
-	assert.deepEqual(fitDiagram({ width: 200, height: 100 }, 1200, 800, 16, DEFAULT_SETTINGS), { width: 200, height: 100, containerWidth: 640, portrait: false });
-	assert.deepEqual(fitDiagram({ width: 1000, height: 500 }, 1200, 800, 16, DEFAULT_SETTINGS, 40), { width: 600, height: 300, containerWidth: 640, portrait: false });
+void test('default uses native size while Full can fill the text column inside a wider pane', () => {
+	const settings = { ...DEFAULT_SETTINGS, fillAvailable: true };
+	assert.deepEqual(fitDiagram({ width: 200, height: 100 }, 1200, 800, 16, settings, 0, 600), { width: 200, height: 100, containerWidth: 600, portrait: false });
+	assert.deepEqual(fitDiagram({ width: 1000, height: 500 }, 1200, 800, 16, settings, 40, 600), { width: 560, height: 280, containerWidth: 600, portrait: false });
+	assert.deepEqual(fitDiagram({ width: 200, height: 100 }, 1200, 800, 16, { ...settings, maxWidth: 'full' }, 0, 600), { width: 600, height: 300, containerWidth: 600, portrait: false });
 	assert.equal(fitDiagram({ width: 100, height: 500 }, 1200, 800, 16, DEFAULT_SETTINGS).height, 400);
 });
 
 void test('width presets use configured rem and pane percentages before reserving the zoom rail', () => {
 	const intrinsic = { width: 200, height: 100 };
-	const settings = { ...DEFAULT_SETTINGS, fillAvailable: true, diagramWidths: { normalRem: 30, wideRem: 70, maximumPercent: 80 } };
+	const settings = { ...DEFAULT_SETTINGS, maxWidth: 'normal', fillAvailable: true, diagramWidths: { normalRem: 30, wideRem: 70, maximumPercent: 80 } } as const;
 	for (const [maxWidth, wide, narrow] of [['normal', 480, 240], ['wide', 960, 240], ['maximum', 960, 240], ['none', 1200, 300]] as const) {
 		for (const [paneWidth, expected] of [[1200, wide], [300, narrow]] as const) {
 			const fitted = fitDiagram(intrinsic, paneWidth, 800, 16, { ...settings, maxWidth }, 40);
