@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.3.1 — 2026-11-13
 
 ### Added
 
@@ -17,7 +17,7 @@
 - Default to native diagram width with **Fill available space** off. Preserve explicitly saved fill choices and migrate saved orientation-based global widths to Default. Local `max-width=auto` overrides remain available.
 - Fit diagrams to their usable pane or Live Editor preview column without changing the note's reading width. In Reading view and rendered Live Preview, zoom and pan use the diagram block; zoom controls appear at the bottom right for left-aligned diagrams and at the bottom left for centered or right-aligned diagrams.
 - Use flat styling for Live Editor buttons and dropdowns. Apply Export colors, button font size, and corner radius to Export and its copy and save controls across views.
-- Document development builds, validation commands, width inheritance, and the distinction between Unreleased behavior and 0.3.0 host acceptance.
+- Document development builds, validation commands, width inheritance, and the limits of recorded 0.3.0 host acceptance for 0.3.1.
 
 ### Fixed
 

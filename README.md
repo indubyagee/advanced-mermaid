@@ -3,7 +3,9 @@
 <script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="indubyagee" data-color="#FFDD00" data-emoji="" data-font="Inter" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
 
 Render Mermaid-compatible diagrams with Pele 1.12.0 in `mermaid` or `pele` code blocks.
-Advanced Mermaid provides inline editing, theme-aware styles, reusable preset classes, and SVG/PNG export. This README describes the current development version, including changes listed under **Unreleased** in the [changelog](https://github.com/indubyagee/advanced-mermaid/blob/main/CHANGELOG.md).
+Advanced Mermaid provides inline editing, theme-aware styles, reusable preset classes, and SVG/PNG export.
+
+ See the [changelog](https://github.com/indubyagee/advanced-mermaid/blob/main/CHANGELOG.md) for release notes.
 
 **Compatibility:** requires Obsidian 1.14.5 or newer and is desktop-only. Mobile loading is disabled.
 
@@ -95,8 +97,7 @@ The source pane has **Mermaid** and **CSS** tabs. The preview pane has **Pele** 
 
 ````markdown
 ```pele
-%% mermaidnced-mermaid-style:v1
-%% .pele { --pele-surface: #
+%% advanced-mermaid-style:v1
 %% .pele { --pele-surface: #153030;  --pele-fg: #FF0000; }
 %% .theme-dark .pele { --pele-surface: #2D4646; }
 %% advanced-mermaid-style:end
@@ -106,10 +107,11 @@ flowchart TD
     C -->|Not yet| D["Edit in place"]
     D -.-> B
     C -->|Yes| E["Export SVG or PNG"]
+```
 ````
 
 ![Live editor source and preview panes](docs/media/preview-dark-flowchart-short-3a.png)
-light-flowchart-overrides-2
+
 Allowed selectors are `.pele`, `.theme-light .pele`, and `.theme-dark .pele`. Values are literal hex colors, local family names, and bounded `px` lengths. Element controls use registered names such as `--advanced-mermaid-sequence-note-fill`; measured label size uses `--advanced-mermaid-label-size`. Arbitrary properties, URLs, `var()`, imports, private renderer variables, and `!important` are rejected. Malformed comments produce source-line diagnostics and a clearly labeled fallback preview with export disabled.
 
 The preview delay defaults to 250ms (100–1000ms). **Editor layout** offers Auto (the default), Side by side, and Stacked; narrow panes always stack. Settings also control activation, wrapping, and line numbers. **Render inline diagram** and Ctrl/Cmd+Enter render immediately. Press Esc or select **Rendered view** to exit. Tab indents the current or selected lines. Shift+Tab outdents. Source edits preserve the parent note's viewport, and Enter and Tab stay within the nested editor. Three slow renders pause automatic preview while source edits continue to save.
@@ -183,6 +185,9 @@ The build checks TypeScript and bundles `src/main.ts` into `main.js`. Install th
 | `npm run typecheck` | Check TypeScript for source and test fixtures. |
 | `npm run lint` | Run ESLint, including Obsidian-specific rules. |
 | `npm run test:browser` | Run browser fixtures using Microsoft Edge by default. |
+| `npm run check:public` | Check public source files for private or generated content. |
+| `npm run check:history` | Check the public source tree and outgoing Git history. |
+| `npm run check:release -- --tag 0.3.1` | Validate built artifacts, version metadata, and the exact release tag. |
 
 Browser fixtures use an Obsidian test adapter. Verify changes in Obsidian separately before claiming host compatibility.
 
@@ -192,7 +197,7 @@ Advanced Mermaid uses the MIT license. Its bundled renderer, [Pele 1.12.0](https
 
 ## Platform coverage and troubleshooting
 
-The recorded Windows acceptance covers the exact 0.3.0 production artifacts on Obsidian 1.14.5 and 1.15.0, including settings persistence, editor modes, undo, draft recovery, SVG/PNG clipboard and save actions, embeds, multiple panes, pop-outs, and unload/re-enable cleanup. Those results do not establish host acceptance for Unreleased changes. macOS and Linux host behavior, mobile devices, touch, and IME behavior remain unverified. Mobile loading is disabled.
+The recorded Windows acceptance covers the exact 0.3.0 production artifacts on Obsidian 1.14.5 and 1.15.0, including settings persistence, editor modes, undo, draft recovery, SVG/PNG clipboard and save actions, embeds, multiple panes, pop-outs, and unload/re-enable cleanup. Those results do not establish host acceptance for 0.3.1. macOS and Linux host behavior, mobile devices, touch, and IME behavior remain unverified. Mobile loading is disabled.
 
 - **No diagram:** verify the fence language is `mermaid` or `pele`; inspect the displayed diagnostic.
 - **Height did not change:** check for a per-diagram override and use an accepted unit or `none`.
