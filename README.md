@@ -13,12 +13,16 @@ See the [settings menu guide](https://github.com/indubyagee/advanced-mermaid/blo
 
 ````markdown
 ```mermaid
-flowchart LR
-  A[Source] --> B[Diagram]
+flowchart TD
+    A["Write Mermaid"] --> B["Preview diagram"]
+    B --> C{"Ready to share?"}
+    C -->|Not yet| D["Edit in place"]
+    D -.-> B
+    C -->|Yes| E["Export SVG or PNG"]
 ```
 ````
 
-![Live editor](docs/media/preview-dark-flowchart-short-1.png)
+![Live editor](docs/media/preview-light-flowchart.png)
 
 Both `mermaid` and `pele` code blocks use Advanced Mermaid in Reading view, rendered Live Preview blocks, and embeds while the plugin is enabled. Existing `pele` blocks remain supported. Source mode remains plain editable Markdown.
 
@@ -49,14 +53,17 @@ Override display settings in one reserved Mermaid comment immediately before the
 
 ````markdown
 ```mermaid
-%% advanced-mermaid: align=left max-width=wide max-height=30vh aspect-ratio=true fill=true
-flowchart LR
-  A --> B
+%% advanced-mermaid: align=left max-width=full max-height=30vh aspect-ratio=true fill=true
+flowchart TD
+    A["Write Mermaid"] --> B["Preview diagram"]
+    B --> C{"Ready to share?"}
+    C -->|Not yet| D["Edit in place"]
+    D -.-> B
+    C -->|Yes| E["Export SVG or PNG"]
 ```
 ````
 
-![Live editor with local overrides](docs/media/preview-dark-flowchart-short-2.png)
-
+![Live editor with local overrides](docs/media/preview-light-flowchart-overrides.png)
 `max-width` accepts `default`, `full`, `normal`, `wide`, `maximum`, `none`, or `auto`. Default retains native sizing. Full uses Full Pane when MTS is enabled and the text column otherwise. With MTS enabled, `none` selects Full Pane and `auto` selects Normal for landscape and square diagrams or Full Pane for portrait diagrams. With MTS absent or disabled, Normal, Wide, and Maximum use Default, and `none` uses Full. `max-height` accepts concrete lengths, `short`, `medium`, `tall`, `none`, or `auto`. For height, `none` removes the height cap and `auto` uses the orientation defaults. `aspect-ratio` and `fill` accept `true` or `false`.
 
 The marker is case-sensitive. Use at most one directive, with each key at most once; unknown keys and malformed values produce a configuration error. Directives are recognized only in the initial comment/blank-line region after optional frontmatter, before the diagram declaration. Ordinary comments elsewhere are unchanged. The `%% advanced-mermaid:` prefix is reserved; existing notes that previously used that exact prefix as an ordinary initial comment may need adjustment. Fence metadata is not used.
@@ -88,17 +95,21 @@ The source pane has **Mermaid** and **CSS** tabs. The preview pane has **Pele** 
 
 ````markdown
 ```pele
-%% advanced-mermaid-style:v1
-%% .pele { --pele-surface: #153030;  --pele-fg: #FFFFFF; }
+%% mermaidnced-mermaid-style:v1
+%% .pele { --pele-surface: #
+%% .pele { --pele-surface: #153030;  --pele-fg: #FF0000; }
 %% .theme-dark .pele { --pele-surface: #2D4646; }
 %% advanced-mermaid-style:end
-flowchart LR
- A --> B
-```
+flowchart TD
+    A["Write Mermaid"] --> B["Preview diagram"]
+    B --> C{"Ready to share?"}
+    C -->|Not yet| D["Edit in place"]
+    D -.-> B
+    C -->|Yes| E["Export SVG or PNG"]
 ````
 
 ![Live editor source and preview panes](docs/media/preview-dark-flowchart-short-3a.png)
-
+light-flowchart-overrides-2
 Allowed selectors are `.pele`, `.theme-light .pele`, and `.theme-dark .pele`. Values are literal hex colors, local family names, and bounded `px` lengths. Element controls use registered names such as `--advanced-mermaid-sequence-note-fill`; measured label size uses `--advanced-mermaid-label-size`. Arbitrary properties, URLs, `var()`, imports, private renderer variables, and `!important` are rejected. Malformed comments produce source-line diagnostics and a clearly labeled fallback preview with export disabled.
 
 The preview delay defaults to 250ms (100–1000ms). **Editor layout** offers Auto (the default), Side by side, and Stacked; narrow panes always stack. Settings also control activation, wrapping, and line numbers. **Render inline diagram** and Ctrl/Cmd+Enter render immediately. Press Esc or select **Rendered view** to exit. Tab indents the current or selected lines. Shift+Tab outdents. Source edits preserve the parent note's viewport, and Enter and Tab stay within the nested editor. Three slow renders pause automatic preview while source edits continue to save.
