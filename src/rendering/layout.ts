@@ -12,7 +12,7 @@ export class DiagramLayout {
 	private pane?: HTMLElement;
 	private readonly observer: ResizeObserver;
 
-	constructor(private readonly root: HTMLElement, private readonly layout: HTMLElement, private readonly host: HTMLElement,
+	constructor(private readonly root: HTMLElement, private readonly layout: HTMLElement, private readonly viewport: HTMLElement, private readonly host: HTMLElement,
 		owner: Component, private readonly resized: () => void, private readonly app: App, private readonly boundary?: HTMLElement) {
 		const view = root.ownerDocument.defaultView!;
 		const schedule = (): void => {
@@ -67,7 +67,7 @@ export class DiagramLayout {
 		const paneWidth = Math.max(0, pane.clientWidth - paddingLeft - paddingRight);
 		const paneLeft = pane.getBoundingClientRect().left + pane.clientLeft + paddingLeft;
 		const rem = Number.parseFloat(view.getComputedStyle(root.ownerDocument.documentElement).fontSize) || 16;
-		const viewportStyle = view.getComputedStyle(host.parentElement!);
+		const viewportStyle = view.getComputedStyle(this.viewport);
 		const navigationSpace = (Number.parseFloat(viewportStyle.paddingLeft) || 0) + (Number.parseFloat(viewportStyle.paddingRight) || 0);
 		const diagramWidths = minimalThemeWidths(this.app);
 		const requested = settings.maxWidth === 'auto' ? (intrinsic.height > intrinsic.width ? 'none' : 'normal') : settings.maxWidth;

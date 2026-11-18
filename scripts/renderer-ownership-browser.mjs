@@ -38,7 +38,7 @@ async function runOwnershipChecks(page, fenceLanguage) {
 			const paneIsolation = other.host.querySelectorAll('svg.pele').length === 1;
 			first.view.dispatch({ changes: { from: 0, insert: 'Prefix\n' } }); await wait();
 			const mapped = !first.host.querySelector('svg.pele');
-			const nested = fixture.EditorView.findFromDOM(first.view.dom.querySelector('.advanced-mermaid-editor-source .cm-editor'));
+			const nested = fixture.EditorView.findFromDOM(fixture.sourceRoot(first.view.dom).querySelector('.cm-editor'));
 			nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert: 'flowchart LR\n A[Latest] --> B[Saved]' } }); await wait();
 			const delayed = first.view.dom.createDiv({ cls: 'delayed-preview' }); const count = children.length;
 			processor(source, delayed, first.context); await wait();

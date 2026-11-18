@@ -37,11 +37,39 @@ try {
 	await runCanvasChecks(page);
 	const sourceBudget = await page.evaluate(() => {
 		const item = fixture.diagram('---\n' + ' '.repeat(60_000) + '\n---\nflowchart LR\n A-->B');
-		const result = { diagnostic: item.host.textContent.includes('Diagram source exceeds 50,000 characters.'), rendered: !!item.host.querySelector('svg'), actionsHidden: item.host.querySelector('.advanced-mermaid-actions')?.hidden };
+		const actions = item.host.querySelector('.advanced-mermaid-actions');
+		const result = { diagnostic: item.host.textContent.includes('Diagram source exceeds 50,000 characters.'), rendered: !!item.host.querySelector('svg'), actionsHidden: actions.hidden && getComputedStyle(actions).display === 'none' };
 		item.child.unload();
 		return result;
 	});
 	assert.deepEqual(sourceBudget, { diagnostic: true, rendered: false, actionsHidden: true });
+	const detached = await page.evaluate(async () => {
+		const frame = document.body.createEl('iframe');
+		try {
+			const view = frame.contentWindow;
+			const doc = view.document;
+			fixture.installDomHelpers(view);
+			const widget = fixture.createDetachedEl(doc, 'div', { cls: 'detached-test' });
+			const canvas = fixture.createDetachedEl(doc, 'canvas');
+			let usedOwnerCanvas = false;
+			const getContext = view.HTMLCanvasElement.prototype.getContext;
+			view.HTMLCanvasElement.prototype.getContext = function (...args) {
+				usedOwnerCanvas = this.ownerDocument === doc && this.parentNode === null;
+				return getContext.apply(this, args);
+			};
+			const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="5"><rect width="10" height="5" fill="red"/></svg>';
+			const png = await fixture.createPng({ svg, width: 10, height: 5 }, doc, new AbortController().signal);
+			const bitmap = await view.createImageBitmap(png);
+			const result = {
+				widget: widget instanceof view.HTMLDivElement && widget.ownerDocument === doc && widget.parentNode === null && widget.classList.contains('detached-test'),
+				canvas: canvas instanceof view.HTMLCanvasElement && canvas.ownerDocument === doc && canvas.parentNode === null,
+				png: usedOwnerCanvas && png.type === 'image/png' && bitmap.width === 20 && bitmap.height === 10,
+			};
+			bitmap.close();
+			return result;
+		} finally { frame.remove(); }
+	});
+	assert.deepEqual(detached, { widget: true, canvas: true, png: true });
 	await runRendererOwnershipChecks(page);
 	await runEditorInteractionChecks(page);
 	await runEditorStyleChecks(page);
@@ -84,7 +112,18 @@ try {
 		const source = 'flowchart LR\n A["Start & Ω"] --> B["Finish"]';
 		const item = fixture.diagram(source);
 		const rendered = fixture.render(source, { images: false, fontFamily: 'Arial' });
-		const snapshot = await fixture.createSvgSnapshot(rendered, item.host, () => true);
+		const limit = item.host.createEl('style', { text: 'body .fixture-diagram svg.pele { max-width: 24px; max-height: 24px; }' });
+		const readStyle = window.getComputedStyle;
+		let cloneSize;
+		window.getComputedStyle = (element, pseudo) => {
+			const computed = readStyle.call(window, element, pseudo);
+			if (element.matches('.advanced-mermaid-snapshot > svg')) cloneSize = [parseFloat(computed.width), parseFloat(computed.height)];
+			return computed;
+		};
+		let snapshot;
+		try { snapshot = await fixture.createSvgSnapshot(rendered, item.host, () => true); }
+		finally { window.getComputedStyle = readStyle; limit.remove(); }
+		if (cloneSize?.[0] !== rendered.width || cloneSize?.[1] !== rendered.height) throw new Error('Snapshot did not keep its intrinsic size.');
 		const parsed = new DOMParser().parseFromString(snapshot.svg, 'image/svg+xml');
 		const visible = !snapshot.svg.includes('visibility: hidden') && !parsed.querySelector('parsererror');
 		const png = await fixture.createPng(snapshot, document, new AbortController().signal);

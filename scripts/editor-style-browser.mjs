@@ -54,7 +54,7 @@ export async function runEditorStyleChecks(page) {
 			for (const theme of ['light', 'dark']) {
 				document.body.classList.toggle('theme-dark', theme === 'dark');
 				await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-				const editor = host.querySelector('.advanced-mermaid-editor'); const source = editor.querySelector('.cm-content');
+				const editor = host.querySelector('.advanced-mermaid-editor'); const source = fixture.sourceRoot(editor);
 				const paint = element => {
 					const css = getComputedStyle(element);
 					return [css.color, css.backgroundColor, css.borderTopStyle === 'solid' && css.borderTopWidth === '1px' ? css.borderTopColor : null];
@@ -70,9 +70,10 @@ export async function runEditorStyleChecks(page) {
 					return css.appearance === 'none' && css.boxShadow === 'none';
 				});
 				const rounded = [...buttons.filter(button => !button.closest('.pele-zoom')), ...dropdowns].every(control => radius(control) === '14px');
-				themes.push({ theme, source: paint(source)[0], background: getComputedStyle(editor.querySelector('.cm-editor')).backgroundColor,
-					gutter: getComputedStyle(editor.querySelector('.cm-gutters')).backgroundColor,
-					font: getComputedStyle(source).fontSize, flat, dropdownsFlat, rounded, sizes: buttons.map(button => getComputedStyle(button).fontSize),
+				const content = source.querySelector('.cm-content');
+				themes.push({ theme, source: paint(content)[0], token: paint(content.querySelector('span'))[0], background: getComputedStyle(source.querySelector('.cm-editor')).backgroundColor,
+					gutter: getComputedStyle(source.querySelector('.cm-gutters')).backgroundColor,
+					font: getComputedStyle(content).fontSize, flat, dropdownsFlat, rounded, sizes: buttons.map(button => getComputedStyle(button).fontSize),
 					dropdowns: Object.fromEntries(dropdowns.map(select => [select.getAttribute('aria-label'), paint(select)])),
 					active: paint(editor.querySelector('button[aria-selected="true"]')), inactive: paint(editor.querySelector('.advanced-mermaid-draft-actions button')),
 					export: paint(editor.querySelector('.advanced-mermaid-export summary')),
@@ -106,6 +107,7 @@ export async function runEditorStyleChecks(page) {
 		const rgb = hex => `rgb(${hex.match(/../g).map(byte => parseInt(byte, 16)).join(', ')})`;
 		for (const [i, result] of report.themes.entries()) {
 			assert.equal(result.source, rgb(i ? 'abcdef' : '123456')); assert.equal(result.background, rgb(i ? '102030' : 'f0e0d0')); assert.equal(result.gutter, result.background);
+			assert.equal(result.token, result.source, 'The selected source color applies to syntax tokens');
 			assert.equal(result.font, '21px'); assert.ok(result.sizes.every(size => size === '17px'), JSON.stringify(result.sizes));
 			assert.ok(result.flat && result.dropdownsFlat && result.rounded, `Flat controls with the configured radius in ${result.theme}`);
 			const colors = {

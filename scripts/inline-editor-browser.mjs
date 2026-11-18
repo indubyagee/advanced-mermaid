@@ -49,7 +49,7 @@ export async function runInlineEditorChecks(page) {
 		window.inlineFixture = { host, view, inline, settings, text };
 	});
 	await page.waitForSelector('.advanced-mermaid-editor .cm-editor');
-	const ownership = await page.evaluate(() => ({ widgets: document.querySelectorAll('.advanced-mermaid-editor').length, nested: inlineFixture.host.querySelectorAll('.advanced-mermaid-editor-source .cm-editor').length }));
+	const ownership = await page.evaluate(() => ({ widgets: document.querySelectorAll('.advanced-mermaid-editor').length, nested: fixture.sourceRoot(inlineFixture.host).querySelectorAll('.cm-editor').length }));
 	assert.equal(ownership.widgets, 1); assert.equal(ownership.nested, 1);
 	await page.waitForFunction(() => document.querySelector('.advanced-mermaid-editor').dataset.layout === 'side-by-side');
 	assert.ok(await page.evaluate(() => {
@@ -72,10 +72,10 @@ export async function runInlineEditorChecks(page) {
 	});
 	assert.ok(editing.single && editing.paragraphs && editing.reused && editing.prefix, JSON.stringify(editing));
 	await page.evaluate(() => { inlineFixture.settings.liveEditor.activation = 'focused-block'; const source = inlineFixture.view.state.doc.toString(); inlineFixture.view.dispatch({ selection: { anchor: source.lastIndexOf('flowchart') } }); });
-	await page.waitForFunction(() => !document.querySelector('.advanced-mermaid-editor-source .cm-content').textContent.includes('C[Next]'));
+	await page.waitForFunction(() => !fixture.sourceRoot(document).querySelector('.cm-content').textContent.includes('C[Next]'));
 	assert.equal(await page.locator('.advanced-mermaid-editor').count(), 1);
 	await page.evaluate(() => { const source = inlineFixture.view.state.doc.toString(); inlineFixture.view.dispatch({ selection: { anchor: source.indexOf('flowchart') } }); });
-	await page.waitForFunction(() => document.querySelector('.advanced-mermaid-editor-source .cm-content').textContent.includes('C[Next]'));
+	await page.waitForFunction(() => fixture.sourceRoot(document).querySelector('.cm-content').textContent.includes('C[Next]'));
 	await page.evaluate(() => { inlineFixture.settings.liveEditor.activation = 'manual'; });
 	await page.getByRole('tab', { name: 'CSS', exact: true }).click();
 	await content.click(); await page.keyboard.press('Control+A'); await page.keyboard.type('.pele { --pele-fg: #246; }');

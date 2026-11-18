@@ -43,7 +43,7 @@ export async function run(app: App): Promise<Record<string, unknown>> {
 	const widget = root.querySelector<HTMLElement>('.advanced-mermaid-editor');
 	const report: Record<string, unknown> = { path, parent: !!parent, focusedCommand, livePreview: parent?.state.field(editorLivePreviewField, false), ranges: parent ? diagramFences(parent.state) : [], opened, widgets: root.querySelectorAll('.advanced-mermaid-editor').length, nodes };
 	if (widget && parent) {
-		const nested = EditorView.findFromDOM(widget.querySelector('.advanced-mermaid-editor-source .cm-editor')!);
+		const nested = EditorView.findFromDOM(widget.querySelector('.advanced-mermaid-editor-source > div')!.shadowRoot!.querySelector('.cm-editor')!);
 		if (nested) {
 			const before = view.editor.getValue(); nested.dispatch({ changes: { from: nested.state.doc.length, insert: '\n B --> C[Host]' } });
 			report.immediateParentEdit = view.editor.getValue().includes('C[Host]');

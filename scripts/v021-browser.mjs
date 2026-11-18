@@ -32,7 +32,7 @@ export async function runEditorInteractionChecks(page) {
 		await page.keyboard.type('B --> C[Next]');
 		const original = await page.evaluate(() => interactions.view.state.doc.toString());
 		await page.keyboard.press('Home'); await page.keyboard.press('Tab');
-		assert.equal(await content.evaluate(element => element.contains(element.ownerDocument.activeElement)), true, 'Tab keeps source focus');
+		assert.equal(await content.evaluate(element => element.getRootNode().activeElement === element), true, 'Tab keeps source focus');
 		assert.notEqual(await page.evaluate(() => interactions.view.state.doc.toString()), original, 'Tab indents source');
 		await page.keyboard.press('Shift+Tab');
 		assert.equal(await page.evaluate(() => interactions.view.state.doc.toString()), original, 'Shift+Tab reverses indentation');
@@ -110,7 +110,9 @@ export async function runNavigationChecks(page) {
 			};
 			for (const label of ['Zoom In', 'Zoom Out', 'Reset Zoom']) assert.equal(await host.getByRole('button', { name: label, exact: true }).isVisible(), true, mode + ': ' + label);
 			const zoomIn = host.getByRole('button', { name: 'Zoom In', exact: true });
+			const zoomOut = host.getByRole('button', { name: 'Zoom Out', exact: true });
 			assert.equal(await zoomIn.isEnabled(), true, 'Enlarged small diagrams can zoom beyond their fitted scale');
+			assert.equal(await zoomOut.isDisabled(), true, 'Zoom out is disabled at fit');
 			await zoomIn.hover();
 			assert.ok(await host.locator('.pele-zoom').evaluate(zoom => [zoom, ...zoom.querySelectorAll('button')].every(element => {
 				const style = getComputedStyle(element);
@@ -140,6 +142,7 @@ export async function runNavigationChecks(page) {
 			assert.notEqual(await svg.getAttribute('viewBox'), panned, 'Arrow keys pan');
 			await host.getByRole('button', { name: 'Reset Zoom', exact: true }).click(); assert.equal(await svg.getAttribute('viewBox'), original);
 			assert.equal(await host.getByRole('button', { name: 'Reset Zoom', exact: true }).isVisible(), true);
+			assert.equal(await zoomOut.isDisabled(), true, 'Reset restores the fitted button state');
 			await assertCorner('left');
 			await page.evaluate(() => { navigation.item.settings.alignment = 'left'; navigation.item.child.updateSettings(); });
 			await assertCorner('right');

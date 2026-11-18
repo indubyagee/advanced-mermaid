@@ -1,11 +1,16 @@
 /** Minimal host adapter for browser integration tests, not an Obsidian emulator. */
 import { StateField } from '@codemirror/state';
-import { load, dump, JSON_SCHEMA } from 'js-yaml';
+import { parseDocument, stringify } from 'yaml';
 import type { SettingDefinitionItem, SettingDefinitionGroup, SettingDefinitionPage, SettingGroup } from 'obsidian';
 export const editorLivePreviewField = StateField.define<boolean>({ create: () => true, update: value => value });
 export const editorInfoField = StateField.define<{ file: { path: string }; editor?: unknown }>({ create: () => ({ file: { path: 'InlineEditor.md' } }), update: value => value });
-export function parseYaml(source: string): unknown { return load(source, { schema: JSON_SCHEMA }); }
-export function stringifyYaml(value: unknown): string { return dump(value, { schema: JSON_SCHEMA, noRefs: true }); }
+export function parseYaml(source: string): unknown {
+	const doc = parseDocument(source, { schema: 'core', merge: false, uniqueKeys: true });
+	const issue = doc.errors[0] ?? doc.warnings.find(warning => warning.code === 'TAG_RESOLVE_FAILED');
+	if (issue) throw issue;
+	return doc.contents === null ? undefined : doc.toJS();
+}
+export function stringifyYaml(value: unknown): string { return stringify(value, { aliasDuplicateObjects: false }); }
 export class MarkdownRenderChild {
 	private cleanup: (() => void)[] = [];
 	constructor(readonly containerEl: HTMLElement) {}
@@ -140,6 +145,8 @@ class ToggleControl {
 	onChange(callback: (value: boolean) => void): this { this.inputEl.addEventListener('change', () => callback(this.inputEl.checked)); return this; }
 }
 
+export function setIcon(element: HTMLElement, icon: string): void { element.dataset.icon = icon; }
+
 export class Setting {
 	readonly controlEl: HTMLElement;
 	readonly settingEl: HTMLElement;
@@ -157,25 +164,42 @@ export class Setting {
 	addColorPicker(callback: (control: TextControl) => void): this { const control = new TextControl(this.controlEl); control.inputEl.type = 'color'; callback(control); return this; }
 }
 
-if (typeof HTMLElement !== 'undefined') {
-	HTMLElement.prototype.addClass = function (...classes: string[]): void { this.classList.add(...classes); };
-	HTMLElement.prototype.empty = function (): void { this.replaceChildren(); };
-	HTMLElement.prototype.setText = function (text: string): void { this.textContent = text; };
-	HTMLElement.prototype.createEl = function (this: HTMLElement, tag: string, options?: { text?: string; cls?: string; attr?: Record<string, string> }): HTMLElement {
-		// Implements the host DOM helper in this test adapter.
-		const element = this.ownerDocument.createElement(tag);
-		if (options?.text) element.textContent = options.text;
-		if (options?.cls) element.className = options.cls;
-		for (const [name, value] of Object.entries(options?.attr ?? {})) element.setAttribute(name, value);
-		this.append(element);
-		return element;
-	} as typeof HTMLElement.prototype.createEl;
-	HTMLElement.prototype.createDiv = function (this: HTMLElement, options?: { cls?: string; attr?: Record<string, string> }): HTMLDivElement {
-		// Implements the helper; calling itself would recurse.
-		return this.createEl('div', options);
+export function installDomHelpers(view: typeof window): void {
+	view.HTMLElement.prototype.addClass = function (...classes: string[]): void { this.classList.add(...classes); };
+	view.HTMLElement.prototype.empty = function (): void { this.replaceChildren(); };
+	view.HTMLElement.prototype.setText = function (text: string): void { this.textContent = text; };
+	view.HTMLElement.prototype.onWindowMigrated = function (listener): () => void {
+		const migrated = (): void => { listener(this.ownerDocument.defaultView!); };
+		this.addEventListener('fixture-window-migrated', migrated);
+		return () => this.removeEventListener('fixture-window-migrated', migrated);
 	};
-	HTMLElement.prototype.createSpan = function (this: HTMLElement, options?: { text?: string; cls?: string; attr?: Record<string, string> }): HTMLSpanElement {
-		// Implements the helper; calling itself would recurse.
-		return this.createEl('span', options);
+	view.createFragment = view.document.createDocumentFragment.bind(view.document);
+
+	function create<K extends keyof HTMLElementTagNameMap>(parent: Node, tag: K, options?: DomElementInfo | string,
+		callback?: (element: HTMLElementTagNameMap[K]) => void): HTMLElementTagNameMap[K] {
+		const info = typeof options === 'string' ? { cls: options } : options;
+		const doc = parent.ownerDocument ?? view.document;
+		// The mock DOM helpers are backed by the browser's native factories.
+		const element = doc.createElement(tag);
+		if (typeof info?.text === 'string') element.textContent = info.text;
+		else if (info?.text) element.append(info.text);
+		if (info?.cls) element.className = Array.isArray(info.cls) ? info.cls.join(' ') : info.cls;
+		if (info?.title) element.title = info.title;
+		for (const [name, value] of Object.entries(info?.attr ?? {})) element.setAttribute(name, String(value));
+		callback?.(element);
+		parent.appendChild(element);
+		return element;
+	}
+
+	view.Node.prototype.createEl = function (tag, options, callback) {
+		return create(this, tag, options, callback);
+	};
+	view.Node.prototype.createDiv = function (options, callback) {
+		return create(this, 'div', options, callback);
+	};
+	view.Node.prototype.createSpan = function (options, callback) {
+		return create(this, 'span', options, callback);
 	};
 }
+
+if (typeof window !== 'undefined') installDomHelpers(window);

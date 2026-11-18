@@ -58,7 +58,7 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 			await page.waitForTimeout(100);
 			const metrics = await page.evaluate(() => {
 				const editor = layoutFixture.host.querySelector('.advanced-mermaid-editor');
-				const source = editor.querySelector('.advanced-mermaid-editor-source');
+				const source = fixture.sourceRoot(editor);
 				const scroller = source.querySelector('.cm-scroller');
 				const content = source.querySelector('.cm-content');
 				const line = content.querySelector('.cm-line');
@@ -69,6 +69,7 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 				return {
 					font: getComputedStyle(scroller).fontFamily, contentFont: getComputedStyle(content).fontFamily,
 					gap: range.getBoundingClientRect().left - source.querySelector('.cm-gutters').getBoundingClientRect().right,
+					gutterPosition: getComputedStyle(source.querySelector('.cm-gutters')).position,
 					radius: parseFloat(getComputedStyle(source.querySelector('.cm-editor')).borderRadius),
 					sourceTabs: box(editor.querySelector('[aria-label="Source format"]')), previewTabs: box(editor.querySelector('[aria-label="Preview format"]')),
 					footer: box(footer), actions: actions.map(box), labels: actions.map(button => button.textContent),
@@ -78,6 +79,7 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 			});
 			assert.match(metrics.font, /Courier New/, `${theme}: ${JSON.stringify(metrics)}`); assert.equal(metrics.contentFont, metrics.font);
 			assert.ok(metrics.gap >= 7, `${theme}: Source touches the gutter at ${width}px: ${metrics.gap}`);
+			assert.equal(metrics.gutterPosition, 'sticky');
 			assert.ok(metrics.radius > 0); assert.equal(metrics.overflow, false);
 			assert.deepEqual(metrics.labels, ['Copy draft', 'Discard changes', 'Use note version', 'Render now']);
 			assert.ok(Math.abs(metrics.export.right - metrics.footer.right) <= 1);
@@ -88,13 +90,13 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 				assert.equal(metrics.actions[0].left, metrics.footer.left);
 			}
 			await page.evaluate(() => {
-				const content = layoutFixture.host.querySelector('.advanced-mermaid-editor-source .cm-content');
+				const content = fixture.sourceRoot(layoutFixture.host).querySelector('.cm-content');
 				const nested = fixture.EditorView.findFromDOM(content);
 				nested.dispatch({ selection: { anchor: nested.state.doc.length }, scrollIntoView: true });
 			});
 			await page.waitForTimeout(80);
 			const lastLine = await page.evaluate(() => {
-				const source = layoutFixture.host.querySelector('.advanced-mermaid-editor-source');
+				const source = fixture.sourceRoot(layoutFixture.host);
 				const line = [...source.querySelectorAll('.cm-line')].at(-1);
 				const range = document.createRange(); range.selectNodeContents(line);
 				const number = [...source.querySelectorAll('.cm-lineNumbers .cm-gutterElement')].find(element => element.textContent === '212');
@@ -105,7 +107,7 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 		}
 		const originalSizes = await page.evaluate(() => {
 			const source = layoutFixture.host.querySelector('.advanced-mermaid-editor-source');
-			const sizes = { source: getComputedStyle(source.querySelector('.cm-content')).fontSize,
+			const sizes = { source: getComputedStyle(fixture.sourceRoot(layoutFixture.host).querySelector('.cm-content')).fontSize,
 				inherited: getComputedStyle(source).fontSize,
 				parent: getComputedStyle(layoutFixture.view.scrollDOM).fontSize,
 				preview: getComputedStyle(layoutFixture.host.querySelector('svg.pele text')).fontSize };
@@ -118,15 +120,15 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 		assert.equal(await fontSize.inputValue(), '10');
 		assert.equal(originalSizes.source, '10px');
 		await fontSize.fill('22');
-		await page.waitForFunction(() => getComputedStyle(document.querySelector('.advanced-mermaid-editor-source .cm-content')).fontSize === '22px');
+		await page.waitForFunction(() => getComputedStyle(fixture.sourceRoot(document).querySelector('.cm-content')).fontSize === '22px');
 		await page.locator('.advanced-mermaid-editor-source').scrollIntoViewIfNeeded();
 		await page.evaluate(() => {
-			const nested = fixture.EditorView.findFromDOM(layoutFixture.host.querySelector('.advanced-mermaid-editor-source .cm-content'));
+			const nested = fixture.EditorView.findFromDOM(fixture.sourceRoot(layoutFixture.host).querySelector('.cm-content'));
 			nested.dispatch({ selection: { anchor: nested.state.doc.length }, scrollIntoView: true });
 		});
 		await page.waitForTimeout(80);
 		const resized = await page.evaluate(() => {
-			const source = layoutFixture.host.querySelector('.advanced-mermaid-editor-source');
+			const source = fixture.sourceRoot(layoutFixture.host);
 			const line = [...source.querySelectorAll('.cm-line')].at(-1);
 			const number = [...source.querySelectorAll('.cm-lineNumbers .cm-gutterElement')].find(element => element.textContent === '212');
 			return { saved: fixture.normalizeSettings(JSON.parse(JSON.stringify(layoutFixture.settings))).liveEditor.fontSizePx,
@@ -144,18 +146,18 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 		}
 		await page.locator('.advanced-mermaid-editor-mode').first().getByRole('button', { name: 'Rendered view', exact: true }).click();
 		await page.evaluate(() => { if (!layoutFixture.inline.openAt('InlineEditor.md', 2)) throw new Error('Could not reopen the inline editor'); });
-		await page.waitForFunction(() => getComputedStyle(document.querySelector('.advanced-mermaid-editor-source .cm-content')).fontSize === '22px');
+		await page.waitForFunction(() => getComputedStyle(fixture.sourceRoot(document).querySelector('.cm-content')).fontSize === '22px');
 		await page.getByRole('tab', { name: 'CSS', exact: true }).click();
 		assert.equal(await page.locator('.advanced-mermaid-editor-source .cm-content').evaluate(element => getComputedStyle(element).fontSize), '22px');
 		await fontSize.fill('');
-		await page.waitForFunction(size => getComputedStyle(document.querySelector('.advanced-mermaid-editor-source .cm-content')).fontSize === size, originalSizes.inherited);
+		await page.waitForFunction(size => getComputedStyle(fixture.sourceRoot(document).querySelector('.cm-content')).fontSize === size, originalSizes.inherited);
 		assert.equal(await fontSize.getAttribute('aria-invalid'), 'false');
 		assert.equal(await page.evaluate(() => layoutFixture.settings.liveEditor.fontSizePx), null);
 		await page.getByRole('tab', { name: 'Mermaid', exact: true }).first().click();
 		await page.evaluate(() => { layoutFixture.fontTab.hide(); layoutFixture.fontTab.containerEl.remove(); delete layoutFixture.fontTab; });
 		await page.evaluate(() => {
 			layoutFixture.settings.liveEditor.lineNumbers = false; layoutFixture.settings.liveEditor.wrapSource = false; layoutFixture.inline.refresh();
-			const nested = fixture.EditorView.findFromDOM(layoutFixture.host.querySelector('.advanced-mermaid-editor-source .cm-content'));
+			const nested = fixture.EditorView.findFromDOM(fixture.sourceRoot(layoutFixture.host).querySelector('.cm-content'));
 			const insert = '\n  ' + 'Long branch '.repeat(80);
 			nested.dispatch({ changes: { from: nested.state.doc.length, insert }, selection: { anchor: nested.state.doc.length + insert.length }, scrollIntoView: true });
 		});
@@ -163,13 +165,44 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 		await page.waitForTimeout(100);
 		const unwrapped = await page.evaluate(() => {
 			const editor = layoutFixture.host.querySelector('.advanced-mermaid-editor');
-			const scroller = editor.querySelector('.advanced-mermaid-editor-source .cm-scroller');
-			return { gutters: editor.querySelectorAll('.cm-gutters').length, scrolls: scroller.scrollWidth > scroller.clientWidth,
+			const source = fixture.sourceRoot(editor);
+			const scroller = source.querySelector('.cm-scroller');
+			return { gutters: source.querySelectorAll('.cm-gutters').length, scrolls: scroller.scrollWidth > scroller.clientWidth,
 				contained: editor.scrollWidth <= editor.clientWidth, parentFont: getComputedStyle(layoutFixture.view.scrollDOM).fontFamily };
 		});
 		assert.equal(unwrapped.gutters, 0); assert.ok(unwrapped.scrolls && unwrapped.contained, JSON.stringify(unwrapped)); assert.equal(unwrapped.parentFont, 'Arial');
 		await page.getByRole('tab', { name: 'CSS', exact: true }).click();
 		assert.match(await page.locator('.advanced-mermaid-editor-source .cm-content').evaluate(element => getComputedStyle(element).fontFamily), /Courier New/);
+		if (theme === 'Minimal') {
+			const moved = await page.evaluate(() => {
+				const { host, view } = layoutFixture;
+				const sourcePane = host.querySelector('.advanced-mermaid-editor-source');
+				const original = fixture.sourceRoot(host);
+				const nested = fixture.EditorView.findFromDOM(original.querySelector('.cm-editor'));
+				const frame = document.body.createEl('iframe');
+				const other = frame.contentWindow;
+				fixture.installDomHelpers(other);
+				const move = target => {
+					target.body.append(host);
+					view.setRoot(target);
+					sourcePane.dispatchEvent(new target.defaultView.Event('fixture-window-migrated'));
+				};
+				try {
+					move(other.document);
+					const root = fixture.sourceRoot(host);
+					return {
+						owner: root.ownerDocument === other.document,
+						sameEditor: fixture.EditorView.findFromDOM(root.querySelector('.cm-editor')) === nested,
+						font: other.getComputedStyle(root.querySelector('.cm-content')).fontFamily,
+					};
+				} finally {
+					move(document);
+					frame.remove();
+				}
+			});
+			assert.ok(moved.owner && moved.sameEditor, JSON.stringify(moved));
+			assert.match(moved.font, /Courier New/);
+		}
 		console.log(`Inline layout passed (${theme}): host CSS, monospace Mermaid/CSS, gutter spacing, rounded source, header/footer positions, responsive widths and live source font-size settings/validation/reset.`);
 	} finally {
 		await page.evaluate(() => { layoutFixture.fontTab?.hide(); layoutFixture.fontTab?.containerEl.remove(); layoutFixture.view.destroy(); layoutFixture.inline.destroy(); layoutFixture.host.remove(); delete window.layoutFixture; });

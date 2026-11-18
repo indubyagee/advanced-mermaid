@@ -11,6 +11,8 @@ try {
 		entryPoints: entries.map(name => `tests/${name}`),
 		outdir: directory, bundle: true, platform: 'node', format: 'esm',
 		alias: { obsidian: resolve('tests/obsidian.ts') },
+		// The bundled YAML test adapter uses Node built-ins through CommonJS.
+		banner: { js: "import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);" },
 	});
 	const scriptTests = (await readdir('scripts')).filter(name => name.endsWith('.test.mjs')).map(name => resolve('scripts', name));
 	const result = spawnSync(process.execPath, ['--test', ...entries.map(name => join(directory, name.replace(/\.ts$/, '.js'))), ...scriptTests], { stdio: 'inherit' });

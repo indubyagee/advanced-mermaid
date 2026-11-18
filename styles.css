@@ -128,6 +128,7 @@
 }
 .advanced-mermaid[data-align="left"] .advanced-mermaid-viewport { justify-content: flex-start; }
 .advanced-mermaid[data-align="right"] .advanced-mermaid-viewport { justify-content: flex-end; }
+.advanced-mermaid-frame { min-width: 0; max-width: 100%; position: relative; }
 .advanced-mermaid-mount {
 	min-width: 0; max-width: 100%; position: relative;
 	width: var(--advanced-mermaid-fitted-width, auto);
@@ -142,18 +143,20 @@
 	background-color: var(--pele-bg);
 }
 :is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid) .advanced-mermaid-viewport { padding-inline-end: 0; }
-:is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid) .advanced-mermaid-viewport > .advanced-mermaid-mount { width: 100%; min-height: inherit; }
+:is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid) .advanced-mermaid-viewport :is(.advanced-mermaid-frame, .advanced-mermaid-mount) { width: 100%; min-height: inherit; }
 :is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid)[data-align="center"] .advanced-mermaid-viewport svg.pele { margin-inline: auto; }
 :is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid)[data-align="right"] .advanced-mermaid-viewport svg.pele { margin-inline-start: auto; }
-/* Keep hidden controls hidden even when other rules assign a display mode. */
-.advanced-mermaid [hidden], .advanced-mermaid-editor [hidden] { display: none !important; }
+.advanced-mermaid :is(.advanced-mermaid-mount, .advanced-mermaid-error)[hidden],
+.advanced-mermaid-actions[hidden],
+.advanced-mermaid-actions .advanced-mermaid-export-options button[hidden],
+.advanced-mermaid-editor .advanced-mermaid-editor-preview > [hidden] { display: none; }
 /* Render errors retain readable, wrapping details for long source messages. */
 .advanced-mermaid-error { border-inline-start: 3px solid var(--text-error); padding: var(--size-4-2); }
 .advanced-mermaid-error-message { font-weight: var(--font-semibold); }
 .advanced-mermaid-error pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 .advanced-mermaid-error summary { cursor: pointer; }
 /* Place diagram actions below the render, aligned to its right edge. */
-.advanced-mermaid-actions { display: flex; justify-content: flex-end; gap: var(--size-4-1); margin-top: 8px; min-height: 28px; }
+.advanced-mermaid-actions:not([hidden]) { display: flex; justify-content: flex-end; gap: var(--size-4-1); margin-top: 8px; min-height: 28px; }
 /* Export snapshots remain in the document to resolve inherited styles, but
    sit offscreen and cannot receive pointer input. Keep intrinsic SVG sizing
    free of display limits while src/export/svg.ts captures computed styles. */
@@ -165,7 +168,7 @@
 	opacity: 0;
 	max-width: none;
 }
-.advanced-mermaid-snapshot > svg.pele { max-width: none !important; max-height: none !important; }
+.advanced-mermaid > .advanced-mermaid-snapshot > svg.pele { max-width: none; max-height: none; }
 /* Export disclosure and actions share the menu's resolved theme colors. */
 .advanced-mermaid-export {
 	--advanced-mermaid-export-button-text: var(--advanced-mermaid-export-button-text-light);
@@ -192,15 +195,26 @@
 .advanced-mermaid :is(button, .advanced-mermaid-export summary) {
 	font-size: var(--advanced-mermaid-button-font-size, var(--font-ui-small, 13px));
 }
-/* Pele normally hides Reset at the fitted scale. Keep the full control stack
-   available in every rendered view, including small diagrams. */
-.advanced-mermaid .pele-zoom .pele-zoom-reset { display: grid !important; }
 /* Reserve a rail beside the SVG. Keeping controls out of its paint area also
    avoids Pele shrinking small diagrams to make room for overlaid buttons. */
 .advanced-mermaid .pele-zoom {
 	--pele-zoom-top: 0;
 	--pele-zoom-right: auto;
 	--pele-zoom-left: calc(100% + 8px);
+	position: absolute;
+	top: var(--pele-zoom-top);
+	right: var(--pele-zoom-right);
+	bottom: var(--pele-zoom-bottom, auto);
+	left: var(--pele-zoom-left);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 2px;
+	border: 1px solid var(--advanced-mermaid-zoom-border, var(--pele-border, #8a8a8a));
+	border-radius: var(--pele-radius, 4px);
+	color: var(--advanced-mermaid-zoom-text, var(--pele-fg, #1f1f1f));
+	background: var(--advanced-mermaid-zoom-background, var(--pele-bg, #fff));
+	line-height: 0;
 }
 :is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid) .pele-zoom {
 	--pele-zoom-top: auto;
@@ -293,32 +307,6 @@
 	max-width: 100%;
 	overflow: auto;
 }
-/* Bound CodeMirror's height and scroll its source in a monospace font. */
-.advanced-mermaid-editor-source > .cm-editor {
-	min-height: 180px;
-	max-height: 70vh;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: var(--radius-m, 6px);
-	overflow: hidden;
-}
-/* Obsidian's Markdown rules reach nested editors. Restore an independent
-   source layout with room for gutters, without changing the parent editor. */
-div.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scroller {
-	overflow: auto; font-family: var(--font-monospace, monospace);
-	font-size: var(--advanced-mermaid-editor-font-size, inherit);
-}
-.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scroller .cm-content {
-	min-height: 180px; width: auto; max-width: none; flex-basis: auto !important; padding: 4px 0;
-}
-.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scroller .cm-line {
-	max-width: none; padding: 0 8px;
-}
-/* Minimal makes note gutters absolute with !important. Nested gutters must
-   retain CodeMirror's sticky position and their own space in the flex row. */
-.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scroller .cm-gutters {
-	position: sticky !important; z-index: 200; margin-inline: 0;
-	background: var(--advanced-mermaid-source-background);
-}
 /* Editor presentation is independent of diagram style overrides. Theme pairs
    resolve through CSS so a light/dark switch also updates existing editors. */
 .advanced-mermaid-editor, .advanced-mermaid-editor-mode {
@@ -397,11 +385,24 @@ div.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scr
 	background-color: var(--advanced-mermaid-export-button-background, var(--advanced-mermaid-inactive-button-background, var(--interactive-normal, #f3f3f3)));
 	border: var(--advanced-mermaid-export-button-border, 0);
 }
-/* Pele supplies its zoom buttons with inline font/background declarations. */
-.advanced-mermaid .pele-zoom button { font-size: var(--advanced-mermaid-button-font-size, var(--font-ui-small, 13px)) !important; }
-.advanced-mermaid-editor .pele-zoom button {
-	color: var(--advanced-mermaid-inactive-button-text) !important; background: var(--advanced-mermaid-inactive-button-background) !important;
+.advanced-mermaid .pele-zoom > button {
+	appearance: none;
+	display: grid;
+	place-items: center;
+	width: 24px;
+	height: 24px;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: calc(var(--pele-radius, 4px) - 1px);
+	font-size: var(--advanced-mermaid-button-font-size, var(--font-ui-small, 13px));
+	color: var(--advanced-mermaid-zoom-text, var(--advanced-mermaid-inactive-button-text, inherit));
+	background: var(--advanced-mermaid-zoom-background, var(--advanced-mermaid-inactive-button-background, transparent));
+	cursor: var(--pele-zoom-cursor, pointer);
 }
+.advanced-mermaid .pele-zoom > button:disabled { opacity: 0.35; cursor: default; }
+.advanced-mermaid .pele-zoom > button > svg { width: 16px; height: 16px; }
 /* Dedicated Zoom colors override editor button colors and diagram tokens,
    including authored border/text/background styles. Global mode bypasses
    these overrides while retaining each saved light/dark choice. */
@@ -415,23 +416,11 @@ div.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-scr
 	--advanced-mermaid-zoom-text: var(--advanced-mermaid-zoom-text-dark, var(--text-normal, #ddd));
 	--advanced-mermaid-zoom-background: var(--advanced-mermaid-zoom-background-dark, var(--background-primary, #222));
 }
-.advanced-mermaid[data-zoom-global="false"] .pele-zoom {
-	border-color: var(--advanced-mermaid-zoom-border) !important;
-	color: var(--advanced-mermaid-zoom-text) !important;
-	background: var(--advanced-mermaid-zoom-background) !important;
-}
-.advanced-mermaid[data-zoom-global="false"] .pele-zoom button {
-	color: var(--advanced-mermaid-zoom-text) !important;
-	background: var(--advanced-mermaid-zoom-background) !important;
-}
-.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor,
-.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-gutters {
-	background: var(--advanced-mermaid-source-background);
-}
-.advanced-mermaid-editor .advanced-mermaid-editor-source > .cm-editor .cm-content { color: var(--advanced-mermaid-source-text); }
 /* Preserve inherited syntax highlighting until a source color is selected. */
-body:not(.theme-dark) .advanced-mermaid-editor[data-source-color-light="true"] .advanced-mermaid-editor-source > .cm-editor .cm-content span,
-.theme-dark .advanced-mermaid-editor[data-source-color-dark="true"] .advanced-mermaid-editor-source > .cm-editor .cm-content span { color: inherit; }
+body:not(.theme-dark) .advanced-mermaid-editor[data-source-color-light="true"],
+.theme-dark .advanced-mermaid-editor[data-source-color-dark="true"] {
+	--advanced-mermaid-source-token-color: var(--advanced-mermaid-source-text);
+}
 /* Allow scroll chaining from the preview to its surrounding editor/note. */
 .advanced-mermaid-editor .advanced-mermaid-viewport { overscroll-behavior: auto; }
 /* Dim the last valid render when it no longer represents the current source. */

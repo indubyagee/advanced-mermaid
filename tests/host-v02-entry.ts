@@ -71,7 +71,7 @@ export default class V02HostProbe extends Plugin {
 			report.staticMapped = !root.querySelector('.advanced-mermaid-editor');
 			mode(0, true); await pause();
 			const widget = root.querySelector<HTMLElement>('.advanced-mermaid-editor')!;
-			const nested = EditorView.findFromDOM(widget.querySelector('.cm-editor')!)!;
+			const nested = EditorView.findFromDOM(widget.querySelector('.advanced-mermaid-editor-source > div')!.shadowRoot!.querySelector('.cm-editor')!)!;
 			Array.from(widget.querySelectorAll('button')).find(button => button.textContent === 'CSS')!.click();
 			nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert: '.pele { color: red; }' } });
 			const valid = view.editor.getValue(); mode(0, false); choose('display:fill');
@@ -135,7 +135,7 @@ export default class V02HostProbe extends Plugin {
 			const independent = firstRoot.querySelectorAll('.advanced-mermaid-editor').length === 1 && secondRoot.querySelectorAll('.advanced-mermaid-editor').length === 1;
 			click(firstRoot, false); await pause();
 			const staticIsolated = !firstRoot.querySelector('.advanced-mermaid-editor') && !!secondRoot.querySelector('.advanced-mermaid-editor');
-			const nested = EditorView.findFromDOM(secondRoot.querySelector('.advanced-mermaid-editor-source .cm-editor')!)!;
+			const nested = EditorView.findFromDOM(secondRoot.querySelector('.advanced-mermaid-editor-source > div')!.shadowRoot!.querySelector('.cm-editor')!)!;
 			nested.dispatch({ changes: { from: nested.state.doc.length, insert: '\n B-->C[Shared]' } }); await pause(300);
 			const sharedSource = first.view instanceof MarkdownView && first.view.editor.getValue().includes('C[Shared]');
 			if (second.view instanceof MarkdownView) await second.view.save();

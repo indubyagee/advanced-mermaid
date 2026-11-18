@@ -1,6 +1,7 @@
 import { Prec, StateEffect, StateField, type Extension, type EditorState } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet } from '@codemirror/view';
 import { editorInfoField, editorLivePreviewField, type App, type Editor } from 'obsidian';
+import { createDetachedEl } from '../dom';
 import type { AdvancedMermaidSettings } from '../settings';
 import { fenceAt, diagramFences, type FenceRange } from './fences';
 import { sourceBridge } from './source-bridge';
@@ -94,8 +95,10 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 		constructor(readonly mode: 'static' | 'live' | 'rendered') { super(); }
 		eq(other: ModeWidget): boolean { return other.mode === this.mode && other.styleKey === this.styleKey; }
 		toDOM(view: EditorView): HTMLElement {
-			// Create a detached element in its owning document, including pop-outs.
-			const bar = view.dom.ownerDocument.createElement('div'); bar.className = 'advanced-mermaid-editor-mode'; bar.setAttribute('role', 'group'); bar.setAttribute('aria-label', 'Diagram editor mode');
+			const bar = createDetachedEl(view.dom.ownerDocument, 'div', {
+				cls: 'advanced-mermaid-editor-mode',
+				attr: { role: 'group', 'aria-label': 'Diagram editor mode' },
+			});
 			applyEditorStyle(bar, settings().liveEditor.style);
 			for (const event of ['pointerdown', 'mousedown', 'click', 'dblclick']) bar.addEventListener(event, evt => evt.stopPropagation());
 			for (const mode of ['rendered', 'live', 'static'] as const) {

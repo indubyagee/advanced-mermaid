@@ -7,10 +7,16 @@ export { SaveExportModal } from '../src/ui/export-modal';
 export { VaultFolderSuggest } from '../src/ui/folder-suggest';
 export { createSvgSnapshot } from '../src/export/svg';
 export { createPng } from '../src/export/png';
+export { createDetachedEl } from '../src/dom';
 export { render } from 'pele';
 
 export const saved = new Map<string, string | ArrayBuffer>();
 export const opened = [] as string[];
+
+export function sourceRoot(host: ParentNode): ShadowRoot {
+	return host.querySelector('.advanced-mermaid-editor-source > div')!.shadowRoot!;
+}
+
 const createdFiles = new Map<string, { path: string }>();
 export const app = { plugins: { manifests: {}, plugins: {} }, vault: {
 	configDir: '.fixture-config',
@@ -52,7 +58,7 @@ export { Decoration, EditorView, WidgetType } from '@codemirror/view';
 export { history, undo, redo } from '@codemirror/commands';
 export { Language, defineLanguageFacet } from '@codemirror/language';
 export { parser as markdownParser } from '@lezer/markdown';
-export { editorLivePreviewField, editorInfoField } from './obsidian';
+export { editorLivePreviewField, editorInfoField, installDomHelpers } from './obsidian';
 export { createInlineExtension } from '../src/editor/extension';
 export { normalizeSettings } from '../src/settings';
 export { DiagramController } from '../src/rendering/controller';

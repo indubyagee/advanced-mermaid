@@ -17,6 +17,7 @@ import { applyZoomStyle } from '../styles/zoom-style';
 import { applyExportButtonStyle } from '../styles/editor-style';
 import { checkDiagramSource } from './source-budget';
 import { originalSourceError, resolveFrontmatter } from '../styles/frontmatter';
+import { createZoomControls, zoomLimit } from '../ui/zoom-controls';
 
 /** Own the wrapper; Pele exclusively owns the inner mount host. */
 export class DiagramController extends Component {
@@ -26,6 +27,7 @@ export class DiagramController extends Component {
 	private feedback!: HTMLElement;
 	private controls!: HTMLElement;
 	private actions!: DiagramActions;
+	private syncZoom!: () => void;
 	private result?: RenderResult;
 	private renderedSource?: string;
 	private revision = 0;
@@ -54,14 +56,17 @@ export class DiagramController extends Component {
 		this.register(registerSvgPreparation(this.containerEl, svg => applyPresetClasses(svg, this.presets, this.containerEl.dataset.category ?? '')));
 		const layout = this.containerEl.createDiv({ cls: 'advanced-mermaid-layout' });
 		const viewport = layout.createDiv({ cls: 'advanced-mermaid-viewport' });
-		this.host = viewport.createDiv({ cls: 'advanced-mermaid-mount' });
-		for (const event of ['click', 'dblclick', 'pointerdown'] as const) this.registerDomEvent(this.host, event, evt => {
-			if (evt.target instanceof this.containerEl.ownerDocument.defaultView!.Element && evt.target.closest('.pele-zoom')) evt.stopPropagation();
-		});
+		const frameEl = viewport.createDiv({ cls: 'advanced-mermaid-frame' });
+		this.host = frameEl.createDiv({ cls: 'advanced-mermaid-mount' });
+		this.syncZoom = createZoomControls(frameEl, this.host, this,
+			() => this.renderedSource === undefined ? undefined : this.diagram?.zoom);
 		this.controls = layout.createDiv({ cls: 'advanced-mermaid-actions' });
 		this.feedback = layout.createDiv({ cls: 'advanced-mermaid-error', attr: { role: 'status' } });
 		this.feedback.hidden = true;
-		this.layout = new DiagramLayout(this.containerEl, layout, this.host, this, () => this.diagram?.zoom?.refresh(), this.app, this.options.boundary);
+		this.layout = new DiagramLayout(this.containerEl, layout, viewport, this.host, this, () => {
+			this.diagram?.zoom?.refresh();
+			this.syncZoom();
+		}, this.app, this.options.boundary);
 		this.actions = new DiagramActions(this.app, this, this.controls, this.sourcePath, () => this.captureExport());
 		const view = this.containerEl.ownerDocument.defaultView!;
 		let frame: number | undefined;
@@ -102,14 +107,8 @@ export class DiagramController extends Component {
 			const options = {
 				// The plugin fits the intrinsic SVG. Do not let the mount host's
 				// already-scaled width feed back into Pele's layout or direction.
-				zoom: { always: true, labels: { zoomIn: 'Zoom In', zoomOut: 'Zoom Out', reset: 'Reset Zoom' },
-					// Pele's absolute default cap can be below the fitted scale when
-					// a small diagram is enlarged. Retain room to zoom in from fit.
-					get maxScale() {
-						const intrinsic = Number(host.querySelector('svg.pele')?.getAttribute('width'));
-						const fittedWidth = Number.parseFloat(host.style.getPropertyValue('--advanced-mermaid-fitted-width'));
-						return Math.max(3, intrinsic > 0 ? 8 * (fittedWidth || intrinsic) / intrinsic : 3);
-					},
+				zoom: { always: true, controls: false,
+					get maxScale() { return zoomLimit(host); },
 				}, images: false, responsive: false, autoDirection: false,
 				maxWidth: Number.MAX_SAFE_INTEGER,
 				fontSize: resolved.profile.labelSizePx ?? labelPixels(settings.theme.labelSize),
@@ -119,6 +118,7 @@ export class DiagramController extends Component {
 			if (this.diagram) this.diagram.update(configured.source, options);
 			else this.diagram = mount(this.host, configured.source, options);
 			this.diagram.refresh();
+			this.syncZoom();
 		} catch (error) { this.failed(originalSourceError(error, lineOffset)); }
 	}
 
@@ -159,6 +159,7 @@ export class DiagramController extends Component {
 			this.containerEl.classList.add('advanced-mermaid-stale');
 			if (this.display) this.layout.update(this.result, this.display);
 		} else { this.result = undefined; this.layout.clear(); this.host.hidden = true; }
+		this.syncZoom();
 		this.actions.setValid(false);
 		showDiagramError(this.feedback, error, this.source, text => this.copyText(text), this);
 		this.options.changed?.(false, error);

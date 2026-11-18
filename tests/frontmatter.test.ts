@@ -77,6 +77,9 @@ void test('source Gantt displayMode overrides the top-level frontmatter alias', 
 void test('frontmatter accepts optional delimiters and rejects malformed, unsafe or unbounded data', () => {
 	const expected = { title: 'Test', config: { flowchart: { rankSpacing: 80 } } };
 	for (const text of ['title: Test\nconfig: { flowchart: { rankSpacing: 80 } }', '---\ntitle: Test\nconfig: { flowchart: { rankSpacing: 80 } }\n---']) assert.deepEqual(parseFrontmatter(text), expected);
+	assert.deepEqual(parseFrontmatter('---\n# no values\n---'), {});
+	assert.throws(() => parseFrontmatter('title: First\ntitle: Second'));
+	assert.throws(() => parseFrontmatter('title: !unknown Example'));
 	for (const text of ['[]', 'plain text', 'config: []', 'config: [', '---\ntitle: Test\n---\nflowchart LR', 'config: &a { self: *a }', 'config: { __proto__: { polluted: true } }', 'config: { constructor: {} }', 'config: { prototype: {} }', 'config: { value: .inf }', ' '.repeat(50_001)]) assert.throws(() => parseFrontmatter(text), text.slice(0, 60));
 	assert.throws(() => parseFrontmatter('config: ' + '['.repeat(40) + '1' + ']'.repeat(40)), /deeply nested/);
 	assert.throws(() => resolveFrontmatter('flowchart LR', profiles('config: [')), /Custom frontmatter for Flowchart/);

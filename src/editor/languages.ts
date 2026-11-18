@@ -1,4 +1,4 @@
-import { StreamLanguage, syntaxHighlighting, defaultHighlightStyle } from '@codemirror/language';
+import { StreamLanguage, syntaxHighlighting, defaultHighlightStyle, HighlightStyle } from '@codemirror/language';
 import type { Extension } from '@codemirror/state';
 
 const mermaid = StreamLanguage.define({
@@ -26,6 +26,12 @@ const css = StreamLanguage.define({
 		stream.next(); return null;
 	},
 });
+const sourceHighlightStyle = HighlightStyle.define(defaultHighlightStyle.specs.map(spec =>
+	typeof spec.color === 'string'
+		? { ...spec, color: `var(--advanced-mermaid-source-token-color, ${spec.color})` }
+		: spec,
+));
+
 export function sourceLanguage(mode: 'mermaid' | 'css'): Extension {
-	return [mode === 'css' ? css : mermaid, syntaxHighlighting(defaultHighlightStyle, { fallback: true })];
+	return [mode === 'css' ? css : mermaid, syntaxHighlighting(sourceHighlightStyle, { fallback: true })];
 }

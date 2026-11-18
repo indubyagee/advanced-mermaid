@@ -1,5 +1,6 @@
 import { type EditorView, WidgetType } from '@codemirror/view';
 import type { App } from 'obsidian';
+import { createDetachedEl } from '../dom';
 import type { AdvancedMermaidSettings } from '../settings';
 import { DiagramController } from '../rendering/controller';
 
@@ -12,9 +13,7 @@ export function createRenderedPreviews(app: App, settings: () => AdvancedMermaid
 		constructor(readonly source: string, readonly file: string) { super(); }
 		eq(other: RenderedPreview): boolean { return other.source === this.source && other.file === this.file; }
 		toDOM(view: EditorView): HTMLElement {
-			// CodeMirror requires a detached widget in the editor's own document.
-			const host = view.dom.ownerDocument.createElement('div');
-			host.className = 'advanced-mermaid-rendered-preview';
+			const host = createDetachedEl(view.dom.ownerDocument, 'div', { cls: 'advanced-mermaid-rendered-preview' });
 			const controller = new DiagramController(host, this.source, settings, app, this.file, { boundary: view.scrollDOM });
 			controllers.set(host, controller);
 			controller.load();

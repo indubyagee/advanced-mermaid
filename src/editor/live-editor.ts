@@ -2,6 +2,7 @@ import { Compartment, EditorState, Transaction, type Extension } from '@codemirr
 import { EditorView, keymap, lineNumbers } from '@codemirror/view';
 import { defaultKeymap, indentWithTab, insertNewlineAndIndent, undo, redo } from '@codemirror/commands';
 import type { App } from 'obsidian';
+import { createDetachedEl } from '../dom';
 import type { AdvancedMermaidSettings } from '../settings';
 import { DiagramController } from '../rendering/controller';
 import { encodeLocalStyle, styleRegion, parseStyleCss, decodeLocalStyle } from '../styles/local-codec';
@@ -9,6 +10,7 @@ import { nestedOrigin, type SourceBridge } from './source-bridge';
 import { retainDraft } from './drafts';
 import { PreviewScheduler } from './preview-scheduler';
 import { sourceLanguage } from './languages';
+import { sourceTheme } from './source-theme';
 import { overrideOptions, overrideValue, type OverrideOption } from './override-options';
 import { insertDisplayOverride, insertStyleOverride, type StyleTarget } from './override-insertion';
 import { overrideSelector } from '../ui/override-selector';
@@ -29,6 +31,7 @@ export class LiveEditor {
 	private readonly controller: DiagramController;
 	private readonly scheduler: PreviewScheduler;
 	private readonly nested: EditorView;
+	private readonly stopWindowMigration: () => void;
 	private readonly syntax: DiagramSyntaxSelector;
 	private css = '';
 	private cssBaseline = '';
@@ -46,13 +49,12 @@ export class LiveEditor {
 	private readonly buttons: HTMLButtonElement[] = [];
 	private readonly presentation = new Compartment();
 	private compositionRange?: { from: number; to: number };
-	private cssTimer?: number;
+	private cancelCssTimer?: () => void;
 
 	constructor(private readonly app: App, private readonly settings: () => AdvancedMermaidSettings, private readonly bridge: SourceBridge,
 		private readonly file: string, private readonly close: () => void) {
 		const doc = bridge.parent.dom.ownerDocument; const win = doc.defaultView!;
-		// Create a detached element in its owning document, including pop-outs.
-		this.element = doc.createElement('div'); this.element.className = 'advanced-mermaid-editor';
+		this.element = createDetachedEl(doc, 'div', { cls: 'advanced-mermaid-editor' });
 		applyEditorStyle(this.element, settings().liveEditor.style);
 		const header = this.element.createDiv({ cls: 'advanced-mermaid-editor-header' });
 		const sources = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Source format' } });
@@ -70,6 +72,8 @@ export class LiveEditor {
 		overrideSelector(this.element, () => overrideOptions(this.bridge.source()), (option, target) => this.insertOverride(option, target));
 		const columns = this.element.createDiv({ cls: 'advanced-mermaid-editor-columns' });
 		this.sourceHost = columns.createDiv({ cls: 'advanced-mermaid-editor-source', attr: { role: 'tabpanel', 'aria-label': 'Diagram source' } });
+		// Keep the note's Markdown gutter and width rules out of the nested editor.
+		let sourceRoot = this.sourceHost.createDiv().attachShadow({ mode: 'open' });
 		this.applySourceFontSize();
 		this.preview = columns.createDiv({ cls: 'advanced-mermaid-editor-preview', attr: { role: 'tabpanel', 'aria-label': 'Diagram preview' } });
 		this.canonical = this.preview.createDiv();
@@ -107,9 +111,18 @@ export class LiveEditor {
 			compositionstart: () => { const selection = this.nested.state.selection.main; this.compositionRange = { from: selection.from, to: selection.to }; },
 			compositionend: () => { this.compositionRange = undefined; this.scheduler.schedule(settings().liveEditor.debounceMs); },
 		})];
-		extensions.push(this.presentation.of(this.presentationExtensions()));
-		this.nested = new EditorView({ state: EditorState.create({ doc: this.sourceBaseline, extensions }), parent: this.sourceHost });
-		this.scheduler = new PreviewScheduler(win, () => this.render(), text => { this.status.textContent = text; });
+		extensions.push(sourceTheme, this.presentation.of(this.presentationExtensions()));
+		this.nested = new EditorView({ state: EditorState.create({ doc: this.sourceBaseline, extensions }), parent: sourceRoot, root: sourceRoot });
+		this.stopWindowMigration = this.sourceHost.onWindowMigrated(() => {
+			// Adopted CodeMirror styles belong to the original document.
+			const replacement = this.sourceHost.createDiv().attachShadow({ mode: 'open' });
+			replacement.append(this.nested.dom);
+			this.nested.setRoot(replacement);
+			sourceRoot.host.remove();
+			sourceRoot = replacement;
+			this.nested.requestMeasure();
+		});
+		this.scheduler = new PreviewScheduler(() => this.element.ownerDocument.defaultView, () => this.render(), text => { this.status.textContent = text; });
 		this.syntax.load();
 		this.controller = new DiagramController(this.canonical, this.sourceBaseline, settings, app, file, { boundary: this.preview, keepLastValid: true, changed: (valid, error) => {
 			this.status.textContent = valid ? 'Current · ' + (this.canonical.dataset.category ?? 'diagram') : (this.canonical.classList.contains('advanced-mermaid-fallback') ? 'Using global/type fallback styling. ' : this.canonical.classList.contains('advanced-mermaid-stale') ? 'Preview is from the last valid source. ' : 'Diagram error. ') + (error instanceof Error ? error.message : 'Diagram error');
@@ -149,18 +162,26 @@ export class LiveEditor {
 	}
 	private validateCss(): void {
 		this.invalidatePreview();
-		const win = this.element.ownerDocument.defaultView!; win.clearTimeout(this.cssTimer);
+		this.clearCssTimer();
 		try {
 			parseStyleCss(this.css, 'light'); parseStyleCss(this.css, 'dark'); this.invalid = false; this.draftStatus.textContent = this.cssDirty ? 'Valid CSS draft · pending save' : '';
-			this.cssTimer = win.setTimeout(() => { if (!this.disposed && this.flush() && (this.visible || this.nested.hasFocus)) this.scheduler.schedule(0); }, this.settings().liveEditor.debounceMs);
+			const win = this.element.ownerDocument.defaultView;
+			if (win) {
+				const timer = win.setTimeout(() => { if (!this.disposed && this.flush() && (this.visible || this.nested.hasFocus)) this.scheduler.schedule(0); }, this.settings().liveEditor.debounceMs);
+				this.cancelCssTimer = win.clearTimeout.bind(win, timer);
+			}
 		}
 		catch (error) { this.invalid = true; this.controller.invalidate(); this.draftStatus.textContent = 'Unsaved CSS draft: ' + (error instanceof Error ? error.message : String(error)); }
+	}
+	private clearCssTimer(): void {
+		this.cancelCssTimer?.();
+		this.cancelCssTimer = undefined;
 	}
 	private invalidatePreview(): void {
 		this.controller.invalidate(); this.outputRevision++; this.output.value = '';
 	}
 	flush(): boolean {
-		this.element.ownerDocument.defaultView!.clearTimeout(this.cssTimer);
+		this.clearCssTimer();
 		if (this.conflict || this.invalid) return false;
 		if (!this.cssDirty) return true;
 		try {
@@ -288,7 +309,7 @@ export class LiveEditor {
 	destroy(): void {
 		if (this.disposed) return;
 		if (this.cssDirty || this.conflict) retainDraft({ file: this.file, source: this.inputMode === 'mermaid' ? this.nested.state.doc.toString() : this.sourceBaseline, css: this.css, reason: 'Editor closed with an unsaved draft' });
-		this.disposed = true; this.outputRevision++; this.scheduler.destroy(); this.resize.disconnect(); this.intersection.disconnect(); this.syntax.unload(); this.nested.destroy(); this.controller.destroy();
-		this.element.ownerDocument.defaultView!.clearTimeout(this.cssTimer);
+		this.disposed = true; this.outputRevision++; this.scheduler.destroy(); this.resize.disconnect(); this.intersection.disconnect(); this.syntax.unload(); this.stopWindowMigration(); this.nested.destroy(); this.controller.destroy();
+		this.clearCssTimer();
 	}
 }

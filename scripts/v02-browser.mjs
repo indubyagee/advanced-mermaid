@@ -84,7 +84,7 @@ export async function runEditorModeChecks(page) {
 		const undone = fixture.undo(view) && view.state.doc.toString() === before; fixture.redo(view); await pause();
 		choose('style:--pele-surface', 'dark'); await pause(); const styleInserted = view.state.doc.toString().includes('.theme-dark .pele { --pele-surface:');
 		const existing = view.state.doc.toString(); choose('style:--pele-surface', 'dark'); const noDuplicate = view.state.doc.toString() === existing;
-		const root = host.querySelector('.advanced-mermaid-editor'); const nested = fixture.EditorView.findFromDOM(root.querySelector('.cm-editor'));
+		const root = host.querySelector('.advanced-mermaid-editor'); const nested = fixture.EditorView.findFromDOM(fixture.sourceRoot(root).querySelector('.cm-editor'));
 		[...root.querySelectorAll('button')].find(element => element.textContent === 'CSS').click(); nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert: '.pele { color: red; }' } });
 		choose('display:fill'); staticMode(0); const draftProtected = view.state.doc.toString() === existing && !!host.querySelector('.advanced-mermaid-editor');
 		button('Discard changes').click(); staticMode(0); await pause();

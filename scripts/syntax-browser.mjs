@@ -9,7 +9,7 @@ export async function runSyntaxChecks(page) {
 		const language = new fixture.Language(fixture.defineLanguageFacet(), fixture.markdownParser);
 		const view = new fixture.EditorView({ parent: host, state: fixture.EditorState.create({ doc: source, extensions: [language, fixture.history(), fixture.editorInfoField, fixture.editorLivePreviewField, inline.extension] }) });
 		view.dispatch({ selection: { anchor: source.indexOf('flowchart') } }); view.focus(); inline.toggle();
-		window.syntaxFixture = { host, settings, inline, view, source, nested: () => fixture.EditorView.findFromDOM(host.querySelector('.advanced-mermaid-editor-source .cm-editor')) };
+		window.syntaxFixture = { host, settings, inline, view, source, nested: () => fixture.EditorView.findFromDOM(fixture.sourceRoot(host).querySelector('.cm-editor')) };
 	});
 	const diagrams = page.getByRole('combobox', { name: 'Diagram type', exact: true });
 	const components = page.getByRole('combobox', { name: 'Insert diagram component', exact: true });

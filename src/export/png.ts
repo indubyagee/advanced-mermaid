@@ -1,3 +1,4 @@
+import { createDetachedEl } from '../dom';
 import type { SvgSnapshot } from './svg';
 
 export const PNG_SCALE = 2;
@@ -19,8 +20,7 @@ export async function createPng(snapshot: SvgSnapshot, doc: Document, signal: Ab
 	const view = doc.defaultView;
 	if (!view) throw new Error('The diagram window is unavailable.');
 	const size = pngDimensions(snapshot.width, snapshot.height);
-	// Create a detached element in its owning document, including pop-outs.
-	const canvas = doc.createElement('canvas');
+	const canvas = createDetachedEl(doc, 'canvas');
 	const image = new view.Image();
 	const url = view.URL.createObjectURL(new view.Blob([snapshot.svg], { type: 'image/svg+xml' }));
 	let abort: (() => void) | undefined;
