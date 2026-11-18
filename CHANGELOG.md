@@ -10,6 +10,17 @@
 - Export Agentflow `refdoc` nodes and Flowchart document shapes as Canvas file cards backed by Markdown notes beside the canvas.
 - Reserve filenames across concurrent exports and reuse notes when retrying a partial save in the same dialog.
 
+### Changed
+
+- Remove `!important` overrides using scoped styles for diagram controls, the Live Editor, and export snapshots. Advanced Mermaid manages the zoom buttons, and Pele handles zoom and pan.
+- Use `yaml` to parse and serialize frontmatter in tests.
+
+### Fixed
+
+- Keep the configured source font and sticky line numbers when moving the Live Editor to a pop-out window, including with the Minimal theme.
+- Create editor widgets and PNG export canvases in their owning windows using Obsidian's DOM helpers.
+- Clear a lint false positive on the `style.global` settings declaration.
+
 ## 0.3.1 — 2026-11-13
 
 ### Added
