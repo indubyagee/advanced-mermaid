@@ -152,6 +152,10 @@ Select **Export → Save canvas** on a Flowchart (`flowchart`, `graph`, or `flow
 
 Canvas export follows the diagram’s direction and nests groups around subgraphs and named flows. It preserves visible connections and their labels, including parallel edges and loops. Agentflow cards carry role labels and the `description`, `model`, `instruction`, and `connectorRef` text fields. Reference and failure connections have matching text labels.
 
+An Agentflow `refdoc` or a Flowchart `doc`, `lin-doc`, `docs`, or `tag-doc` (including their aliases) becomes a Canvas file card backed by a new Markdown note. Each document node creates one note in the selected folder, beside the canvas. The filename comes from the node label and gets a numbered suffix if the name is taken. The note contains the label and any exported Agentflow metadata. Other shapes become text cards. [Mermaid node shapes](https://mermaid.js.org/syntax/flowchart.html)
+
+If saving stops after some notes are created, those notes stay in the vault. Retry in the same save dialog to reuse them.
+
 The output uses native Canvas rectangles, edge routing, and styling. Circle and cross markers on Flowchart links become plain ends. Invisible links guide placement. Mermaid-specific styling, interactive links, and media stay in the diagram preview. Loop labels can overlap a card under native routing. Each export supports up to 300 nodes and groups combined and 1,000 connections. [JSON Canvas 1.0](https://jsoncanvas.org/spec/1.0/)
 
 ## Errors

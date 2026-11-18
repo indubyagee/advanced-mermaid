@@ -1,8 +1,13 @@
 import { parseCanvasGraph, type CanvasEnd } from './canvas-graph';
 import { layOutCanvas, type CanvasRect } from './canvas-layout';
+import { createUniqueExport, documentBasename, exportFolder, type ExportVault } from './files';
 
 type Side = 'top' | 'right' | 'bottom' | 'left';
-type CanvasNode = CanvasRect & { id: string } & ({ type: 'text'; text: string } | { type: 'group'; label: string });
+type CanvasNode = CanvasRect & { id: string } & (
+	| { type: 'text'; text: string }
+	| { type: 'file'; basename: string; markdown: string }
+	| { type: 'group'; label: string }
+);
 interface CanvasEdge {
 	id: string;
 	fromNode: string;
@@ -12,6 +17,10 @@ interface CanvasEdge {
 	fromEnd: CanvasEnd;
 	toEnd: CanvasEnd;
 	label?: string;
+}
+export interface CanvasExport {
+	nodes: readonly CanvasNode[];
+	edges: readonly CanvasEdge[];
 }
 
 function literalMarkdown(text: string): string {
@@ -46,7 +55,7 @@ function attachmentSides(from: CanvasRect, to: CanvasRect, parallel: number): [S
 	return pairs[parallel % pairs.length]!;
 }
 
-export function createCanvasExport(source: string): string {
+export function createCanvasExport(source: string): CanvasExport {
 	const graph = parseCanvasGraph(source);
 	const positions = layOutCanvas(graph);
 	const ids = new Map<string, string>();
@@ -66,6 +75,8 @@ export function createCanvasExport(source: string): string {
 				if (!child || !contains(position, child)) throw new Error('Could not position every member inside its Canvas group.');
 			}
 			groups.push({ ...position, id, type: 'group', label: vertex.label });
+		} else if (vertex.type === 'file') {
+			cards.push({ ...position, id, type: 'file', basename: documentBasename(vertex.title, key), markdown: literalMarkdown(vertex.text) + '\n' });
 		} else cards.push({ ...position, id, type: 'text', text: literalMarkdown(vertex.text) });
 	}
 	if (ids.size !== graph.vertices.size) throw new Error('Could not position every node and group on the canvas.');
@@ -85,5 +96,56 @@ export function createCanvasExport(source: string): string {
 			fromEnd: connection.fromEnd, toEnd: connection.toEnd, label: connection.label,
 		});
 	}
-	return JSON.stringify({ nodes: [...groups, ...cards], edges }, null, 2) + '\n';
+	return { nodes: [...groups, ...cards], edges };
+}
+
+type CanvasVault = Pick<ExportVault, 'adapter' | 'getAbstractFileByPath' | 'create'>;
+interface SavedDocument { path: string; file: unknown }
+
+/** Keep notes created during this dialog available for retry after a failed save. */
+export function createCanvasSaver(vault: CanvasVault, basename: string, canvas: CanvasExport):
+	(folder: string, current: () => boolean) => Promise<string> {
+	const documents = canvas.nodes.filter(node => node.type === 'file');
+	const byFolder = new Map<string, Map<string, SavedDocument>>();
+	const exists = (document: SavedDocument): boolean => vault.getAbstractFileByPath(document.path) === document.file;
+	return async (folder, current) => {
+		const destination = exportFolder(folder);
+		let saved = byFolder.get(destination);
+		if (!saved) {
+			saved = new Map();
+			byFolder.set(destination, saved);
+		}
+		try {
+			for (const note of documents) {
+				const existing = saved.get(note.id);
+				if (existing && exists(existing)) continue;
+				const created = await createUniqueExport(vault, destination, note.basename, 'md', current,
+					path => vault.create(path, note.markdown));
+				saved.set(note.id, created);
+			}
+			const paths = saved;
+			const nodes = canvas.nodes.map(node => {
+				if (node.type !== 'file') return node;
+				const { id, type, x, y, width, height } = node;
+				return { id, type, x, y, width, height, file: paths.get(id)!.path };
+			});
+			const content = JSON.stringify({ nodes, edges: canvas.edges }, null, 2) + '\n';
+			const ready = (): boolean => {
+				if (!current()) return false;
+				if ([...paths.values()].some(note => !exists(note))) {
+					throw new Error('A generated note moved or was removed. Select Save to try again.');
+				}
+				return true;
+			};
+			const result = await createUniqueExport(vault, destination, basename, 'canvas', ready,
+				path => vault.create(path, content));
+			return result.path;
+		} catch (error) {
+			const count = [...saved.values()].filter(exists).length;
+			if (count === 0) throw error;
+			const reason = error instanceof Error ? error.message : String(error);
+			const remaining = count === 1 ? 'note remains' : 'notes remain';
+			throw new Error(reason + ' ' + count + ' generated Markdown ' + remaining + ' in ' + (destination || 'the vault root') + '.');
+		}
+	};
 }

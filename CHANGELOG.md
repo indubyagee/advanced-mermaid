@@ -7,6 +7,8 @@
 - Save rendered Flowcharts and Agentflows as editable Obsidian canvases with text cards, nested groups, and labeled connections.
 - Create editable text cards, nested groups, and labeled connections in a new .canvas file.
 - Reuse the vault folder picker, handle filename collisions, and offer to open the saved canvas in a new tab.
+- Export Agentflow `refdoc` nodes and Flowchart document shapes as Canvas file cards backed by Markdown notes beside the canvas.
+- Reserve filenames across concurrent exports and reuse notes when retrying a partial save in the same dialog.
 
 ## 0.3.1 — 2026-11-13
 

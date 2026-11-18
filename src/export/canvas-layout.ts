@@ -185,7 +185,10 @@ export function layOutCanvas(graph: CanvasGraph): Map<string, CanvasRect> {
 					width: Math.max(content.width + 2 * GROUP_SIDE, textWidth(vertex.label) + 2 * GROUP_SIDE, 224),
 					height: Math.max(content.height + GROUP_TOP + GROUP_SIDE, 112),
 				};
-			} else size = cardSize(vertex.text);
+			} else {
+				size = cardSize(vertex.text);
+				if (vertex.type === 'file') size.height += 32; // Room for the file card's title bar.
+			}
 			relative.set(id, { x: 0, y: 0, ...size });
 		}
 		return placeScope(scope, relative, direction);

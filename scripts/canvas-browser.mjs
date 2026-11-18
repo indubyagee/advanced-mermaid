@@ -29,21 +29,24 @@ export async function runCanvasChecks(page) {
 			return find(chooser);
 		};
 		try {
-			const flowchart = render('graph LR\nA["Start"] -->|Next| B["Finish"]');
+			const flowchart = render('graph LR\nA["Start"] -->|Next| B@{ shape: lin-doc, label: "Finish" }');
 			const modal = await startSave(flowchart);
 			const folder = modal.querySelector('input').value;
+			const describesNote = modal.textContent.includes('This export creates 1 Markdown note in the selected folder.');
 			const previewPath = [...modal.querySelectorAll('p')].find(p => p.textContent.startsWith('Save as: ')).textContent.slice(9);
 			fixture.saved.set(previewPath, 'original canvas');
+			fixture.saved.set('notes/nested/Finish.md', 'original note');
 			button(modal, 'Save').click();
 			const status = flowchart.host.querySelector('.advanced-mermaid-export-status');
 			const path = await find(() => status.textContent.startsWith('Saved ') && status.textContent.slice(6));
 			const savedData = JSON.parse(fixture.saved.get(path));
+			const document = savedData.nodes.find(node => node.type === 'file');
 			button(flowchart.host, 'Open canvas').click();
 			const opened = await find(() => fixture.opened.at(-1));
 
 			const before = fixture.saved.size;
 			const stale = await startSave(flowchart);
-			flowchart.child.setInlineOwned(false, 'flowchart TB\nC["Updated"] --> D');
+			flowchart.child.setInlineOwned(false, 'flowchart TB\nC@{ shape: docs, label: "Updated" } --> D');
 			button(stale, 'Save').click();
 			const retry = await find(() => stale.querySelector('[role=status]').textContent.includes('diagram changed'));
 			button(stale, 'Cancel').click();
@@ -58,12 +61,15 @@ export async function runCanvasChecks(page) {
 			await find(() => empty.host.querySelector('.advanced-mermaid-export-status').textContent.includes('Add a node or group'));
 			const emptyDidNotWrite = fixture.saved.size === before && !chooser();
 
-			const agent = render('agentflow-beta LR\nA@{ shape: task, label: "Work" } --> B');
+			const agent = render('agentflow-beta LR\nA@{ shape: refdoc, label: "Policy" } -.- B');
 			await startSave(agent);
 			items.pop().child.unload();
 			return {
-				folder, path, previewPath, opened, untouched: fixture.saved.get(previewPath) === 'original canvas',
-				cards: savedData.nodes.map(node => node.text), edge: savedData.edges[0]?.label, retry, cancelDidNotWrite,
+				folder, path, previewPath, opened, describesNote,
+				untouched: fixture.saved.get(previewPath) === 'original canvas' && fixture.saved.get('notes/nested/Finish.md') === 'original note',
+				cards: savedData.nodes.filter(node => node.type === 'text').map(node => node.text),
+				note: document.file, noteContent: fixture.saved.get(document.file), edge: savedData.edges[0]?.label,
+				edgeToFile: savedData.edges[0]?.toNode === document.id, retry, cancelDidNotWrite,
 				unsupported: button(unsupported.host, 'Save canvas').hidden && !button(unsupported.host, 'Save SVG').disabled,
 				invalid: invalid.host.querySelector('.advanced-mermaid-actions').hidden,
 				emptyDidNotWrite, unloaded: !chooser() && fixture.saved.size === before,
@@ -78,9 +84,11 @@ export async function runCanvasChecks(page) {
 	assert.equal(report.folder, 'notes/nested');
 	assert.equal(report.path, report.previewPath.replace(/\.canvas$/, '-2.canvas'));
 	assert.equal(report.opened, report.path);
-	assert.deepEqual(report.cards, ['Start', 'Finish']);
+	assert.deepEqual(report.cards, ['Start']);
+	assert.equal(report.note, 'notes/nested/Finish-2.md');
+	assert.equal(report.noteContent, 'Finish\n');
 	assert.equal(report.edge, 'Next');
-	for (const key of ['untouched', 'retry', 'cancelDidNotWrite', 'unsupported', 'invalid', 'emptyDidNotWrite', 'unloaded']) {
+	for (const key of ['describesNote', 'untouched', 'edgeToFile', 'retry', 'cancelDidNotWrite', 'unsupported', 'invalid', 'emptyDidNotWrite', 'unloaded']) {
 		assert.equal(report[key], true, key);
 	}
 	console.log('Canvas export passed: save, open, collision handling, stale and invalid previews, cancellation, and unload.');

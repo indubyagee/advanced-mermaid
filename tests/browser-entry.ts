@@ -11,16 +11,22 @@ export { render } from 'pele';
 
 export const saved = new Map<string, string | ArrayBuffer>();
 export const opened = [] as string[];
+const createdFiles = new Map<string, { path: string }>();
 export const app = { plugins: { manifests: {}, plugins: {} }, vault: {
 	configDir: '.fixture-config',
-	adapter: { read: (path: string) => {
+	adapter: { exists: (path: string) => Promise.resolve(saved.has(path)), read: (path: string) => {
 		const data = saved.get(path);
 		return typeof data === 'string' ? Promise.resolve(data) : Promise.reject(new Error('Fixture file missing.'));
 	} },
 	getAllFolders: () => [new TFolder('attachments'), new TFolder('notes'), new TFolder('notes/nested')],
-	getAbstractFileByPath: (path: string) => ['attachments', 'notes', 'notes/nested'].includes(path) ? new TFolder(path) : saved.has(path) ? {} : null,
+	getAbstractFileByPath: (path: string) => ['attachments', 'notes', 'notes/nested'].includes(path) ? new TFolder(path) : saved.has(path) ? createdFiles.get(path) ?? { path } : null,
 	getFileByPath: (path: string) => saved.has(path) ? { path } : null,
-	create: (path: string, data: string) => { saved.set(path, data); return Promise.resolve(); },
+	create: (path: string, data: string) => {
+		const file = { path };
+		createdFiles.set(path, file);
+		saved.set(path, data);
+		return Promise.resolve(file);
+	},
 	createBinary: (path: string, data: ArrayBuffer) => { saved.set(path, data); return Promise.resolve(); },
 }, workspace: {
 	on: () => ({}),

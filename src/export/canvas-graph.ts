@@ -8,6 +8,7 @@ export type CanvasDirection = 'TB' | 'BT' | 'LR' | 'RL';
 export type CanvasEnd = 'arrow' | 'none';
 export type CanvasVertex =
 	| { type: 'text'; text: string }
+	| { type: 'file'; title: string; text: string }
 	| { type: 'group'; label: string; members: readonly string[]; direction?: CanvasDirection };
 export interface CanvasConnection {
 	from: string;
@@ -24,6 +25,9 @@ export interface CanvasGraph {
 }
 
 const roles = { action: 'Action', connector: 'Connector', decision: 'Decision', input: 'Input', refdoc: 'Reference document', task: 'Task', tool: 'Tool' };
+const documentShapes = new Set([
+	'doc', 'document', 'lin-doc', 'lined-document', 'docs', 'documents', 'st-doc', 'stacked-document', 'tag-doc', 'tagged-document',
+]);
 const fields = { description: 'Description', model: 'Model', instruction: 'Instruction', connectorRef: 'Connector reference' } as const;
 const entities = new Map([['amp', '&'], ['apos', "'"], ['gt', '>'], ['lt', '<'], ['nbsp', '\u00a0'], ['quot', '"']]);
 
@@ -69,17 +73,22 @@ export function parseCanvasGraph(source: string): CanvasGraph {
 	for (const [id, node] of nodes) {
 		// Pele can create an implicit node with the same ID as a group endpoint.
 		if (vertices.has(id)) continue;
-		const parts = [labelText(node.text ?? id)];
+		const title = labelText(node.text ?? id);
+		const parts = [title];
 		const agent = agents.get(id);
+		const role = model.type === 'agentflow' && model.connectors.has(id) ? 'connector' : agent?.vertexKind;
 		if (model.type === 'agentflow') {
-			const role = model.connectors.has(id) ? 'connector' : agent?.vertexKind;
 			if (role) parts.push(roles[role]);
 			for (const field of Object.keys(fields) as (keyof typeof fields)[]) {
 				const value = agent?.metadata?.[field];
 				if (typeof value === 'string' && value.trim()) parts.push(fields[field] + '\n' + labelText(value));
 			}
 		}
-		vertices.set(id, { type: 'text', text: parts.join('\n\n') });
+		const isDocument = model.type === 'agentflow'
+			? role === 'refdoc'
+			: documentShapes.has(node.type?.toLowerCase() ?? '');
+		const text = parts.join('\n\n');
+		vertices.set(id, isDocument ? { type: 'file', title, text } : { type: 'text', text });
 	}
 	if (!vertices.size) throw new Error('Add a node or group before saving the diagram as a canvas.');
 	if (vertices.size > MAX_CANVAS_NODES || model.edges.length > MAX_CANVAS_EDGES) {

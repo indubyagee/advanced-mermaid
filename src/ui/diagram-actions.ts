@@ -71,15 +71,13 @@ export class DiagramActions {
 		}
 	}
 
-	private async save(extension: ExportExtension, data: string | ArrayBuffer, request: ExportRequest): Promise<void> {
+	private async save(extension: ExportExtension, request: ExportRequest,
+		write: (folder: string, current: () => boolean) => Promise<string>, description?: string): Promise<void> {
 		if (!request.current()) throw new Error('The diagram changed. Export it again.');
 		const folder = this.sourcePath.slice(0, Math.max(0, this.sourcePath.lastIndexOf('/')));
-		const description = extension === 'canvas'
-			? 'Canvas uses its own cards and lines. Circle and cross markers become plain ends.' : undefined;
 		const path = await new Promise<string | null>(resolve => {
 			this.modal = new SaveExportModal(this.app, this.basename + '.' + extension, folder,
-				(destination, open) => saveExport(this.app.vault, destination, this.basename, extension, data, () => open() && request.current()),
-				resolve, description);
+				(destination, open) => write(destination, () => open() && request.current()), resolve, description);
 			this.modal.open();
 		});
 		this.modal = undefined;
@@ -135,9 +133,15 @@ export class DiagramActions {
 			const captured = request;
 			if (action === 'save-canvas') {
 				if (captured.canvasSource === undefined) throw new Error('Choose a Flowchart or Agentflow to save as a canvas.');
-				const { createCanvasExport } = await import('../export/canvas');
+				const { createCanvasExport, createCanvasSaver } = await import('../export/canvas');
 				if (!captured.current()) throw new Error('The diagram changed. Export it again.');
-				await this.save('canvas', createCanvasExport(captured.canvasSource), captured);
+				const canvas = createCanvasExport(captured.canvasSource);
+				const notes = canvas.nodes.filter(node => node.type === 'file').length;
+				const base = 'Canvas uses its own cards and lines. Circle and cross markers become plain ends.';
+				const description = notes
+					? base + ' This export creates ' + notes + ' Markdown ' + (notes === 1 ? 'note' : 'notes') + ' in the selected folder.'
+					: base;
+				await this.save('canvas', captured, createCanvasSaver(this.app.vault, this.basename, canvas), description);
 				return;
 			}
 			const view = this.host.ownerDocument.defaultView!;
@@ -148,7 +152,8 @@ export class DiagramActions {
 			if (action === 'save-svg' || action === 'save-png') {
 				const extension = action === 'save-svg' ? 'svg' : 'png';
 				const data = extension === 'svg' ? (await snapshot).svg : await (await png()).arrayBuffer();
-				await this.save(extension, data, captured);
+				await this.save(extension, captured, (folder, current) =>
+					saveExport(this.app.vault, folder, this.basename, extension, data, current));
 			} else if (action === 'copy-png') {
 				if (!this.canCopyPng()) throw new Error('PNG copy is unavailable here. Use Save PNG.');
 				// Promise-backed data starts the clipboard request during user activation.
