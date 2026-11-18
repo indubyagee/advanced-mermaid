@@ -31,6 +31,7 @@ export class DiagramController extends Component {
 	private result?: RenderResult;
 	private renderedSource?: string;
 	private revision = 0;
+	private canvasRevision = 0;
 	private generation = 0;
 	private blocked = false;
 	private disposed = false;
@@ -43,10 +44,21 @@ export class DiagramController extends Component {
 		private readonly sourcePath: string, private readonly options: ControllerOptions = {}) {
 		super();
 	}
-	setSource(source: string): void { this.source = source; this.blocked = false; this.updateSettings(); }
+	setSource(source: string): void {
+		if (source !== this.source) this.canvasRevision++;
+		this.source = source;
+		this.blocked = false;
+		this.updateSettings();
+	}
 	settingsChanged(): void { this.updateSettings(); }
 	environmentChanged(): void { this.updateSettings(); }
-	invalidate(): void { this.blocked = true; this.revision++; this.generation++; this.actions?.setValid(false); }
+	invalidate(): void {
+		this.blocked = true;
+		this.revision++;
+		this.canvasRevision++;
+		this.generation++;
+		this.actions?.setValid(false);
+	}
 	async snapshot(): Promise<SvgSnapshot> { return this.captureExport().snapshot(); }
 	destroy(): void { this.unload(); }
 	onload(): void {
@@ -95,6 +107,8 @@ export class DiagramController extends Component {
 			try { local = decodeLocalStyle(this.source, activeTheme(this.containerEl)).profile; } catch (error) { this.configurationError = error; }
 			const resolved = resolveDiagramStyle(this.source, settings.style.global, settings.style.diagrams, local);
 			const configured = resolveFrontmatter(this.source, settings.style.diagrams);
+			// Canvas conversion uses the configured source across visual refreshes.
+			if (this.diagram?.source !== configured.source || this.configurationError) this.canvasRevision++;
 			lineOffset = configured.lineOffset;
 			applyStyle(this.containerEl, settings, resolved.profile);
 			const editorStyle = settings.liveEditor.style;
@@ -148,6 +162,7 @@ export class DiagramController extends Component {
 
 	private failed(error: unknown): void {
 		this.revision++;
+		this.canvasRevision++;
 		this.renderedSource = undefined;
 		if (this.options.keepLastValid && this.result) {
 			const doc = this.containerEl.ownerDocument;
@@ -169,11 +184,14 @@ export class DiagramController extends Component {
 		const result = this.result;
 		const source = this.renderedSource;
 		const revision = this.revision;
+		const canvasRevision = this.canvasRevision;
 		if (!result || source === undefined || this.disposed || this.blocked || this.configurationError || this.containerEl.classList.contains('advanced-mermaid-stale')) throw new Error('Render the diagram successfully before exporting it.');
 		const current = (): boolean => !this.disposed && this.revision === revision;
 		return {
 			current, snapshot: () => createSvgSnapshot(result, this.containerEl, current),
-			canvasSource: result.type === 'flowchart' || result.type === 'agentflow' ? source : undefined,
+			canvas: result.type === 'flowchart' || result.type === 'agentflow'
+				? { source, current: () => !this.disposed && this.canvasRevision === canvasRevision }
+				: undefined,
 		};
 	}
 
@@ -187,6 +205,7 @@ export class DiagramController extends Component {
 		this.disposed = true;
 		this.generation++;
 		this.revision++;
+		this.canvasRevision++;
 		this.diagram?.destroy();
 		this.diagram = undefined;
 		this.result = undefined;

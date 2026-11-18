@@ -62,6 +62,13 @@ export async function runCanvasChecks(page) {
 			const emptyDidNotWrite = fixture.saved.size === before && !chooser();
 
 			const agent = render('agentflow-beta LR\nA@{ shape: refdoc, label: "Policy" } -.- B');
+			const agentModal = await startSave(agent);
+			agent.child.refreshTheme();
+			button(agentModal, 'Save').click();
+			const agentStatus = agent.host.querySelector('.advanced-mermaid-export-status');
+			const agentPath = await find(() => agentStatus.textContent.startsWith('Saved ') && agentStatus.textContent.slice(6));
+			const agentCanvas = JSON.parse(fixture.saved.get(agentPath));
+			const afterAgent = fixture.saved.size;
 			await startSave(agent);
 			items.pop().child.unload();
 			return {
@@ -72,7 +79,8 @@ export async function runCanvasChecks(page) {
 				edgeToFile: savedData.edges[0]?.toNode === document.id, retry, cancelDidNotWrite,
 				unsupported: button(unsupported.host, 'Save canvas').hidden && !button(unsupported.host, 'Save SVG').disabled,
 				invalid: invalid.host.querySelector('.advanced-mermaid-actions').hidden,
-				emptyDidNotWrite, unloaded: !chooser() && fixture.saved.size === before,
+				refdocAfterRefresh: agentCanvas.nodes.find(node => node.type === 'file')?.file,
+				emptyDidNotWrite, unloaded: !chooser() && fixture.saved.size === afterAgent,
 			};
 		} finally {
 			for (const item of items) item.child.unload();
@@ -88,8 +96,9 @@ export async function runCanvasChecks(page) {
 	assert.equal(report.note, 'notes/nested/Finish-2.md');
 	assert.equal(report.noteContent, 'Finish\n');
 	assert.equal(report.edge, 'Next');
+	assert.equal(report.refdocAfterRefresh, 'notes/nested/Policy.md');
 	for (const key of ['describesNote', 'untouched', 'edgeToFile', 'retry', 'cancelDidNotWrite', 'unsupported', 'invalid', 'emptyDidNotWrite', 'unloaded']) {
 		assert.equal(report[key], true, key);
 	}
-	console.log('Canvas export passed: save, open, collision handling, stale and invalid previews, cancellation, and unload.');
+	console.log('Canvas export passed: save, open, collision handling, theme refresh, stale and invalid previews, cancellation, and unload.');
 }

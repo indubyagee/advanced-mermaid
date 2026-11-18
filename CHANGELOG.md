@@ -4,8 +4,7 @@
 
 ### Added
 
-- Save rendered Flowcharts and Agentflows as editable Obsidian canvases with text cards, nested groups, and labeled connections.
-- Create editable text cards, nested groups, and labeled connections in a new .canvas file.
+- Export rendered Flowcharts and Agentflows to new `.canvas` files with editable text cards, nested groups, and labeled connections.
 - Reuse the vault folder picker, handle filename collisions, and offer to open the saved canvas in a new tab.
 - Export Agentflow `refdoc` nodes and Flowchart document shapes as Canvas file cards backed by Markdown notes beside the canvas.
 - Reserve filenames across concurrent exports and reuse notes when retrying a partial save in the same dialog.
@@ -17,6 +16,7 @@
 
 ### Fixed
 
+- Keep Canvas save dialogs usable when Obsidian refreshes the diagram’s appearance.
 - Keep the configured source font and sticky line numbers when moving the Live Editor to a pop-out window, including with the Minimal theme.
 - Create editor widgets and PNG export canvases in their owning windows using Obsidian's DOM helpers.
 - Clear a lint false positive on the `style.global` settings declaration.

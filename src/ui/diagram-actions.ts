@@ -8,7 +8,7 @@ import { errorText } from './diagram-error';
 export interface ExportRequest {
 	snapshot: () => Promise<SvgSnapshot>;
 	current: () => boolean;
-	canvasSource?: string;
+	canvas?: { source: string; current: () => boolean };
 }
 const labels = {
 	'copy-svg': 'Copy SVG', 'save-svg': 'Save SVG', 'copy-png': 'Copy PNG', 'save-png': 'Save PNG', 'save-canvas': 'Save canvas',
@@ -71,13 +71,13 @@ export class DiagramActions {
 		}
 	}
 
-	private async save(extension: ExportExtension, request: ExportRequest,
+	private async save(extension: ExportExtension, isCurrent: () => boolean,
 		write: (folder: string, current: () => boolean) => Promise<string>, description?: string): Promise<void> {
-		if (!request.current()) throw new Error('The diagram changed. Export it again.');
+		if (!isCurrent()) throw new Error('The diagram changed. Export it again.');
 		const folder = this.sourcePath.slice(0, Math.max(0, this.sourcePath.lastIndexOf('/')));
 		const path = await new Promise<string | null>(resolve => {
 			this.modal = new SaveExportModal(this.app, this.basename + '.' + extension, folder,
-				(destination, open) => write(destination, () => open() && request.current()), resolve, description);
+				(destination, open) => write(destination, () => open() && isCurrent()), resolve, description);
 			this.modal.open();
 		});
 		this.modal = undefined;
@@ -88,7 +88,7 @@ export class DiagramActions {
 				this.savedCanvasPath = path;
 				this.openCanvasButton.hidden = false;
 			}
-		} else if (request.current()) this.status.textContent = 'Export cancelled.';
+		} else if (isCurrent()) this.status.textContent = 'Export cancelled.';
 	}
 
 	private async openSavedCanvas(): Promise<void> {
@@ -132,16 +132,17 @@ export class DiagramActions {
 			request = this.capture();
 			const captured = request;
 			if (action === 'save-canvas') {
-				if (captured.canvasSource === undefined) throw new Error('Choose a Flowchart or Agentflow to save as a canvas.');
+				const canvasRequest = captured.canvas;
+				if (!canvasRequest) throw new Error('Choose a Flowchart or Agentflow to save as a canvas.');
 				const { createCanvasExport, createCanvasSaver } = await import('../export/canvas');
-				if (!captured.current()) throw new Error('The diagram changed. Export it again.');
-				const canvas = createCanvasExport(captured.canvasSource);
+				if (!canvasRequest.current()) throw new Error('The diagram changed. Export it again.');
+				const canvas = createCanvasExport(canvasRequest.source);
 				const notes = canvas.nodes.filter(node => node.type === 'file').length;
 				const base = 'Canvas uses its own cards and lines. Circle and cross markers become plain ends.';
 				const description = notes
 					? base + ' This export creates ' + notes + ' Markdown ' + (notes === 1 ? 'note' : 'notes') + ' in the selected folder.'
 					: base;
-				await this.save('canvas', captured, createCanvasSaver(this.app.vault, this.basename, canvas), description);
+				await this.save('canvas', canvasRequest.current, createCanvasSaver(this.app.vault, this.basename, canvas), description);
 				return;
 			}
 			const view = this.host.ownerDocument.defaultView!;
@@ -152,7 +153,7 @@ export class DiagramActions {
 			if (action === 'save-svg' || action === 'save-png') {
 				const extension = action === 'save-svg' ? 'svg' : 'png';
 				const data = extension === 'svg' ? (await snapshot).svg : await (await png()).arrayBuffer();
-				await this.save(extension, captured, (folder, current) =>
+				await this.save(extension, captured.current, (folder, current) =>
 					saveExport(this.app.vault, folder, this.basename, extension, data, current));
 			} else if (action === 'copy-png') {
 				if (!this.canCopyPng()) throw new Error('PNG copy is unavailable here. Use Save PNG.');
@@ -189,7 +190,8 @@ export class DiagramActions {
 				}
 			}
 		} catch (error) {
-			if (!this.disposed && (!request || request.current())) this.status.textContent = `Export failed: ${errorText(error)}`;
+			const isCurrent = action === 'save-canvas' ? request?.canvas?.current : request?.current;
+			if (!this.disposed && (!isCurrent || isCurrent())) this.status.textContent = `Export failed: ${errorText(error)}`;
 			else if (!this.disposed && action === 'save-canvas') this.status.textContent = 'The diagram changed. Export it again.';
 		} finally {
 			this.busy = false;

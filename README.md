@@ -202,7 +202,7 @@ The build checks TypeScript and bundles `src/main.ts` into `main.js`. Install th
 | `npm run test:browser` | Run browser fixtures using Microsoft Edge by default. |
 | `npm run check:public` | Check public source files for private or generated content. |
 | `npm run check:history` | Check the public source tree and outgoing Git history. |
-| `npm run check:release -- --tag 0.3.1` | Validate built artifacts, version metadata, and the exact release tag. |
+| `node scripts/check-release.mjs --tag 0.3.2` | Validate built artifacts, version metadata, and the exact release tag. |
 
 Browser fixtures use an Obsidian test adapter. Verify changes in Obsidian separately before claiming host compatibility.
 
@@ -212,7 +212,9 @@ Advanced Mermaid uses the MIT license. Its bundled renderer, [Pele 1.12.0](https
 
 ## Platform coverage and troubleshooting
 
-The recorded Windows acceptance covers the exact 0.3.0 production artifacts on Obsidian 1.14.5 and 1.15.0, including settings persistence, editor modes, undo, draft recovery, SVG/PNG clipboard and save actions, embeds, multiple panes, pop-outs, and unload/re-enable cleanup. Those results do not establish host acceptance for 0.3.1. macOS and Linux host behavior, mobile devices, touch, and IME behavior remain unverified. Mobile loading is disabled.
+The recorded Windows acceptance covers the exact 0.3.0 production artifacts on Obsidian 1.14.5 and 1.15.0, including settings persistence, editor modes, undo, draft recovery, SVG/PNG clipboard and save actions, embeds, multiple panes, pop-outs, and unload/re-enable cleanup.
+
+A Windows smoke test of the 0.3.2 release files on Obsidian 1.15.0 covered saving and opening Flowchart and Agentflow canvases with linked Markdown notes. macOS and Linux host behavior, mobile devices, touch, and IME behavior remain unverified. Mobile loading is disabled.
 
 - **No diagram:** verify the fence language is `mermaid` or `pele`; inspect the displayed diagnostic.
 - **Height did not change:** check for a per-diagram override and use an accepted unit or `none`.
