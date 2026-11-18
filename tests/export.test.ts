@@ -18,20 +18,25 @@ void test('PNG budgets reject oversized, non-finite, or empty canvases', () => {
 });
 
 void test('saving creates unique files and retries concurrent collisions without modification', async () => {
-	const files = new Map<string, string | ArrayBuffer>([['Exports/note.svg', 'existing']]);
-	let raced = false;
-	const vault: ExportVault = {
-		getAbstractFileByPath: path => files.get(path),
-		create: (path, data) => {
-			if (!raced) { raced = true; files.set(path, 'concurrent'); return Promise.reject(new Error('Exists')); }
-			files.set(path, data); return Promise.resolve();
-		},
-		createBinary: () => Promise.reject(new Error('Unexpected binary call')),
-	};
-	assert.equal(await saveExport(vault, 'Exports', 'note', 'svg', '<svg/>', () => true), 'Exports/note-3.svg');
-	assert.equal(files.get('Exports/note.svg'), 'existing');
-	assert.equal(files.get('Exports/note-2.svg'), 'concurrent');
-	await assert.rejects(saveExport(vault, '', 'note', 'svg', 'new', () => false), /changed/);
+	for (const [extension, data] of [['svg', '<svg/>'], ['canvas', '{"nodes":[],"edges":[]}']] as const) {
+		const files = new Map<string, string | ArrayBuffer>([['Exports/note.' + extension, 'existing']]);
+		let raced = false;
+		const vault: ExportVault = {
+			getAbstractFileByPath: path => files.get(path),
+			create: (path, text) => {
+				if (!raced) { raced = true; files.set(path, 'concurrent'); return Promise.reject(new Error('Exists')); }
+				files.set(path, text); return Promise.resolve();
+			},
+			createBinary: () => Promise.reject(new Error('Unexpected binary call')),
+		};
+		const path = 'Exports/note-3.' + extension;
+		assert.equal(await saveExport(vault, 'Exports', 'note', extension, data, () => true), path);
+		assert.equal(files.get(path), data);
+		assert.equal(files.get('Exports/note.' + extension), 'existing');
+		assert.equal(files.get('Exports/note-2.' + extension), 'concurrent');
+		await assert.rejects(saveExport(vault, '', 'note', extension, data, () => false), /changed/);
+		assert.equal(files.size, 3);
+	}
 });
 
 void test('binary saves use createBinary and I/O failures are not swallowed', async () => {
@@ -45,4 +50,5 @@ void test('binary saves use createBinary and I/O failures are not swallowed', as
 	assert.equal(await saveExport(vault, '', 'diagram', 'png', data, () => true), 'diagram.png');
 	assert.equal(saved, data);
 	await assert.rejects(saveExport(vault, '', 'diagram', 'svg', '<svg/>', () => true), /Read only/);
+	await assert.rejects(saveExport(vault, '', 'diagram', 'canvas', '{}', () => true), /Read only/);
 });

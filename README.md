@@ -1,9 +1,11 @@
 # Advanced Mermaid
 
-<script type="text/javascript" src="https://cdnjs.buymeacoffee.com/1.0.0/button.prod.min.js" data-name="bmc-button" data-slug="indubyagee" data-color="#FFDD00" data-emoji="" data-font="Inter" data-text="Buy me a coffee" data-outline-color="#000000" data-font-color="#000000" data-coffee-color="#ffffff" ></script>
+<a href="https://buymeacoffee.com/indubyagee">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy me a coffee" height="40">
+</a>
 
 Render Mermaid-compatible diagrams with Pele 1.12.0 in `mermaid` or `pele` code blocks.
-Advanced Mermaid provides inline editing, theme-aware styles, reusable preset classes, and SVG/PNG export.
+Advanced Mermaid provides inline editing, theme-aware styles, reusable preset classes, and export to SVG, PNG, or Obsidian Canvas.
 
  See the [changelog](https://github.com/indubyagee/advanced-mermaid/blob/main/CHANGELOG.md) for release notes.
 
@@ -96,7 +98,7 @@ The **Local override** selector inserts display directives or registered style v
 The source pane has **Mermaid** and **CSS** tabs. The preview pane has **Pele** and read-only **SVG** tabs. The source excludes the enclosing fences. Mermaid edits enter the parent note immediately and share its undo history. CSS accepts a constrained variable language, validates immediately, and saves valid drafts after the configured delay.
 
 ````markdown
-```pele
+```mermaid
 %% advanced-mermaid-style:v1
 %% .pele { --pele-surface: #153030;  --pele-fg: #FF0000; }
 %% .theme-dark .pele { --pele-surface: #2D4646; }
@@ -110,7 +112,7 @@ flowchart TD
 ```
 ````
 
-![Live editor source and preview panes](docs/media/preview-dark-flowchart-short-3a.png)
+![Live editor source and preview panes](docs/media/preview-light-flowchart-overrides-2.png)
 
 Allowed selectors are `.pele`, `.theme-light .pele`, and `.theme-dark .pele`. Values are literal hex colors, local family names, and bounded `px` lengths. Element controls use registered names such as `--advanced-mermaid-sequence-note-fill`; measured label size uses `--advanced-mermaid-label-size`. Arbitrary properties, URLs, `var()`, imports, private renderer variables, and `!important` are rejected. Malformed comments produce source-line diagnostics and a clearly labeled fallback preview with export disabled.
 
@@ -136,12 +138,21 @@ Expand the compact **Export** control below the diagram, at the bottom right, us
 | **Save SVG** | Creates a new `.svg` file in a selected existing vault folder.                                                                                     |
 | **Copy PNG** | Copies a PNG image when the host supports image clipboard writes and grants access. Otherwise use **Save PNG**.                                    |
 | **Save PNG** | Creates a new `.png` file in a selected existing vault folder.                                                                                     |
+| **Save canvas** | Converts a rendered Flowchart or Agentflow into a new `.canvas` file with editable cards, groups, and connections. |
 
 The save dialog suggests existing vault folders as you type and previews the destination. Select **Vault root** or leave the folder empty to save at the root. Typed paths remain validated. Names derive from the note and a diagram suffix; collisions receive another suffix. Existing files are never overwritten, and no attachment links are inserted into the note. External save dialogs and mobile share sheets are outside this implementation.
 
-Exports contain the full current layout at its intrinsic dimensions, independently of display limits, aspect-ratio stretching, pane size, and zoom/pan state. Font changes can change intrinsic dimensions. SVG styles and an opaque background are resolved before export; alpha backgrounds are composited over white. PNG uses 2× the SVG dimensions, rounded up, with an 8192-pixel side limit and a 16-million-pixel total limit. These are conservative product budgets, not measured mobile hardware limits; oversized PNG exports suggest saving SVG.
+SVG and PNG exports contain the full current layout at its intrinsic dimensions, independently of display limits, aspect-ratio stretching, pane size, and zoom/pan state. Font changes can change intrinsic dimensions. SVG styles and an opaque background are resolved before export; alpha backgrounds are composited over white. PNG uses 2× the SVG dimensions, rounded up, with an 8192-pixel side limit and a 16-million-pixel total limit. These are conservative product budgets, not measured mobile hardware limits; oversized PNG exports suggest saving SVG.
 
 SVG fonts are referenced by family and are not embedded. Other devices may substitute fonts. Custom theme/web fonts may also fall back in the browser's SVG-to-PNG path; only the tested local font cases are confirmed. Inspect exports when exact typography matters. Exporting a diagram that changes while preparation is running requires trying again.
+
+### Obsidian Canvas
+
+Select **Export → Save canvas** on a Flowchart (`flowchart`, `graph`, or `flowchart-elk`) or an `agentflow-beta` diagram in a `mermaid` or `pele` block. The source note’s folder is selected by default. Choose **Save**, then **Open canvas** to edit the file in a new tab. You can save while the Canvas core plugin is disabled. Enable it under **Settings → Core plugins → Canvas** to open and edit the file.
+
+Canvas export follows the diagram’s direction and nests groups around subgraphs and named flows. It preserves visible connections and their labels, including parallel edges and loops. Agentflow cards carry role labels and the `description`, `model`, `instruction`, and `connectorRef` text fields. Reference and failure connections have matching text labels.
+
+The output uses native Canvas rectangles, edge routing, and styling. Circle and cross markers on Flowchart links become plain ends. Invisible links guide placement. Mermaid-specific styling, interactive links, and media stay in the diagram preview. Loop labels can overlap a card under native routing. Each export supports up to 300 nodes and groups combined and 1,000 connections. [JSON Canvas 1.0](https://jsoncanvas.org/spec/1.0/)
 
 ## Errors
 

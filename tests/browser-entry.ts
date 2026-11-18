@@ -10,6 +10,7 @@ export { createPng } from '../src/export/png';
 export { render } from 'pele';
 
 export const saved = new Map<string, string | ArrayBuffer>();
+export const opened = [] as string[];
 export const app = { plugins: { manifests: {}, plugins: {} }, vault: {
 	configDir: '.fixture-config',
 	adapter: { read: (path: string) => {
@@ -18,17 +19,25 @@ export const app = { plugins: { manifests: {}, plugins: {} }, vault: {
 	} },
 	getAllFolders: () => [new TFolder('attachments'), new TFolder('notes'), new TFolder('notes/nested')],
 	getAbstractFileByPath: (path: string) => ['attachments', 'notes', 'notes/nested'].includes(path) ? new TFolder(path) : saved.has(path) ? {} : null,
+	getFileByPath: (path: string) => saved.has(path) ? { path } : null,
 	create: (path: string, data: string) => { saved.set(path, data); return Promise.resolve(); },
 	createBinary: (path: string, data: ArrayBuffer) => { saved.set(path, data); return Promise.resolve(); },
-}, workspace: { on: () => ({}) } } as unknown as App;
+}, workspace: {
+	on: () => ({}),
+	getLeaf: () => ({
+		openFile: (file: { path: string }) => { opened.push(file.path); return Promise.resolve(); },
+		getViewState: () => ({ type: 'canvas' }),
+	}),
+} } as unknown as App;
 
-export function diagram(source: string, data?: Partial<AdvancedMermaidSettings>, parent: HTMLElement = document.body): { child: AdvancedMermaidDiagram; host: HTMLElement; settings: AdvancedMermaidSettings } {
+export function diagram(source: string, data?: Partial<AdvancedMermaidSettings>, parent: HTMLElement = document.body,
+	sourcePath = 'Example.md'): { child: AdvancedMermaidDiagram; host: HTMLElement; settings: AdvancedMermaidSettings } {
 	// Create a detached element in its owning document, including pop-outs.
 	const host = document.createElement('div');
 	host.className = 'fixture-diagram';
 	parent.append(host);
 	const settings = normalizeSettings(data);
-	const child = new AdvancedMermaidDiagram(host, source, () => settings, () => {}, app, 'Example.md');
+	const child = new AdvancedMermaidDiagram(host, source, () => settings, () => {}, app, sourcePath);
 	child.load();
 	return { child, host, settings };
 }

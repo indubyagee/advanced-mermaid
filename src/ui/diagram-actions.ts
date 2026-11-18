@@ -1,6 +1,6 @@
-import type { App, Component, Modal } from 'obsidian';
+import type { App, Component, Modal, WorkspaceLeaf } from 'obsidian';
 import { createPng } from '../export/png';
-import { exportBasename, saveExport } from '../export/files';
+import { exportBasename, saveExport, type ExportExtension } from '../export/files';
 import type { SvgSnapshot } from '../export/svg';
 import { SaveExportModal, SvgSourceModal } from './export-modal';
 import { errorText } from './diagram-error';
@@ -8,17 +8,23 @@ import { errorText } from './diagram-error';
 export interface ExportRequest {
 	snapshot: () => Promise<SvgSnapshot>;
 	current: () => boolean;
+	canvasSource?: string;
 }
-type Action = 'copy-svg' | 'save-svg' | 'copy-png' | 'save-png';
+const labels = {
+	'copy-svg': 'Copy SVG', 'save-svg': 'Save SVG', 'copy-png': 'Copy PNG', 'save-png': 'Save PNG', 'save-canvas': 'Save canvas',
+};
+type Action = keyof typeof labels;
 let nextDiagram = 0;
 
 /** Export operations are initiated only by an explicit diagram action. */
 export class DiagramActions {
-	private readonly buttons: HTMLButtonElement[] = [];
+	private readonly buttons = new Map<Action, HTMLButtonElement>();
 	private readonly status: HTMLElement;
+	private readonly openCanvasButton: HTMLButtonElement;
 	private readonly basename: string;
 	private readonly abort = new AbortController();
 	private modal?: Modal;
+	private savedCanvasPath?: string;
 	private busy = false;
 	private valid = false;
 	private disposed = false;
@@ -33,7 +39,6 @@ export class DiagramActions {
 			owner.registerDomEvent(host, event, evt => evt.stopPropagation());
 		}
 		const options = menu.createDiv({ cls: 'advanced-mermaid-export-options' });
-		const labels: Record<Action, string> = { 'copy-svg': 'Copy SVG', 'save-svg': 'Save SVG', 'copy-png': 'Copy PNG', 'save-png': 'Save PNG' };
 		for (const action of Object.keys(labels) as Action[]) {
 			const button = options.createEl('button', { text: labels[action], attr: { type: 'button' } });
 			if (action === 'copy-svg') button.title = 'Copy SVG source text';
@@ -43,17 +48,72 @@ export class DiagramActions {
 				options.createEl('small', { text: 'PNG copy is unavailable here. Save the PNG instead.' });
 			}
 			owner.registerDomEvent(button, 'click', () => { void this.run(action); });
-			this.buttons.push(button);
+			this.buttons.set(action, button);
 		}
+		this.openCanvasButton = options.createEl('button', { text: 'Open canvas', attr: { type: 'button' } });
+		this.openCanvasButton.hidden = true;
+		owner.registerDomEvent(this.openCanvasButton, 'click', () => { void this.openSavedCanvas(); });
 		this.status = host.createEl('p', { cls: 'advanced-mermaid-export-status', attr: { role: 'status' } });
 		owner.register(() => { this.disposed = true; this.abort.abort(); this.modal?.close(); });
 	}
 
-	setValid(value: boolean): void {
+	setValid(value: boolean, supportsCanvas = false): void {
 		this.valid = value;
 		this.host.hidden = !value;
-		for (const button of this.buttons) button.disabled = !value || this.busy || button.dataset.unavailable === 'true';
-		this.status.textContent = '';
+		this.buttons.get('save-canvas')!.hidden = !supportsCanvas;
+		this.updateButtons();
+		if (!this.savedCanvasPath) this.status.textContent = '';
+	}
+
+	private updateButtons(): void {
+		for (const button of this.buttons.values()) {
+			button.disabled = !this.valid || this.busy || button.hidden || button.dataset.unavailable === 'true';
+		}
+	}
+
+	private async save(extension: ExportExtension, data: string | ArrayBuffer, request: ExportRequest): Promise<void> {
+		if (!request.current()) throw new Error('The diagram changed. Export it again.');
+		const folder = this.sourcePath.slice(0, Math.max(0, this.sourcePath.lastIndexOf('/')));
+		const description = extension === 'canvas'
+			? 'Canvas uses its own cards and lines. Circle and cross markers become plain ends.' : undefined;
+		const path = await new Promise<string | null>(resolve => {
+			this.modal = new SaveExportModal(this.app, this.basename + '.' + extension, folder,
+				(destination, open) => saveExport(this.app.vault, destination, this.basename, extension, data, () => open() && request.current()),
+				resolve, description);
+			this.modal.open();
+		});
+		this.modal = undefined;
+		if (this.disposed) return;
+		if (path) {
+			this.status.textContent = 'Saved ' + path;
+			if (extension === 'canvas') {
+				this.savedCanvasPath = path;
+				this.openCanvasButton.hidden = false;
+			}
+		} else if (request.current()) this.status.textContent = 'Export cancelled.';
+	}
+
+	private async openSavedCanvas(): Promise<void> {
+		const path = this.savedCanvasPath;
+		if (!path || this.disposed || this.openCanvasButton.disabled) return;
+		const file = this.app.vault.getFileByPath(path);
+		if (!file) {
+			this.status.textContent = 'Could not find ' + path + '. It may have been moved or renamed.';
+			return;
+		}
+		this.openCanvasButton.disabled = true;
+		let leaf: WorkspaceLeaf | undefined;
+		try {
+			leaf = this.app.workspace.getLeaf('tab');
+			await leaf.openFile(file, { active: true });
+			if (leaf.getViewState().type !== 'canvas') throw new Error('Canvas view unavailable.');
+			if (this.savedCanvasPath === path) this.status.textContent = 'Saved ' + path;
+		} catch {
+			if (leaf?.getViewState().type === 'empty') leaf.detach();
+			if (this.savedCanvasPath === path) this.status.textContent = 'Saved ' + path + '. Could not open it. Check Settings → Core plugins → Canvas.';
+		} finally {
+			this.openCanvasButton.disabled = false;
+		}
 	}
 
 	private canCopyPng(): boolean {
@@ -65,28 +125,30 @@ export class DiagramActions {
 	private async run(action: Action): Promise<void> {
 		if (this.busy || !this.valid || this.disposed) return;
 		this.busy = true;
-		this.setValid(this.valid);
+		this.savedCanvasPath = undefined;
+		this.openCanvasButton.hidden = true;
+		this.updateButtons();
 		this.status.textContent = 'Preparing export…';
 		let request: ExportRequest | undefined;
 		try {
 			request = this.capture();
 			const captured = request;
+			if (action === 'save-canvas') {
+				if (captured.canvasSource === undefined) throw new Error('Choose a Flowchart or Agentflow to save as a canvas.');
+				const { createCanvasExport } = await import('../export/canvas');
+				if (!captured.current()) throw new Error('The diagram changed. Export it again.');
+				await this.save('canvas', createCanvasExport(captured.canvasSource), captured);
+				return;
+			}
 			const view = this.host.ownerDocument.defaultView!;
 			const snapshot = request.snapshot();
 			// A platform may reject a clipboard request before consuming its data.
 			void snapshot.catch(() => {});
 			const png = (): Promise<Blob> => snapshot.then(value => createPng(value, this.host.ownerDocument, this.abort.signal));
-			if (action.startsWith('save-')) {
+			if (action === 'save-svg' || action === 'save-png') {
 				const extension = action === 'save-svg' ? 'svg' : 'png';
 				const data = extension === 'svg' ? (await snapshot).svg : await (await png()).arrayBuffer();
-				if (!request.current()) throw new Error('The diagram changed. Export it again.');
-				const path = await new Promise<string | null>(resolve => {
-					this.modal = new SaveExportModal(this.app, `${this.basename}.${extension}`,
-						this.sourcePath.slice(0, Math.max(0, this.sourcePath.lastIndexOf('/'))),
-						folder => saveExport(this.app.vault, folder, this.basename, extension, data, captured.current), resolve);
-					this.modal.open();
-				});
-				if (request.current()) this.status.textContent = path ? `Saved ${path}` : 'Export cancelled.';
+				await this.save(extension, data, captured);
 			} else if (action === 'copy-png') {
 				if (!this.canCopyPng()) throw new Error('PNG copy is unavailable here. Use Save PNG.');
 				// Promise-backed data starts the clipboard request during user activation.
@@ -123,9 +185,10 @@ export class DiagramActions {
 			}
 		} catch (error) {
 			if (!this.disposed && (!request || request.current())) this.status.textContent = `Export failed: ${errorText(error)}`;
+			else if (!this.disposed && action === 'save-canvas') this.status.textContent = 'The diagram changed. Export it again.';
 		} finally {
 			this.busy = false;
-			for (const button of this.buttons) button.disabled = !this.valid || button.dataset.unavailable === 'true';
+			this.updateButtons();
 		}
 	}
 }

@@ -30,12 +30,14 @@ export interface ExportVault {
 	createBinary(path: string, data: ArrayBuffer): Promise<unknown>;
 }
 
+export type ExportExtension = 'svg' | 'png' | 'canvas';
+
 /** Creation (never modification) protects existing files, including racing saves. */
 export async function saveExport(
 	vault: ExportVault,
 	folder: string,
 	basename: string,
-	extension: 'svg' | 'png',
+	extension: ExportExtension,
 	data: string | ArrayBuffer,
 	current: () => boolean
 ): Promise<string> {

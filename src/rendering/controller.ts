@@ -27,6 +27,7 @@ export class DiagramController extends Component {
 	private controls!: HTMLElement;
 	private actions!: DiagramActions;
 	private result?: RenderResult;
+	private renderedSource?: string;
 	private revision = 0;
 	private generation = 0;
 	private blocked = false;
@@ -76,6 +77,8 @@ export class DiagramController extends Component {
 		if (this.disposed || !this.host) return;
 		this.revision++;
 		const generation = ++this.generation;
+		this.renderedSource = undefined;
+		this.actions.setValid(false);
 		let lineOffset = 0;
 		try {
 			checkDiagramSource(this.source);
@@ -110,7 +113,7 @@ export class DiagramController extends Component {
 				}, images: false, responsive: false, autoDirection: false,
 				maxWidth: Number.MAX_SAFE_INTEGER,
 				fontSize: resolved.profile.labelSizePx ?? labelPixels(settings.theme.labelSize),
-				onRender: (result: RenderResult) => { if (generation === this.generation && !this.disposed) this.rendered(result); },
+				onRender: (result: RenderResult) => { if (generation === this.generation && !this.disposed) this.rendered(result, configured.source); },
 				onError: (error: unknown) => { if (generation === this.generation && !this.disposed) this.failed(originalSourceError(error, lineOffset)); },
 			};
 			if (this.diagram) this.diagram.update(configured.source, options);
@@ -121,9 +124,10 @@ export class DiagramController extends Component {
 
 	refreshTheme(): void { this.updateSettings(); }
 
-	private rendered(result: RenderResult): void {
+	private rendered(result: RenderResult, source: string): void {
 		this.revision++;
 		this.result = result;
+		this.renderedSource = source;
 		this.containerEl.dataset.category = isDiagramCategory(result.type) ? result.type : 'other';
 		this.containerEl.dataset.mermaidType = result.mermaidType;
 		const svg = this.host.querySelector<SVGSVGElement>('svg.pele');
@@ -133,7 +137,7 @@ export class DiagramController extends Component {
 		if (this.display) this.layout.update(result, this.display);
 		this.feedback.replaceChildren();
 		this.feedback.hidden = true;
-		this.actions.setValid(!this.configurationError && !this.blocked);
+		this.actions.setValid(!this.configurationError && !this.blocked, result.type === 'flowchart' || result.type === 'agentflow');
 		if (this.configurationError) {
 			showDiagramError(this.feedback, this.configurationError, this.source, text => this.copyText(text), this);
 			this.feedback.createEl('p', { text: 'Preview uses global/type fallback styles. Fix the local styles before exporting.' });
@@ -144,6 +148,7 @@ export class DiagramController extends Component {
 
 	private failed(error: unknown): void {
 		this.revision++;
+		this.renderedSource = undefined;
 		if (this.options.keepLastValid && this.result) {
 			const doc = this.containerEl.ownerDocument;
 			const parsed = new doc.defaultView!.DOMParser().parseFromString(this.result.svg, 'image/svg+xml');
@@ -161,10 +166,14 @@ export class DiagramController extends Component {
 
 	private captureExport(): ExportRequest {
 		const result = this.result;
+		const source = this.renderedSource;
 		const revision = this.revision;
-		if (!result || this.disposed || this.blocked || this.configurationError || this.containerEl.classList.contains('advanced-mermaid-stale')) throw new Error('Render the diagram successfully before exporting it.');
+		if (!result || source === undefined || this.disposed || this.blocked || this.configurationError || this.containerEl.classList.contains('advanced-mermaid-stale')) throw new Error('Render the diagram successfully before exporting it.');
 		const current = (): boolean => !this.disposed && this.revision === revision;
-		return { current, snapshot: () => createSvgSnapshot(result, this.containerEl, current) };
+		return {
+			current, snapshot: () => createSvgSnapshot(result, this.containerEl, current),
+			canvasSource: result.type === 'flowchart' || result.type === 'agentflow' ? source : undefined,
+		};
 	}
 
 	private async copyText(text: string): Promise<void> {
@@ -180,6 +189,7 @@ export class DiagramController extends Component {
 		this.diagram?.destroy();
 		this.diagram = undefined;
 		this.result = undefined;
+		this.renderedSource = undefined;
 		this.containerEl.replaceChildren();
 
 	}

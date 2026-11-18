@@ -76,7 +76,7 @@ export async function runEditorStyleChecks(page) {
 					dropdowns: Object.fromEntries(dropdowns.map(select => [select.getAttribute('aria-label'), paint(select)])),
 					active: paint(editor.querySelector('button[aria-selected="true"]')), inactive: paint(editor.querySelector('.advanced-mermaid-draft-actions button')),
 					export: paint(editor.querySelector('.advanced-mermaid-export summary')),
-					exportActions: Object.fromEntries([...editor.querySelectorAll('.advanced-mermaid-export button')].map(button => [button.textContent, paint(button)])),
+					exportActions: Object.fromEntries([...editor.querySelectorAll('.advanced-mermaid-export button:not([hidden])')].map(button => [button.textContent, paint(button)])),
 					mode: paint(host.querySelector('.advanced-mermaid-editor-mode button[aria-pressed="true"]')),
 					inactiveMode: paint(host.querySelector('.advanced-mermaid-editor-mode button[aria-pressed="false"]')),
 					statusSize: getComputedStyle(editor.querySelector('.advanced-mermaid-editor-status')).fontSize,
@@ -117,7 +117,7 @@ export async function runEditorStyleChecks(page) {
 			assert.deepEqual(Object.keys(result.dropdowns), ['Diagram type', 'Insert diagram component', 'Insert local override', 'Local style theme']);
 			for (const [label, paint] of Object.entries(result.dropdowns)) assert.deepEqual(paint, result.inactive, label);
 			assert.deepEqual(result.mode, result.active); assert.deepEqual(result.inactiveMode, result.inactive);
-			assert.deepEqual(Object.keys(result.exportActions), ['Copy SVG', 'Save SVG', 'Copy PNG', 'Save PNG']);
+			assert.deepEqual(Object.keys(result.exportActions), ['Copy SVG', 'Save SVG', 'Copy PNG', 'Save PNG', 'Save canvas']);
 			for (const [label, paint] of Object.entries(result.exportActions)) assert.deepEqual(paint, result.export, label);
 			assert.equal(result.statusSize, '12px'); assert.equal(result.detailsSize, '12px');
 		}

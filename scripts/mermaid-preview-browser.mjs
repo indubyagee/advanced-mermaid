@@ -119,14 +119,14 @@ export async function runMermaidPreviewChecks(page) {
 		await checkMinimalWidths(page);
 		const exportMenus = page.locator('.advanced-mermaid-rendered-preview .advanced-mermaid-export, .reading-export-fixture .advanced-mermaid-export');
 		const assertExportStyles = async (text, background, border) => {
-			const menus = await exportMenus.evaluateAll(menus => menus.map(menu => [...menu.querySelectorAll('summary, button')].map(control => {
+			const menus = await exportMenus.evaluateAll(menus => menus.map(menu => [...menu.querySelectorAll('summary, button:not([hidden])')].map(control => {
 				const css = getComputedStyle(control);
 				return { label: control.textContent, text: css.color, background: css.backgroundColor, border: css.borderTopColor,
 					radius: css.borderTopLeftRadius, size: css.fontSize, flat: css.boxShadow === 'none' && css.backgroundImage === 'none' };
 			})));
 			assert.equal(menus.length, 3);
 			for (const menu of menus) {
-				assert.deepEqual(menu.map(control => control.label), ['Export', 'Copy SVG', 'Save SVG', 'Copy PNG', 'Save PNG']);
+				assert.deepEqual(menu.map(control => control.label), ['Export', 'Copy SVG', 'Save SVG', 'Copy PNG', 'Save PNG', 'Save canvas']);
 				for (const { label, ...style } of menu) {
 					assert.deepEqual(style, { text, background, border, radius: '14px', size: '17px', flat: true }, label);
 				}

@@ -16,6 +16,7 @@ import { runMermaidPreviewChecks } from './mermaid-preview-browser.mjs';
 import { runZoomStyleChecks } from './zoom-style-browser.mjs';
 import { runFrontmatterChecks } from './frontmatter-browser.mjs';
 import { runSyntaxChecks } from './syntax-browser.mjs';
+import { runCanvasChecks } from './canvas-browser.mjs';
 
 const bundle = await build({ entryPoints: ['tests/browser-entry.ts'], bundle: true, write: false, format: 'iife', globalName: 'fixture', alias: { obsidian: resolve('tests/obsidian.ts') } });
 const css = await readFile('styles.css', 'utf8');
@@ -33,6 +34,7 @@ try {
 	await runMermaidPreviewChecks(page);
 	await runSyntaxChecks(page);
 	await runFrontmatterChecks(page);
+	await runCanvasChecks(page);
 	const sourceBudget = await page.evaluate(() => {
 		const item = fixture.diagram('---\n' + ' '.repeat(60_000) + '\n---\nflowchart LR\n A-->B');
 		const result = { diagnostic: item.host.textContent.includes('Diagram source exceeds 50,000 characters.'), rendered: !!item.host.querySelector('svg'), actionsHidden: item.host.querySelector('.advanced-mermaid-actions')?.hidden };
