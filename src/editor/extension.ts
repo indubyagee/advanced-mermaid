@@ -1,20 +1,33 @@
-import { Prec, StateEffect, StateField, type Extension, type EditorState } from '@codemirror/state';
+import { Prec, StateEffect, StateField, type Extension, type EditorState, type Transaction } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet } from '@codemirror/view';
 import { editorInfoField, editorLivePreviewField, type App, type Editor } from 'obsidian';
 import { createDetachedEl } from '../dom';
 import type { AdvancedMermaidSettings } from '../settings';
-import { fenceAt, diagramFences, type FenceRange } from './fences';
+import { diagramFences, fenceAt, fenceContaining, fencesBetween, type FenceRange } from './fences';
+import { updateFenceDecorations, type ActiveFence, type FencePresentation } from './fence-decorations';
 import { sourceBridge } from './source-bridge';
 import { LiveEditor } from './live-editor';
 import { setInlineOwner } from './ownership';
 import { applyEditorStyle } from '../styles/editor-style';
 import { createRenderedPreviews } from './rendered-preview';
 
-interface Active { range: FenceRange; id: number }
+interface DecorationContext extends FencePresentation { enabled: boolean; file: string; styleKey: string }
+interface DecoratedFences extends DecorationContext { decorations: DecorationSet }
 const open = StateEffect.define<number | null>();
 const refresh = StateEffect.define<null>();
 const modeChoice = StateEffect.define<{ from: number; static: boolean }>();
 let identity = 0;
+
+// A whole-block replacement ends the active session even if its text is identical.
+function mapFence(range: FenceRange, transaction: Transaction): FenceRange | null | undefined {
+	const { changes } = transaction;
+	let removed = false;
+	changes.iterChangedRanges((from, to) => { if (from <= range.from && to >= range.to) removed = true; });
+	if (removed) return null;
+	const from = changes.mapPos(range.from, 1);
+	const mapped = fenceContaining(diagramFences(transaction.state), from);
+	return mapped?.from === from && mapped.to === changes.mapPos(range.to, -1) ? mapped : undefined;
+}
 
 export interface InlineExtension {
 	extension: Extension; toggle(checking?: boolean, editor?: Editor): boolean; render(checking?: boolean, editor?: Editor): boolean;
@@ -27,21 +40,22 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 	const staticBlocks = StateField.define<readonly FenceRange[]>({
 		create: () => [],
 		update(previous, transaction) {
-			const fences = transaction.docChanged ? diagramFences(transaction.state) : undefined;
 			let ranges = transaction.docChanged ? previous.flatMap(range => {
-				let removed = false; transaction.changes.iterChangedRanges((from, to) => { if (from <= range.from && to >= range.to) removed = true; });
-				const mapped = fences!.find(block => block.from === transaction.changes.mapPos(range.from, 1) && block.to === transaction.changes.mapPos(range.to, -1));
-				return !removed && mapped ? [mapped] : [];
-			}) : [...previous];
+				const mapped = mapFence(range, transaction);
+				return mapped ? [mapped] : [];
+			}) : previous;
 			for (const effect of transaction.effects) if (effect.is(modeChoice)) {
 				ranges = ranges.filter(range => range.from !== effect.value.from);
-				const range = fenceAt(transaction.state, effect.value.from); if (effect.value.static && range) ranges.push(range);
+				if (effect.value.static) {
+					const range = fenceAt(transaction.state, effect.value.from);
+					if (range) ranges = [...ranges, range];
+				}
 			}
 			return ranges;
 		},
 	});
 	const isStatic = (state: EditorState, from: number): boolean => state.field(staticBlocks).some(range => range.from === from);
-	const state = StateField.define<Active | null>({
+	const state = StateField.define<ActiveFence | null>({
 		create: () => null,
 		update(active, transaction) {
 			if (!settings().liveEditor.enabled || !transaction.state.field(editorLivePreviewField, false)) return null;
@@ -51,14 +65,9 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 				return range ? { range, id: ++identity } : null;
 			}
 			if (active && transaction.docChanged) {
-				let removed = false;
-				const previous = active.range;
-				transaction.changes.iterChangedRanges((from, to) => { if (from <= previous.from && to >= previous.to) removed = true; });
-				if (removed) return null;
-				const from = transaction.changes.mapPos(active.range.from, 1);
-				const range = diagramFences(transaction.state).find(block => block.from === from);
-				const expectedClosing = transaction.changes.mapPos(previous.to, -1);
-				active = range && range.to === expectedClosing ? { ...active, range } : null;
+				const range = mapFence(active.range, transaction);
+				if (range === null) return null;
+				active = range ? { id: active.id, range } : null;
 			}
 			if (active && transaction.selection) {
 				const range = active.range;
@@ -91,8 +100,7 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 	};
 	const requestClose = (view: EditorView): void => { const active = view.state.field(state); if (active) chooseMode(view, active.range.from, 'rendered'); };
 	class ModeWidget extends WidgetType {
-		private readonly styleKey = JSON.stringify(settings().liveEditor.style);
-		constructor(readonly mode: 'static' | 'live' | 'rendered') { super(); }
+		constructor(readonly mode: 'static' | 'live' | 'rendered', private readonly styleKey: string) { super(); }
 		eq(other: ModeWidget): boolean { return other.mode === this.mode && other.styleKey === this.styleKey; }
 		toDOM(view: EditorView): HTMLElement {
 			const bar = createDetachedEl(view.dom.ownerDocument, 'div', {
@@ -127,23 +135,55 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 			for (const [view, editor] of editors) if (editor.element === dom) { editor.destroy(); editors.delete(view); setInlineOwner(view.dom); }
 		}
 	}
-	const decorate = (current: EditorState): DecorationSet => {
-		if (!current.field(editorLivePreviewField, false)) return Decoration.none;
+	const decorationContext = (current: EditorState): DecorationContext | null => {
+		if (!current.field(editorLivePreviewField, false)) return null;
 		const active = current.field(state);
 		const fences = diagramFences(current);
-		const ranges = settings().liveEditor.enabled ? fences.map(range => Decoration.widget({ block: true, side: -1, widget: new ModeWidget(active?.range.from === range.from ? 'live' : current.selection.ranges.some(selection => selection.from <= range.to && selection.to >= range.from) ? 'static' : 'rendered') }).range(range.from)) : [];
-		for (const range of fences) {
-			if (range.language !== 'mermaid' || active?.range.from === range.from || current.selection.ranges.some(selection => selection.from <= range.to && selection.to >= range.from)) continue;
-			const widget = previews.widget(current.sliceDoc(range.bodyFrom, range.bodyTo), current.field(editorInfoField, false)?.file?.path ?? '');
-			ranges.push(Decoration.replace({ block: true, widget }).range(range.from, range.to));
+		const selected = new Set<FenceRange>();
+		for (const { from, to } of current.selection.ranges) {
+			for (const fence of fencesBetween(fences, from, to)) selected.add(fence);
 		}
-		if (active) ranges.push(Decoration.replace({ block: true, widget: new InlineWidget(active.id) }).range(active.range.from, active.range.to));
-		return Decoration.set(ranges, true);
+		const { enabled, style } = settings().liveEditor;
+		return { fences, selected, active, enabled, styleKey: enabled ? JSON.stringify(style) : '',
+			file: current.field(editorInfoField, false)?.file?.path ?? '' };
 	};
-	const decorations = StateField.define<DecorationSet>({
-		create: decorate,
-		update: (_old, transaction) => decorate(transaction.state),
-		provide: field => Prec.highest(EditorView.decorations.from(field)),
+	const decorateFence = (current: EditorState, context: DecorationContext, fence: FenceRange) => {
+		const { active, selected, enabled, styleKey, file } = context;
+		const isActive = active?.range.from === fence.from;
+		const isSelected = selected.has(fence);
+		const ranges = [];
+		if (enabled) {
+			const mode = isActive ? 'live' : isSelected ? 'static' : 'rendered';
+			const widget = new ModeWidget(mode, styleKey);
+			ranges.push(Decoration.widget({ block: true, side: -1, widget }).range(fence.from));
+		}
+		if (isActive) {
+			ranges.push(Decoration.replace({ block: true, widget: new InlineWidget(active.id) }).range(fence.from, fence.to));
+		} else if (fence.language === 'mermaid' && !isSelected) {
+			const widget = previews.widget(current.sliceDoc(fence.bodyFrom, fence.bodyTo), file);
+			ranges.push(Decoration.replace({ block: true, widget }).range(fence.from, fence.to));
+		}
+		return ranges;
+	};
+	const decorateAll = (current: EditorState, context: DecorationContext): DecoratedFences => ({
+		...context, decorations: Decoration.set(context.fences.flatMap(fence => decorateFence(current, context, fence)), true),
+	});
+	const decorations = StateField.define<DecoratedFences | null>({
+		create(current) {
+			const context = decorationContext(current);
+			return context && decorateAll(current, context);
+		},
+		update(previous, transaction) {
+			const current = transaction.state;
+			const context = decorationContext(current);
+			if (!context) return null;
+			if (!previous || previous.enabled !== context.enabled || previous.styleKey !== context.styleKey || previous.file !== context.file) {
+				return decorateAll(current, context);
+			}
+			const updated = updateFenceDecorations(previous, context, transaction.changes, fence => decorateFence(current, context, fence));
+			return { ...context, decorations: updated };
+		},
+		provide: field => Prec.highest(EditorView.decorations.from(field, value => value?.decorations ?? Decoration.none)),
 	});
 	const lifecycle = ViewPlugin.define(view => {
 		views.add(view);

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { normalizeSettings, SETTINGS_SCHEMA_VERSION } from '../src/settings';
 import { decodeLocalStyle, encodeLocalStyle, parseStyleCss, LocalStyleError, frontmatterEnd } from '../src/styles/local-codec';
 import { checkDiagramSource, MAX_DIAGRAM_SOURCE_LENGTH } from '../src/rendering/source-budget';
-import { Language, defineLanguageFacet } from '@codemirror/language';
+import { Language, StreamLanguage, defineLanguageFacet } from '@codemirror/language';
 import { EditorState } from '@codemirror/state';
 import { parser } from '@lezer/markdown';
 import { diagramFences } from '../src/editor/fences';
@@ -96,4 +96,31 @@ void test('both fence languages retain their delimiters and exclude nested or in
 	for (const range of ranges) assert.equal(state.sliceDoc(range.bodyFrom, range.bodyTo), 'flowchart LR\n A-->B');
 	assert.ok(state.sliceDoc(ranges[0]!.from, ranges[0]!.to).startsWith('```mermaid'));
 	assert.ok(state.sliceDoc(ranges[1]!.from, ranges[1]!.to).startsWith('~~~pele'));
+});
+
+void test('flat HyperMD-style markers pair within one block and reject mismatched closes', () => {
+	const language = StreamLanguage.define({
+		token(stream) {
+			const line = stream.string;
+			stream.skipToEnd();
+			if (/^ {0,3}(?:`{3,}|~{3,})\s*\w/.test(line)) return 'hmd-codeblock-begin keyword';
+			if (/^ {0,3}(?:`{3,}|~{3,})\s*$/.test(line)) return 'hmd-codeblock-end meta';
+			return null;
+		},
+		tokenTable: { 'hmd-codeblock-begin': [], 'hmd-codeblock-end': [] },
+	});
+	const doc = [
+		'  ~~~mermaid', 'flowchart LR', ' A --> B', '  ~~~~',
+		'```pele', '```',
+		'~~~~pele', 'Too short', '~~~',
+		'~~~mermaid', 'Wrong marker', '```',
+		'~~~mermaid', 'Missing close', '~~~text', '~~~',
+		'~~~pele', 'Still open',
+	].join('\n');
+	const state = EditorState.create({ doc, extensions: [language] });
+	const fences = diagramFences(state);
+	assert.strictEqual(diagramFences(state.update({ selection: { anchor: 1 } }).state), fences);
+	assert.deepEqual(fences.map(fence => ({
+		language: fence.language, empty: fence.empty, body: state.sliceDoc(fence.bodyFrom, fence.bodyTo),
+	})), [{ language: 'mermaid', empty: false, body: 'flowchart LR\n A --> B' }, { language: 'pele', empty: true, body: '' }]);
 });

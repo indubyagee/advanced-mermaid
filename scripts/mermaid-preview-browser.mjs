@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 
 /** Live Preview's native Mermaid widget bypasses Markdown code block processors. */
 export async function runMermaidPreviewChecks(page) {
+	await checkFenceIndex(page);
 	const theme = await page.addStyleTag({ content: `
 		.mermaid-preview-fixture > .cm-editor > .cm-scroller > .cm-content > div {
 			width: 400px; max-width: 90%; margin-inline: auto !important;
@@ -154,6 +155,75 @@ export async function runMermaidPreviewChecks(page) {
 		});
 		await theme.evaluate(style => style.remove());
 	}
+}
+
+async function checkFenceIndex(page) {
+	const result = await page.evaluate(() => {
+		const settings = fixture.normalizeSettings(null);
+		const inline = fixture.createInlineExtension(fixture.app, () => settings);
+		const language = new fixture.Language(fixture.defineLanguageFacet(), fixture.markdownParser);
+		const create = doc => fixture.EditorState.create({ doc, extensions: [language, fixture.editorInfoField, fixture.editorLivePreviewField, inline.extension] });
+		const decorations = state => state.facet(fixture.EditorView.decorations).find(set => typeof set !== 'function');
+		const fence = '~~~';
+		const note = 'Introduction\n\n' + Array.from({ length: 100 }, (_, i) =>
+			`## Section ${i}\n\nA **description** with [link](./note.md).\n\n${fence}mermaid\nflowchart LR\n A --> B\n${fence}\n\n`
+		).join('');
+		let state = create(note);
+		if (!fixture.ensureSyntaxTree(state, note.length, 1000)) throw new Error('Full fence fixture parse unavailable');
+		state = state.update({}).state;
+		const tree = fixture.syntaxTree(state);
+		const blocks = fixture.diagramFences(state);
+		if (tree.length !== note.length || blocks.length !== 100 || decorations(state).size !== 200) throw new Error('Incomplete fence fixture');
+		const prototype = Object.getPrototypeOf(tree);
+		const iterate = prototype.iterate;
+		let traversals = 0;
+		let visits = 0;
+		prototype.iterate = function (spec) {
+			traversals++;
+			return iterate.call(this, { ...spec, enter(node) { visits++; return spec.enter(node); } });
+		};
+		let moved;
+		settings.liveEditor.activation = 'focused-block';
+		try { moved = state.update({ selection: { anchor: 1 } }).state; }
+		finally {
+			settings.liveEditor.activation = 'manual';
+			prototype.iterate = iterate;
+		}
+		const valuesAt = (state, range) => {
+			const values = [];
+			decorations(state).between(range.from, range.to, (from, _to, value) => { if (from === range.from) values.push(value); });
+			return values;
+		};
+		const originalValues = valuesAt(state, blocks[1]);
+		const sameValues = (state, range) => {
+			const values = valuesAt(state, range);
+			return values.length === 2 && values.every((value, i) => value === originalValues[i]);
+		};
+		const selected = moved.update({ selection: { anchor: blocks[0].bodyFrom } }).state;
+		const shifted = selected.update({ changes: { from: 0, insert: 'Prefix\n\n' } }).state;
+		const [shiftedFirst, shiftedSecond] = fixture.diagramFences(shifted);
+		const deleted = shifted.update({ changes: { from: shiftedFirst.from, to: shiftedFirst.to } }).state;
+		const partialSource = `Before\n\n${fence}mermaid\nflowchart LR\n A --> B\n${fence}\n\n` +
+			'Paragraph before the later diagram.\n\n'.repeat(280) + `${fence}pele\nflowchart LR\n Tail --> End\n${fence}`;
+		const partial = create(partialSource);
+		const later = partialSource.indexOf('Tail');
+		const beforeParse = fixture.syntaxTree(partial);
+		const duringLookup = fixture.fenceAt(partial, later);
+		const advanced = partial.update({}).state;
+		inline.destroy();
+		return {
+			traversals, visits, stableDecorations: decorations(moved) === decorations(state),
+			selectionIsLocal: decorations(selected).size === 199 && sameValues(selected, blocks[1]),
+			prefixMapped: sameValues(shifted, shiftedSecond),
+			deletionMapped: fixture.diagramFences(deleted).length === 99 && sameValues(deleted, fixture.diagramFences(deleted)[0]),
+			partial: beforeParse.length < later && decorations(partial).size === 2,
+			lookupExtended: duringLookup?.language === 'pele' && fixture.syntaxTree(partial) === beforeParse,
+			newTreeDecorated: partial.doc === advanced.doc && decorations(advanced).size === 3,
+		};
+	});
+	console.log('Fence index measurements:', JSON.stringify(result));
+	assert.deepEqual(result, { traversals: 0, visits: 0, stableDecorations: true, selectionIsLocal: true, prefixMapped: true,
+		deletionMapped: true, partial: true, lookupExtended: true, newTreeDecorated: true });
 }
 
 async function checkMinimalWidths(page) {

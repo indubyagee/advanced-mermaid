@@ -5,6 +5,7 @@
 ### Changed
 
 - Reuse rendered diagrams when alignment, sizing, or colors change.
+- Reduce diagram scanning during typing and cursor movement in Live Preview.
 
 ## 0.3.2 — 2026-11-18
 
