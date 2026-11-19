@@ -1,6 +1,7 @@
 import { Notice, Plugin, type MarkdownPostProcessorContext } from 'obsidian';
 import { normalizeSettings, isFutureSettingsSchema, type AdvancedMermaidSettings } from './settings';
 import { AdvancedMermaidDiagram } from './rendering/diagram';
+import { scheduleDiagramEnvironmentRefresh } from './rendering/environment';
 import { AdvancedMermaidSettingTab } from './ui/settings-tab';
 import { createInlineExtension, type InlineExtension } from './editor/extension';
 import { RecoveryModal } from './ui/recovery-modal';
@@ -46,8 +47,8 @@ export default class AdvancedMermaidPlugin extends Plugin {
 		this.registerMarkdownCodeBlockProcessor('mermaid', renderDiagram, -1);
 		this.register(observeOwnership(() => { for (const [child, block] of this.blocks) this.syncOwnership(child, block); }));
 		this.registerEvent(this.app.workspace.on('css-change', () => {
-			for (const child of this.diagrams) child.refreshTheme();
-			this.inline?.refresh();
+			scheduleDiagramEnvironmentRefresh();
+			this.inline?.remeasure();
 		}));
 		this.register(() => {
 			window.clearTimeout(this.refreshTimer);

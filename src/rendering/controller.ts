@@ -1,9 +1,8 @@
+import { Component, type App } from 'obsidian';
+import { mount, type MountOptions, type Mounted, type RenderResult, type ZoomOptions } from 'pele';
+import { labelPixels, type AdvancedMermaidSettings } from '../settings';
 import { decodeLocalStyle } from '../styles/local-codec';
 import { resolveDiagramStyle } from '../styles/resolve';
-export interface ControllerOptions { boundary?: HTMLElement; keepLastValid?: boolean; changed?: (valid: boolean, error?: unknown) => void }
-import { Component, type App } from 'obsidian';
-import { mount, type Mounted, type RenderResult } from 'pele';
-import { labelPixels, type AdvancedMermaidSettings } from '../settings';
 import { resolveDisplay, type ResolvedDisplaySettings } from './overrides';
 import { applyStyle, activeTheme } from '../styles/apply';
 import { showDiagramError } from '../ui/diagram-error';
@@ -18,6 +17,15 @@ import { applyExportButtonStyle } from '../styles/editor-style';
 import { checkDiagramSource } from './source-budget';
 import { originalSourceError, resolveFrontmatter } from '../styles/frontmatter';
 import { createZoomControls, zoomLimit } from '../ui/zoom-controls';
+import { hasPendingDiagramEnvironmentRefresh, observeDiagramEnvironment } from './environment';
+
+export interface ControllerOptions { boundary?: HTMLElement; keepLastValid?: boolean; changed?: (valid: boolean, error?: unknown) => void }
+
+interface RenderRequest {
+	readonly source: string;
+	readonly fontSize: number | undefined;
+	lineOffset: number;
+}
 
 /** Own the wrapper; Pele exclusively owns the inner mount host. */
 export class DiagramController extends Component {
@@ -28,11 +36,12 @@ export class DiagramController extends Component {
 	private controls!: HTMLElement;
 	private actions!: DiagramActions;
 	private syncZoom!: () => void;
+	private zoomOptions!: ZoomOptions;
+	private request?: RenderRequest;
 	private result?: RenderResult;
 	private renderedSource?: string;
 	private revision = 0;
 	private canvasRevision = 0;
-	private generation = 0;
 	private blocked = false;
 	private disposed = false;
 	private layout!: DiagramLayout;
@@ -51,12 +60,11 @@ export class DiagramController extends Component {
 		this.updateSettings();
 	}
 	settingsChanged(): void { this.updateSettings(); }
-	environmentChanged(): void { this.updateSettings(); }
 	invalidate(): void {
 		this.blocked = true;
 		this.revision++;
 		this.canvasRevision++;
-		this.generation++;
+		this.request = undefined;
 		this.actions?.setValid(false);
 	}
 	async snapshot(): Promise<SvgSnapshot> { return this.captureExport().snapshot(); }
@@ -70,6 +78,8 @@ export class DiagramController extends Component {
 		const viewport = layout.createDiv({ cls: 'advanced-mermaid-viewport' });
 		const frameEl = viewport.createDiv({ cls: 'advanced-mermaid-frame' });
 		this.host = frameEl.createDiv({ cls: 'advanced-mermaid-mount' });
+		const host = this.host;
+		this.zoomOptions = { always: true, controls: false, get maxScale() { return zoomLimit(host); } };
 		this.syncZoom = createZoomControls(frameEl, this.host, this,
 			() => this.renderedSource === undefined ? undefined : this.diagram?.zoom);
 		this.controls = layout.createDiv({ cls: 'advanced-mermaid-actions' });
@@ -80,22 +90,13 @@ export class DiagramController extends Component {
 			this.syncZoom();
 		}, this.app, this.options.boundary);
 		this.actions = new DiagramActions(this.app, this, this.controls, this.sourcePath, () => this.captureExport());
-		const view = this.containerEl.ownerDocument.defaultView!;
-		let frame: number | undefined;
-		const observer = new view.MutationObserver(() => {
-			if (frame !== undefined) return;
-			frame = view.requestAnimationFrame(() => { frame = undefined; this.environmentChanged(); });
-		}); observer.observe(this.containerEl.ownerDocument.body, { attributes: true, attributeFilter: ['class'] });
-		this.register(() => { observer.disconnect(); if (frame !== undefined) view.cancelAnimationFrame(frame); });
+		this.register(observeDiagramEnvironment(this.containerEl, () => this.updateSettings()));
 		this.updateSettings();
 	}
 
 	updateSettings(): void {
 		if (this.disposed || !this.host) return;
 		this.revision++;
-		const generation = ++this.generation;
-		this.renderedSource = undefined;
-		this.actions.setValid(false);
 		let lineOffset = 0;
 		try {
 			checkDiagramSource(this.source);
@@ -117,31 +118,45 @@ export class DiagramController extends Component {
 			this.containerEl.dataset.category = resolved.category ?? 'other';
 			this.containerEl.dataset.align = settings.alignment;
 			this.host.hidden = false;
-			const host = this.host;
-			const options = {
-				// The plugin fits the intrinsic SVG. Do not let the mount host's
-				// already-scaled width feed back into Pele's layout or direction.
-				zoom: { always: true, controls: false,
-					get maxScale() { return zoomLimit(host); },
-				}, images: false, responsive: false, autoDirection: false,
-				maxWidth: Number.MAX_SAFE_INTEGER,
-				fontSize: resolved.profile.labelSizePx ?? labelPixels(settings.theme.labelSize),
-				onRender: (result: RenderResult) => { if (generation === this.generation && !this.disposed) this.rendered(result, configured.source); },
-				onError: (error: unknown) => { if (generation === this.generation && !this.disposed) this.failed(originalSourceError(error, lineOffset)); },
-			};
-			if (this.diagram) this.diagram.update(configured.source, options);
-			else this.diagram = mount(this.host, configured.source, options);
-			this.diagram.refresh();
+			const fontSize = resolved.profile.labelSizePx ?? labelPixels(settings.theme.labelSize);
+			const { request, result } = this;
+			if (this.diagram && result && request && this.renderedSource === configured.source && request.fontSize === fontSize) {
+				request.lineOffset = lineOffset;
+				// Pele refreshes geometry when the computed font changes, including inherited fonts.
+				this.diagram.refresh();
+				if (this.request === request && this.result === result) this.present(result);
+			} else {
+				this.render({ ...configured, fontSize });
+			}
 			this.syncZoom();
 		} catch (error) { this.failed(originalSourceError(error, lineOffset)); }
 	}
 
-	refreshTheme(): void { this.updateSettings(); }
+	private render(request: RenderRequest): void {
+		this.request = request;
+		this.renderedSource = undefined;
+		this.actions.setValid(false);
+		const options: MountOptions = {
+			// The plugin fits the intrinsic SVG. Keep Pele independent of the fitted width.
+			zoom: this.zoomOptions, images: false, responsive: false, autoDirection: false,
+			maxWidth: Number.MAX_SAFE_INTEGER,
+			fontSize: request.fontSize,
+			onRender: result => { if (this.request === request) this.rendered(result, request.source); },
+			onError: error => { if (this.request === request) this.failed(originalSourceError(error, request.lineOffset)); },
+		};
+		if (this.diagram) this.diagram.update(request.source, options);
+		else this.diagram = mount(this.host, request.source, options);
+		this.diagram.refresh();
+	}
 
 	private rendered(result: RenderResult, source: string): void {
 		this.revision++;
 		this.result = result;
 		this.renderedSource = source;
+		this.present(result);
+	}
+
+	private present(result: RenderResult): void {
 		this.containerEl.dataset.category = isDiagramCategory(result.type) ? result.type : 'other';
 		this.containerEl.dataset.mermaidType = result.mermaidType;
 		const svg = this.host.querySelector<SVGSVGElement>('svg.pele');
@@ -161,6 +176,7 @@ export class DiagramController extends Component {
 	}
 
 	private failed(error: unknown): void {
+		this.request = undefined;
 		this.revision++;
 		this.canvasRevision++;
 		this.renderedSource = undefined;
@@ -186,7 +202,8 @@ export class DiagramController extends Component {
 		const revision = this.revision;
 		const canvasRevision = this.canvasRevision;
 		if (!result || source === undefined || this.disposed || this.blocked || this.configurationError || this.containerEl.classList.contains('advanced-mermaid-stale')) throw new Error('Render the diagram successfully before exporting it.');
-		const current = (): boolean => !this.disposed && this.revision === revision;
+		const current = (): boolean => !this.disposed && this.revision === revision &&
+			!hasPendingDiagramEnvironmentRefresh(this.containerEl.ownerDocument);
 		return {
 			current, snapshot: () => createSvgSnapshot(result, this.containerEl, current),
 			canvas: result.type === 'flowchart' || result.type === 'agentflow'
@@ -203,7 +220,7 @@ export class DiagramController extends Component {
 
 	onunload(): void {
 		this.disposed = true;
-		this.generation++;
+		this.request = undefined;
 		this.revision++;
 		this.canvasRevision++;
 		this.diagram?.destroy();

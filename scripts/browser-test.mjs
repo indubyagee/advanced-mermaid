@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
-import { runPostTestChecks } from './browser-regressions.mjs';
+import { runDiagramEnvironmentChecks, runDiagramRefreshChecks, runPostTestChecks } from './browser-regressions.mjs';
 import { runInlineEditorChecks } from './inline-editor-browser.mjs';
 import { runInlineSettingsChecks } from './inline-settings-browser.mjs';
 import { runInlineLayoutChecks } from './inline-layout-browser.mjs';
@@ -31,6 +31,8 @@ try {
 	const page = await browser.newPage({ viewport: { width: 1000, height: 800 } });
 	page.on('pageerror', error => console.error('Browser error:', error));
 	await page.goto(`http://127.0.0.1:${server.address().port}`);
+	await runDiagramRefreshChecks(page);
+	await runDiagramEnvironmentChecks(page);
 	await runMermaidPreviewChecks(page);
 	await runSyntaxChecks(page);
 	await runFrontmatterChecks(page);

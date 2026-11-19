@@ -1,5 +1,146 @@
 import assert from 'node:assert/strict';
 
+export async function runDiagramRefreshChecks(page) {
+	const result = await page.evaluate(async () => {
+		const wait = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+		const pane = document.body.createDiv({ cls: 'markdown-preview-view' });
+		pane.style.width = '950px';
+		const source = 'flowchart TD\n' + Array.from({ length: 18 }, (_, i) => ` A${i}[Node ${i}] --> A${i + 1}`).join('\n');
+		const charts = Array.from({ length: 12 }, () => fixture.diagram(source, undefined, pane));
+		const svgs = () => charts.map(({ host }) => host.querySelector('.advanced-mermaid-mount > svg.pele'));
+		const replacements = before => svgs().filter((svg, index) => svg !== before[index]).length;
+		const align = alignment => {
+			for (const { child, settings } of charts) { settings.alignment = alignment; child.updateSettings(); }
+		};
+		try {
+			await wait();
+			if (svgs().some(svg => !svg)) throw new Error('Diagram refresh fixture did not render');
+			align('right');
+			await wait();
+			align('left');
+			await wait();
+			const timings = [];
+			let alignmentReplacements = 0;
+			for (let i = 0; i < 9; i++) {
+				const before = svgs();
+				const start = performance.now();
+				align(i % 2 ? 'left' : 'right');
+				timings.push(performance.now() - start);
+				await wait();
+				alignmentReplacements = Math.max(alignmentReplacements, replacements(before));
+			}
+			const aligned = charts.every(({ host }) => host.dataset.align === 'right');
+			let before = svgs();
+			for (const { child, settings } of charts) {
+				settings.style.global.colors.text = { light: '#123456' };
+				child.updateSettings();
+			}
+			await wait();
+			const colorReplacements = replacements(before);
+			const colorsApplied = svgs().every(svg => getComputedStyle(svg.querySelector('.pele-label')).fill === 'rgb(18, 52, 86)');
+			before = svgs();
+			document.body.classList.add('fixture-unrelated-class');
+			await wait();
+			return { alignmentReplacements, colorReplacements, bodyClassReplacements: replacements(before), aligned, colorsApplied,
+			medianAlignmentMs: Math.round(timings.sort((a, b) => a - b)[4] * 10) / 10 };
+		} finally {
+			for (const { child } of charts) child.unload();
+			pane.remove();
+			document.body.classList.remove('fixture-unrelated-class');
+		}
+	});
+	console.log('Diagram refresh measurements:', JSON.stringify(result));
+	assert.equal(result.alignmentReplacements, 0);
+	assert.equal(result.colorReplacements, 0);
+	assert.equal(result.bodyClassReplacements, 0);
+	assert.ok(result.aligned && result.colorsApplied);
+}
+
+export async function runDiagramEnvironmentChecks(page) {
+	const result = await page.evaluate(async () => {
+		const trackBodyObservers = view => {
+			const { prototype } = view.MutationObserver;
+			const { observe, disconnect } = prototype;
+			const observers = new Set();
+			prototype.observe = function (target, options) {
+				observe.call(this, target, options);
+				if (target === view.document.body) observers.add(this);
+			};
+			prototype.disconnect = function () { disconnect.call(this); observers.delete(this); };
+			return { observers, restore() { Object.assign(prototype, { observe, disconnect }); } };
+		};
+		const wait = view => new Promise(resolve => view.requestAnimationFrame(() => view.requestAnimationFrame(resolve)));
+		const frame = document.body.createEl('iframe');
+		const popout = frame.contentWindow;
+		fixture.installDomHelpers(popout);
+		popout.document.head.createEl('style', { text: document.head.querySelector('style').textContent });
+		const mainObservers = trackBodyObservers(window);
+		const popoutObservers = trackBodyObservers(popout);
+		let cssChange;
+		const app = { ...fixture.app, workspace: { ...fixture.app.workspace, on(name, callback) {
+			if (name === 'css-change') cssChange = callback;
+			return {};
+		} } };
+		const plugin = new fixture.AdvancedMermaidPlugin(app, { id: 'environment-fixture' });
+		const updateSettings = fixture.DiagramController.prototype.updateSettings;
+		let refreshes = 0;
+		fixture.DiagramController.prototype.updateSettings = function () { refreshes++; updateSettings.call(this); };
+		const hosts = [];
+		let report;
+		try {
+			await plugin.onload();
+			plugin.settings.style.global.colors.text = { light: '#123456', dark: '#654321' };
+			const { handler } = plugin.processors.get('pele');
+			const render = () => {
+				const host = document.body.createDiv({ cls: 'fixture-diagram' });
+				hosts.push(host);
+				let controller;
+				handler('flowchart LR\n A[Measured text] --> B[Other label]', host, {
+					sourcePath: 'Environment.md', getSectionInfo: () => null,
+					addChild(child) { child.load(); controller = child.controller; },
+				});
+				return { host, controller };
+			};
+			const { host: moved } = render();
+			const { host: reading, controller } = render();
+			const svg = host => host.querySelector('svg.pele');
+			await wait(window);
+			const shared = mainObservers.observers.size === 1;
+			refreshes = 0;
+			const inFlight = controller.snapshot().then(() => false, error => error.message.includes('The diagram changed'));
+			document.body.classList.add('theme-dark');
+			cssChange();
+			const staleExportRejected = await inFlight;
+			await wait(window);
+			const coalesced = refreshes;
+			const initial = svg(reading);
+			document.body.style.setProperty('--font-text', 'Courier New');
+			await wait(window);
+			const fontMeasured = svg(reading) !== initial && svg(reading).getAttribute('width') !== initial.getAttribute('width');
+			popout.document.body.append(moved);
+			moved.dispatchEvent(new popout.Event('fixture-window-migrated'));
+			const text = host => host.ownerDocument.defaultView.getComputedStyle(svg(host).querySelector('.pele-label')).fill;
+			const separateThemes = text(moved) === 'rgb(18, 52, 86)' && text(reading) === 'rgb(101, 67, 33)';
+			const popoutSubscribed = popoutObservers.observers.size === 1;
+			popout.document.body.classList.add('theme-dark');
+			await wait(popout);
+			const popoutUpdated = text(moved) === 'rgb(101, 67, 33)';
+			report = { shared, coalesced, staleExportRejected, fontMeasured, separateThemes, popoutSubscribed, popoutUpdated };
+		} finally {
+			plugin.unload();
+			fixture.DiagramController.prototype.updateSettings = updateSettings;
+			mainObservers.restore(); popoutObservers.restore();
+			for (const host of hosts) host.remove();
+			frame.remove();
+			document.body.classList.remove('theme-dark');
+			document.body.style.removeProperty('--font-text');
+		}
+		return { ...report, cleaned: mainObservers.observers.size === 0 && popoutObservers.observers.size === 0 };
+	});
+	assert.deepEqual(result, { shared: true, coalesced: 2, staleExportRejected: true, fontMeasured: true, separateThemes: true,
+		popoutSubscribed: true, popoutUpdated: true, cleaned: true });
+}
+
 /** Post-user-test regressions run in a real DOM with explicit host adapters. */
 export async function runPostTestChecks(page) {
 	const fitting = await page.evaluate(async () => {

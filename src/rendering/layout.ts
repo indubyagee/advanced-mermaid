@@ -21,12 +21,8 @@ export class DiagramLayout {
 		};
 		this.observer = new view.ResizeObserver(schedule);
 		this.observer.observe(root);
-		// Minimal Theme Settings publishes vault-wide widths in the main window.
-		const minimalChanges = new MutationObserver(schedule);
-		minimalChanges.observe(document.body, { attributes: true, attributeFilter: ['class', 'style'] });
 		owner.registerDomEvent(view, 'resize', schedule);
 		owner.register(() => {
-			minimalChanges.disconnect();
 			this.observer.disconnect();
 			if (this.frame !== undefined) view.cancelAnimationFrame(this.frame);
 			this.clear();

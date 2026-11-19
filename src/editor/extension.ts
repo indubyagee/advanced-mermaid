@@ -18,7 +18,7 @@ let identity = 0;
 
 export interface InlineExtension {
 	extension: Extension; toggle(checking?: boolean, editor?: Editor): boolean; render(checking?: boolean, editor?: Editor): boolean;
-	refresh(): void; destroy(): void; openAt(file: string, line: number | (() => number), element?: HTMLElement): boolean;
+	refresh(): void; remeasure(): void; destroy(): void; openAt(file: string, line: number | (() => number), element?: HTMLElement): boolean;
 }
 
 export function createInlineExtension(app: App, settings: () => AdvancedMermaidSettings): InlineExtension {
@@ -187,6 +187,7 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 		},
 		render(checking = false, context) { const view = focused(context); const editor = view && editors.get(view); if (!editor) return false; if (!checking) editor.renderNow(); return true; },
 		refresh() { for (const view of views) { editors.get(view)?.flush(); view.dispatch({ effects: refresh.of(null) }); } previews.refresh(); },
+		remeasure() { for (const editor of editors.values()) editor.remeasure(); },
 		destroy() { for (const editor of editors.values()) editor.destroy(); editors.clear(); previews.destroy(); views.clear(); },
 		openAt(file, line, element) {
 			if (!settings().liveEditor.enabled) return false;

@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Reuse rendered diagrams when alignment, sizing, or colors change.
+
 ## 0.3.2 — 2026-11-18
 
 ### Added

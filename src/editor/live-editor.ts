@@ -282,6 +282,7 @@ export class LiveEditor {
 		this.controller.settingsChanged(); this.bridge.parent.requestMeasure();
 		if (this.outputMode === 'svg') void this.showOutput();
 	}
+	remeasure(): void { this.nested.requestMeasure(); this.bridge.parent.requestMeasure(); }
 	renderNow(): void { if (this.flush()) this.scheduler.now(); }
 	focus(): void { if (!this.disposed) this.nested.focus(); }
 	/** The parent note must not scroll its hidden fence cursor while the inline editor owns focus. */

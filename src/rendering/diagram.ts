@@ -32,6 +32,6 @@ export class AdvancedMermaidDiagram extends MarkdownRenderChild {
 		this.controller.load();
 	}
 	updateSettings(): void { this.controller?.settingsChanged(); }
-	refreshTheme(): void { this.controller?.environmentChanged(); }
+	refreshTheme(): void { this.updateSettings(); }
 	onunload(): void { this.loaded = false; this.controller?.destroy(); this.controller = undefined; this.presence(this, false); }
 }
