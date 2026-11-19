@@ -1,5 +1,109 @@
 import assert from 'node:assert/strict';
 
+export async function runSvgOutputChecks(page) {
+	const result = await page.evaluate(async () => {
+		const wait = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+		const settings = fixture.normalizeSettings(null);
+		const source = label => `flowchart LR\n A[${label}] --> B[End]`;
+		const note = `Before\n\n~~~pele\n${source('Initial')}\n~~~\n\nAfter`;
+		const inline = fixture.createInlineExtension(fixture.app, () => settings);
+		const language = new fixture.Language(fixture.defineLanguageFacet(), fixture.markdownParser);
+		const host = document.body.createDiv();
+		host.style.width = '900px';
+		const view = new fixture.EditorView({ parent: host, state: fixture.EditorState.create({
+			doc: note, extensions: [language, fixture.editorInfoField, fixture.editorLivePreviewField, inline.extension],
+		}) });
+		const click = (selector, label) => [...host.querySelectorAll(selector)].find(button => button.textContent === label).click();
+		const render = () => click('button', 'Render now');
+		const tab = name => click('[role="tab"]', name);
+		const prototype = fixture.DiagramController.prototype;
+		const snapshot = prototype.snapshot;
+		let requests = 0;
+		let holdNext = false;
+		let release;
+		let heldSvg;
+		prototype.snapshot = async function () {
+			requests++;
+			const hold = holdNext && new Promise(resolve => { release = resolve; });
+			holdNext = false;
+			const result = await snapshot.call(this);
+			if (hold) {
+				heldSvg = result.svg;
+				await hold;
+			}
+			return result;
+		};
+		try {
+			click('.advanced-mermaid-editor-mode button', 'Live editor');
+			await wait();
+			render();
+			const output = host.querySelector('.advanced-mermaid-svg-source');
+			const graph = output.previousElementSibling;
+			const nested = fixture.EditorView.findFromDOM(fixture.sourceRoot(host).querySelector('.cm-editor'));
+			const replace = insert => nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert } });
+			const hasSvg = label => output.value.startsWith('<svg') && output.value.includes(label);
+			const idleRequests = requests;
+			tab('SVG');
+			await wait();
+			const initial = hasSvg('Initial');
+			const mountWidth = graph.querySelector('.advanced-mermaid-mount').clientWidth;
+			const concealed = graph.inert && getComputedStyle(graph).opacity === '0';
+			let baseline = requests;
+			replace(source('Manual'));
+			render();
+			await wait();
+			const manual = hasSvg('Manual');
+			const manualError = manual ? '' : output.value;
+			const manualRequests = requests - baseline;
+			baseline = requests;
+			replace(source('Automatic'));
+			await new Promise(resolve => setTimeout(resolve, settings.liveEditor.debounceMs + 120));
+			await wait();
+			const automatic = hasSvg('Automatic');
+			const automaticRequests = requests - baseline;
+			baseline = requests;
+			settings.style.global.colors.text = { light: '#123456' };
+			inline.refresh();
+			await wait();
+			const svg = new DOMParser().parseFromString(output.value, 'image/svg+xml');
+			const styled = svg.querySelector('.pele-label')?.style.fill === 'rgb(18, 52, 86)' &&
+				svg.documentElement.style.visibility === 'visible';
+			const styleRequests = requests - baseline;
+			baseline = requests;
+			tab('Pele');
+			tab('SVG');
+			await wait();
+			const reopenRequests = requests - baseline;
+			holdNext = true;
+			replace(source('Older'));
+			render();
+			await wait();
+			replace(source('Latest'));
+			render();
+			await wait();
+			release?.();
+			await wait();
+			const superseded = heldSvg?.includes('Older') === true && hasSvg('Latest') && !output.value.includes('Older');
+			replace('Invalid diagram');
+			render();
+			await wait();
+			const invalidCleared = !output.value.startsWith('<svg') && graph.classList.contains('advanced-mermaid-stale');
+			return { idleRequests, initial, mountWidth, concealed, manual, manualError, manualRequests, automatic,
+				automaticRequests, styled, styleRequests, reopenRequests, superseded, invalidCleared };
+		} finally {
+			view.destroy();
+			inline.destroy();
+			release?.();
+			prototype.snapshot = snapshot;
+			host.remove();
+		}
+	});
+	console.log('Inline SVG output checks:', JSON.stringify(result));
+	assert.ok(result.initial && result.manual && result.automatic, result.manualError);
+	assert.ok(result.mountWidth > 0 && result.concealed && result.styled && result.superseded && result.invalidCleared);
+	assert.deepEqual([result.idleRequests, result.manualRequests, result.automaticRequests, result.styleRequests, result.reopenRequests], [0, 1, 1, 1, 0]);
+}
+
 export async function runInlineEditorChecks(page) {
 	const profiles = await page.evaluate(async () => {
 		const source = 'flowchart LR\n A[Start] --> B[End]';

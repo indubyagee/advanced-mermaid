@@ -5,7 +5,7 @@ import { decodeLocalStyle } from '../styles/local-codec';
 import { resolveDiagramStyle } from '../styles/resolve';
 import { resolveDisplay, type ResolvedDisplaySettings } from './overrides';
 import { applyStyle, activeTheme } from '../styles/apply';
-import { showDiagramError } from '../ui/diagram-error';
+import { DiagramFeedback } from '../ui/diagram-error';
 import { DiagramActions, type ExportRequest } from '../ui/diagram-actions';
 import { createSvgSnapshot, registerSvgPreparation, type SvgSnapshot } from '../export/svg';
 import { DiagramLayout } from './layout';
@@ -32,7 +32,7 @@ export class DiagramController extends Component {
 	private diagram?: Mounted;
 	private configurationError?: unknown;
 	private host!: HTMLElement;
-	private feedback!: HTMLElement;
+	private feedback!: DiagramFeedback;
 	private controls!: HTMLElement;
 	private actions!: DiagramActions;
 	private syncZoom!: () => void;
@@ -83,8 +83,8 @@ export class DiagramController extends Component {
 		this.syncZoom = createZoomControls(frameEl, this.host, this,
 			() => this.renderedSource === undefined ? undefined : this.diagram?.zoom);
 		this.controls = layout.createDiv({ cls: 'advanced-mermaid-actions' });
-		this.feedback = layout.createDiv({ cls: 'advanced-mermaid-error', attr: { role: 'status' } });
-		this.feedback.hidden = true;
+		const feedback = layout.createDiv({ cls: 'advanced-mermaid-error', attr: { role: 'status' } });
+		this.feedback = new DiagramFeedback(feedback, this, text => this.copyText(text));
 		this.layout = new DiagramLayout(this.containerEl, layout, viewport, this.host, this, () => {
 			this.diagram?.zoom?.refresh();
 			this.syncZoom();
@@ -164,15 +164,12 @@ export class DiagramController extends Component {
 		this.containerEl.classList.toggle('advanced-mermaid-fallback', !!this.configurationError);
 		this.host.hidden = false;
 		if (this.display) this.layout.update(result, this.display);
-		this.feedback.replaceChildren();
-		this.feedback.hidden = true;
 		this.actions.setValid(!this.configurationError && !this.blocked, result.type === 'flowchart' || result.type === 'agentflow');
 		if (this.configurationError) {
-			showDiagramError(this.feedback, this.configurationError, this.source, text => this.copyText(text), this);
-			this.feedback.createEl('p', { text: 'Preview uses global/type fallback styles. Fix the local styles before exporting.' });
-		}
+			this.feedback.show(this.configurationError, this.source, true);
+		} else this.feedback.clear();
 		this.containerEl.classList.remove('advanced-mermaid-stale');
-		this.options.changed?.(!this.configurationError, this.configurationError);
+		if (!this.blocked) this.options.changed?.(!this.configurationError, this.configurationError);
 	}
 
 	private failed(error: unknown): void {
@@ -192,7 +189,7 @@ export class DiagramController extends Component {
 		} else { this.result = undefined; this.layout.clear(); this.host.hidden = true; }
 		this.syncZoom();
 		this.actions.setValid(false);
-		showDiagramError(this.feedback, error, this.source, text => this.copyText(text), this);
+		this.feedback.show(error, this.source);
 		this.options.changed?.(false, error);
 	}
 
@@ -227,6 +224,7 @@ export class DiagramController extends Component {
 		this.diagram = undefined;
 		this.result = undefined;
 		this.renderedSource = undefined;
+		this.feedback?.clear();
 		this.containerEl.replaceChildren();
 
 	}

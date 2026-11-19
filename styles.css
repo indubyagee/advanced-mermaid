@@ -307,6 +307,14 @@
 	max-width: 100%;
 	overflow: auto;
 }
+.advanced-mermaid-editor-preview { position: relative; }
+/* Keep Pele measurable behind SVG text and preserve visibility in snapshots. */
+.advanced-mermaid-editor-render[inert] {
+	position: absolute;
+	inset: 0;
+	opacity: 0;
+	overflow: clip;
+}
 /* Editor presentation is independent of diagram style overrides. Theme pairs
    resolve through CSS so a light/dark switch also updates existing editors. */
 .advanced-mermaid-editor, .advanced-mermaid-editor-mode {

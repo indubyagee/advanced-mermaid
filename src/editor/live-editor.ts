@@ -42,7 +42,7 @@ export class LiveEditor {
 	private disposed = false;
 	private inputMode: 'mermaid' | 'css' = 'mermaid';
 	private outputMode: 'pele' | 'svg' = 'pele';
-	private outputRevision = 0;
+	private svgOutput?: { requested: boolean };
 	private readonly resize: ResizeObserver;
 	private readonly intersection: IntersectionObserver;
 	private visible = true;
@@ -60,7 +60,7 @@ export class LiveEditor {
 		const sources = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Source format' } });
 		for (const mode of ['mermaid', 'css'] as const) this.tab(sources, mode === 'css' ? 'CSS' : 'Mermaid', () => this.selectInput(mode), mode === 'mermaid');
 		const outputs = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Preview format' } });
-		for (const mode of ['pele', 'svg'] as const) this.tab(outputs, mode === 'svg' ? 'SVG' : 'Pele', () => { this.outputMode = mode; void this.showOutput(); }, mode === 'pele');
+		for (const mode of ['pele', 'svg'] as const) this.tab(outputs, mode === 'svg' ? 'SVG' : 'Pele', () => this.selectOutput(mode), mode === 'pele');
 		this.syntax = new DiagramSyntaxSelector(this.element.createDiv(), () => this.bridge.source(), {
 			diagram: diagram => this.insertSyntax(source => initializeDiagram(source, diagram)),
 			component: component => this.insertSyntax(source => {
@@ -76,7 +76,7 @@ export class LiveEditor {
 		let sourceRoot = this.sourceHost.createDiv().attachShadow({ mode: 'open' });
 		this.applySourceFontSize();
 		this.preview = columns.createDiv({ cls: 'advanced-mermaid-editor-preview', attr: { role: 'tabpanel', 'aria-label': 'Diagram preview' } });
-		this.canonical = this.preview.createDiv();
+		this.canonical = this.preview.createDiv({ cls: 'advanced-mermaid-editor-render' });
 		// Pele is the renderer name.
 		this.output = this.preview.createEl('textarea', { cls: 'advanced-mermaid-svg-source', attr: { readonly: '', 'aria-label': 'Canonical Pele SVG' } }); this.output.hidden = true;
 		this.status = this.element.createDiv({ cls: 'advanced-mermaid-editor-status', attr: { role: 'status', 'aria-live': 'polite' } });
@@ -130,7 +130,10 @@ export class LiveEditor {
 				const line = error.line;
 				this.button(this.status, 'Go To Line ' + line, () => { if (!this.selectInput('mermaid')) return; const target = this.nested.state.doc.line(Math.max(1, Math.min(this.nested.state.doc.lines, line))); this.nested.dispatch({ selection: { anchor: target.from }, scrollIntoView: true }); this.nested.focus(); });
 			}
-			bridge.parent.requestMeasure(); if (this.outputMode === 'svg') void this.showOutput();
+			this.svgOutput = valid ? { requested: false } : undefined;
+			this.output.value = '';
+			void this.refreshSvgOutput();
+			bridge.parent.requestMeasure();
 		} });
 		this.controller.load();
 		const exports = this.canonical.querySelector<HTMLElement>('.advanced-mermaid-actions');
@@ -178,7 +181,9 @@ export class LiveEditor {
 		this.cancelCssTimer = undefined;
 	}
 	private invalidatePreview(): void {
-		this.controller.invalidate(); this.outputRevision++; this.output.value = '';
+		this.controller.invalidate();
+		this.svgOutput = undefined;
+		this.output.value = '';
 	}
 	flush(): boolean {
 		this.clearCssTimer();
@@ -272,7 +277,6 @@ export class LiveEditor {
 		else this.sourceHost.style.setProperty('--advanced-mermaid-editor-font-size', `${size}px`);
 	}
 	refresh(): void {
-		this.outputRevision++;
 		applyEditorStyle(this.element, this.settings().liveEditor.style);
 		this.applySourceFontSize();
 		this.nested.dispatch({ effects: this.presentation.reconfigure(this.presentationExtensions()) });
@@ -280,7 +284,6 @@ export class LiveEditor {
 		const layout = this.settings().liveEditor.layout; const width = this.element.getBoundingClientRect().width;
 		this.element.dataset.layout = layout === 'stacked' || width < (layout === 'auto' ? 768 : 496) ? 'stacked' : 'side-by-side';
 		this.controller.settingsChanged(); this.bridge.parent.requestMeasure();
-		if (this.outputMode === 'svg') void this.showOutput();
 	}
 	remeasure(): void { this.nested.requestMeasure(); this.bridge.parent.requestMeasure(); }
 	renderNow(): void { if (this.flush()) this.scheduler.now(); }
@@ -289,28 +292,39 @@ export class LiveEditor {
 	hasFocus(): boolean { return this.element.contains(this.element.ownerDocument.activeElement); }
 	private render(): void {
 		if (this.disposed || this.conflict || !this.flush()) return;
-		this.controller.setSource(this.bridge.source()); if (this.outputMode === 'svg') void this.showOutput();
+		this.controller.setSource(this.bridge.source());
 	}
-	private async showOutput(): Promise<void> {
-		const revision = ++this.outputRevision;
-		const showSvg = this.outputMode === 'svg';
-		this.canonical.hidden = showSvg;
+	private selectOutput(mode: 'pele' | 'svg'): void {
+		this.outputMode = mode;
+		const showSvg = mode === 'svg';
+		this.canonical.inert = showSvg;
 		this.output.hidden = !showSvg;
-		if (showSvg) {
-			this.output.value = '';
-			try {
-				const snapshot = await this.controller.snapshot();
-				if (!this.disposed && revision === this.outputRevision) this.output.value = snapshot.svg;
-			} catch (error) {
-				if (!this.disposed && revision === this.outputRevision) this.output.value = String(error);
-			}
-		}
+		void this.refreshSvgOutput();
 		this.bridge.parent.requestMeasure();
+	}
+	private async refreshSvgOutput(): Promise<void> {
+		const revision = this.svgOutput;
+		if (this.outputMode !== 'svg' || !revision || revision.requested) return;
+		revision.requested = true;
+		try {
+			const snapshot = await this.controller.snapshot();
+			if (this.svgOutput === revision) this.output.value = snapshot.svg;
+		} catch (error) {
+			if (this.svgOutput === revision) this.output.value = String(error);
+		}
 	}
 	destroy(): void {
 		if (this.disposed) return;
 		if (this.cssDirty || this.conflict) retainDraft({ file: this.file, source: this.inputMode === 'mermaid' ? this.nested.state.doc.toString() : this.sourceBaseline, css: this.css, reason: 'Editor closed with an unsaved draft' });
-		this.disposed = true; this.outputRevision++; this.scheduler.destroy(); this.resize.disconnect(); this.intersection.disconnect(); this.syntax.unload(); this.stopWindowMigration(); this.nested.destroy(); this.controller.destroy();
+		this.disposed = true;
+		this.svgOutput = undefined;
+		this.scheduler.destroy();
+		this.resize.disconnect();
+		this.intersection.disconnect();
+		this.syntax.unload();
+		this.stopWindowMigration();
+		this.nested.destroy();
+		this.controller.destroy();
 		this.clearCssTimer();
 	}
 }

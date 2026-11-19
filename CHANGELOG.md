@@ -7,6 +7,11 @@
 - Reuse rendered diagrams when alignment, sizing, or colors change.
 - Reduce diagram scanning during typing and cursor movement in Live Preview.
 
+### Fixed
+
+- Refresh the Live Editor’s SVG tab after source edits and manual renders.
+- Reuse the error action across repeated render failures.
+
 ## 0.3.2 — 2026-11-18
 
 ### Added

@@ -141,6 +141,44 @@ export async function runDiagramEnvironmentChecks(page) {
 		popoutSubscribed: true, popoutUpdated: true, cleaned: true });
 }
 
+export async function runDiagramErrorChecks(page) {
+	const result = await page.evaluate(async () => {
+		const host = document.body.createDiv({ cls: 'fixture-diagram' });
+		const settings = fixture.normalizeSettings(null);
+		const source = 'flowchart LR\n A --> B';
+		const controller = new fixture.DiagramController(host, source, () => settings, fixture.app, 'Error.md');
+		const clipboard = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+		const copied = [];
+		Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { async writeText(text) { copied.push(text); } } });
+		controller.load();
+		try {
+			const baseline = controller.cleanup.length;
+			const feedback = host.querySelector('.advanced-mermaid-error');
+			let firstButton;
+			for (let i = 0; i < 40; i++) {
+				controller.setSource('\n'.repeat(i) + '%% advanced-mermaid: align=invalid\n' + source);
+				firstButton ??= feedback.querySelector('button');
+			}
+			const registrations = controller.cleanup.length - baseline;
+			const buttons = feedback.querySelectorAll('button');
+			const message = feedback.querySelector('.advanced-mermaid-error-message').textContent;
+			const latestButton = buttons[0];
+			if (firstButton !== latestButton) firstButton.click();
+			latestButton.click();
+			controller.unload();
+			latestButton.click();
+			return { registrations, buttons: buttons.length, copiedLatest: copied.length === 1 && copied[0] === message &&
+				message.includes('line 40'), cleaned: controller.cleanup.length === 0 };
+		} finally {
+			if (host.firstChild) controller.unload();
+			if (clipboard) Object.defineProperty(navigator, 'clipboard', clipboard); else delete navigator.clipboard;
+			host.remove();
+		}
+	});
+	console.log('Diagram error feedback checks:', JSON.stringify(result));
+	assert.deepEqual(result, { registrations: 0, buttons: 1, copiedLatest: true, cleaned: true });
+}
+
 /** Post-user-test regressions run in a real DOM with explicit host adapters. */
 export async function runPostTestChecks(page) {
 	const fitting = await page.evaluate(async () => {
