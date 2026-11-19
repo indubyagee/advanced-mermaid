@@ -147,10 +147,11 @@ export async function runInlineEditorChecks(page) {
 		const inline = fixture.createInlineExtension(fixture.app, () => settings);
 		const text = 'Before\n\n```pele\nflowchart LR\n A[Start] --> B[End]\n```\n\nAfter\n\n```pele\nflowchart LR\n A[Start] --> B[End]\n```';
 		const language = new fixture.Language(fixture.defineLanguageFacet(), fixture.markdownParser);
-		const view = new fixture.EditorView({ parent: host, state: fixture.EditorState.create({ doc: text, extensions: [language, fixture.history(), fixture.editorInfoField, fixture.editorLivePreviewField, inline.extension] }) });
+		const editFilter = new fixture.Compartment();
+		const view = new fixture.EditorView({ parent: host, state: fixture.EditorState.create({ doc: text, extensions: [language, fixture.history(), fixture.editorInfoField, fixture.editorLivePreviewField, inline.extension, editFilter.of([])] }) });
 		view.dispatch({ selection: { anchor: text.indexOf('flowchart') } }); view.focus();
 		if (!inline.toggle()) throw new Error('Inline command unavailable');
-		window.inlineFixture = { host, view, inline, settings, text };
+		window.inlineFixture = { host, view, inline, settings, text, editFilter };
 	});
 	await page.waitForSelector('.advanced-mermaid-editor .cm-editor');
 	const ownership = await page.evaluate(() => ({ widgets: document.querySelectorAll('.advanced-mermaid-editor').length, nested: fixture.sourceRoot(inlineFixture.host).querySelectorAll('.cm-editor').length }));
@@ -165,6 +166,84 @@ export async function runInlineEditorChecks(page) {
 	await page.waitForFunction(() => document.querySelector('.advanced-mermaid-editor').dataset.layout === 'stacked');
 	await page.evaluate(() => { inlineFixture.host.style.width = '900px'; });
 	await page.waitForFunction(() => document.querySelector('.advanced-mermaid-editor').dataset.layout === 'side-by-side');
+	const sourceRouting = await page.evaluate(() => {
+		const { host, view, editFilter } = inlineFixture;
+		const nested = fixture.EditorView.findFromDOM(fixture.sourceRoot(host).querySelector('.cm-editor'));
+		const syntax = fixture.DiagramSyntaxSelector.prototype;
+		const controller = fixture.DiagramController.prototype;
+		const { refresh } = syntax;
+		const { invalidate } = controller;
+		let toolbarRefreshes = 0;
+		let invalidations = 0;
+		syntax.refresh = function (...args) { toolbarRefreshes++; return refresh.apply(this, args); };
+		controller.invalidate = function () { invalidations++; invalidate.call(this); };
+		const original = nested.state.doc.toString();
+		let work;
+		try {
+			nested.dispatch({ changes: { from: nested.state.doc.length, insert: '\n B --> Counted' } });
+			work = { toolbarRefreshes, invalidations, forwarded: view.state.doc.toString().includes('B --> Counted') };
+		} finally {
+			syntax.refresh = refresh;
+			controller.invalidate = invalidate;
+		}
+		const undo = fixture.undo(view) && nested.state.doc.toString() === original;
+		const redo = fixture.redo(view) && nested.state.doc.toString().includes('B --> Counted');
+		fixture.undo(view);
+
+		const click = label => [...host.querySelectorAll('button')].find(button => button.textContent === label).click();
+		const compose = (from, to, changeNote) => {
+			nested.dispatch({ selection: { anchor: from, head: to } });
+			nested.contentDOM.dispatchEvent(new CompositionEvent('compositionstart', { bubbles: true }));
+			// Simulate an active IME session without depending on the operating system keyboard.
+			Object.defineProperty(nested, 'composing', { configurable: true, value: true });
+			try { changeNote(); }
+			finally {
+				delete nested.composing;
+				nested.contentDOM.dispatchEvent(new CompositionEvent('compositionend', { bubbles: true }));
+			}
+		};
+		const start = original.indexOf('Start');
+		const parentStart = view.state.doc.toString().indexOf('Start');
+		compose(start, start + 'Start'.length, () => {
+			view.dispatch({ changes: { from: parentStart, to: parentStart + 'Start'.length, insert: 'External' } });
+		});
+		const compositionProtected = nested.state.doc.toString() === original && host.querySelector('.advanced-mermaid-draft-status').textContent.includes('External change during composition');
+		click('Use note version');
+		const reconciled = nested.state.doc.toString().includes('External');
+		view.dispatch({ changes: { from: parentStart, to: parentStart + 'External'.length, insert: 'Start' } });
+
+		const styleBlock = '%% advanced-mermaid-style:v1\n%% .pele { --pele-fg: #123; }\n%% advanced-mermaid-style:end\n';
+		const bodyStart = fixture.diagramFences(view.state)[0].bodyFrom;
+		view.dispatch({ changes: { from: bodyStart, insert: styleBlock } });
+		click('CSS');
+		const cssStart = nested.state.doc.toString().indexOf('#123');
+		const noteCssStart = view.state.doc.toString().indexOf('#123');
+		compose(cssStart, cssStart + 4, () => {
+			view.dispatch({ changes: { from: noteCssStart, to: noteCssStart + 4, insert: '#456' } });
+		});
+		nested.dispatch({ changes: { from: cssStart, to: cssStart + 4, insert: '#789' } });
+		click('Render now');
+		const cssCompositionProtected = view.state.doc.toString().includes('#456') && !view.state.doc.toString().includes('#789');
+		click('Use note version');
+		const cssReconciled = nested.state.doc.toString().includes('#456');
+		click('Mermaid');
+		view.dispatch({ changes: { from: bodyStart, to: bodyStart + styleBlock.length } });
+
+		click('Render now');
+		const actions = host.querySelector('.advanced-mermaid-actions');
+		const exportWasReady = !actions.hidden;
+		view.dispatch({ effects: editFilter.reconfigure(fixture.EditorState.transactionFilter.of(transaction => transaction.docChanged ? [] : transaction)) });
+		nested.dispatch({ changes: { from: nested.state.doc.length, insert: '\n B --> Rejected' } });
+		const rejectedDraftProtected = exportWasReady && actions.hidden && !view.state.doc.toString().includes('Rejected') && nested.state.doc.toString().includes('Rejected');
+		view.dispatch({ effects: editFilter.reconfigure([]) });
+		click('Use note version');
+		return { ...work, undo, redo, compositionProtected, reconciled, cssCompositionProtected, cssReconciled,
+			rejectedDraftProtected, restored: nested.state.doc.toString() === original };
+	});
+	console.log('Inline source routing checks:', JSON.stringify(sourceRouting));
+	assert.deepEqual(sourceRouting, { toolbarRefreshes: 1, invalidations: 1, forwarded: true,
+		undo: true, redo: true, compositionProtected: true, reconciled: true, cssCompositionProtected: true,
+		cssReconciled: true, rejectedDraftProtected: true, restored: true });
 	const content = page.locator('.advanced-mermaid-editor-source .cm-content');
 	await content.click(); await page.keyboard.press('Control+End'); await page.keyboard.type('\n B --> C[Next]');
 	await page.waitForFunction(() => inlineFixture.view.state.doc.toString().includes('C[Next]'));

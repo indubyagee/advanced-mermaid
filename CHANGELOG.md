@@ -6,6 +6,7 @@
 
 - Reuse rendered diagrams when alignment, sizing, or colors change.
 - Reduce diagram scanning during typing and cursor movement in Live Preview.
+- Limit inline edit updates to the affected pane and remove duplicate toolbar and preview refreshes.
 
 ### Fixed
 

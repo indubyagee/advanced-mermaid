@@ -1,5 +1,59 @@
 import assert from 'node:assert/strict';
 
+export async function runOwnershipScopeChecks(page) {
+	const result = await page.evaluate(async () => {
+		const plugin = new fixture.AdvancedMermaidPlugin(fixture.app, { id: 'ownership-scope-fixture' });
+		await plugin.onload();
+		const root = document.body.createDiv();
+		const source = 'flowchart LR\n A[Original] --> B[Diagram]';
+		const files = ['InlineEditor.md', 'InlineEditor.md', 'Other.md'];
+		const panes = files.map(() => root.createDiv());
+		const lookups = [0, 0, 0];
+		const owner = { id: 1, file: files[0], fromLine: 0, toLine: 4, source };
+		const draw = plugin.processors.get('pele').handler;
+		const children = [];
+		let cachedSectionAvailable = true;
+		try {
+			for (const [index, pane] of panes.entries()) {
+				for (let block = 0; block < 10; block++) {
+					draw(source, pane.createDiv({ cls: 'cached-preview' }), {
+						sourcePath: files[index],
+						getSectionInfo() {
+							lookups[index]++;
+							return index === 0 && block === 0 && !cachedSectionAvailable ? null : { lineStart: block * 10 };
+						},
+						addChild: child => { children.push(child); child.load(); },
+					});
+				}
+			}
+			const [edited, split, other] = panes;
+			const cached = edited.firstElementChild;
+			fixture.setInlineOwner(edited, owner);
+			lookups.fill(0);
+			fixture.setInlineOwner(edited, { ...owner, source: source.replace('Original', 'Edited') });
+			const sectionLookups = [...lookups];
+			cached.remove();
+			cachedSectionAvailable = false;
+			fixture.setInlineOwner(edited, { ...owner, fromLine: 5, toLine: 9, source: source.replace('Original', 'Moved') });
+			const detachedSuppressed = !cached.querySelector('svg.pele');
+			edited.prepend(cached);
+			fixture.setInlineOwner(edited, { ...owner, fromLine: 5, toLine: 9, source: source.replace('Original', 'Reattached') });
+			const reattachedSuppressed = !cached.querySelector('svg.pele');
+			fixture.setInlineOwner(edited);
+			const restored = cached.querySelector('svg.pele')?.textContent.includes('Reattached') === true;
+			const isolated = [split, other].every(pane => pane.querySelectorAll('svg.pele').length === 10 && pane.textContent.includes('Original'));
+			return { sectionLookups, detachedSuppressed, reattachedSuppressed, restored, isolated };
+		} finally {
+			fixture.setInlineOwner(panes[0]);
+			for (const child of children) child.unload();
+			plugin.unload();
+			root.remove();
+		}
+	});
+	console.log('Pane-scoped ownership checks:', JSON.stringify(result));
+	assert.deepEqual(result, { sectionLookups: [9, 0, 0], detachedSuppressed: true, reattachedSuppressed: true, restored: true, isolated: true });
+}
+
 /** Exercise production processor registration with a host reusing cached DOM. */
 export async function runRendererOwnershipChecks(page) {
 	const registrations = await page.evaluate(async () => {

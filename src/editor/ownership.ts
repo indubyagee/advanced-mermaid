@@ -1,17 +1,35 @@
-interface Ownership { file: string; fromLine: number; toLine: number; source?: string }
+interface Ownership { id: number; file: string; fromLine: number; toLine: number; source?: string }
+export interface InlineOwner { editor: HTMLElement; ownership: Ownership }
+export interface OwnershipChange { editor: HTMLElement; previous?: Ownership; current?: Ownership }
+
 const owners = new Map<HTMLElement, Ownership>();
-const listeners = new Set<() => void>();
-export function setInlineOwner(editor: HTMLElement, ownership?: Ownership): void {
+const listeners = new Set<(change: OwnershipChange) => void>();
+
+export function setInlineOwner(editor: HTMLElement, current?: Ownership): void {
 	const previous = owners.get(editor);
-	if (previous === ownership || previous && ownership && previous.file === ownership.file && previous.fromLine === ownership.fromLine && previous.toLine === ownership.toLine && previous.source === ownership.source) return;
-	if (ownership) owners.set(editor, ownership); else owners.delete(editor);
-	for (const listener of listeners) listener();
+	if (previous === current || previous && current && previous.id === current.id && previous.file === current.file &&
+		previous.fromLine === current.fromLine && previous.toLine === current.toLine && previous.source === current.source) return;
+	if (current) owners.set(editor, current); else owners.delete(editor);
+	const change = { editor, previous, current };
+	for (const listener of listeners) listener(change);
 }
-export function inlineOwns(element: HTMLElement, file: string, line: number): boolean {
-	return inlineOwner(element, file, line) !== undefined;
+
+export function releaseInlineOwner(editor: HTMLElement, id: number): void {
+	if (owners.get(editor)?.id === id) setInlineOwner(editor);
 }
-export function inlineOwner(element: HTMLElement, file: string, line: number): Ownership | undefined {
-	for (const [editor, owner] of owners) if (owner.file === file && owner.fromLine <= line && owner.toLine >= line && editor.contains(element)) return owner;
+
+export function coversBlock(owner: Ownership, file: string, line: number | undefined): boolean {
+	return owner.file === file && line !== undefined && owner.fromLine <= line && line <= owner.toLine;
+}
+
+export function inlineOwner(element: HTMLElement, file: string, line: number | undefined): InlineOwner | undefined {
+	for (const [editor, ownership] of owners) {
+		if (coversBlock(ownership, file, line) && editor.contains(element)) return { editor, ownership };
+	}
 	return undefined;
 }
-export function observeOwnership(listener: () => void): () => void { listeners.add(listener); return () => listeners.delete(listener); }
+
+export function observeOwnership(listener: (change: OwnershipChange) => void): () => void {
+	listeners.add(listener);
+	return () => listeners.delete(listener);
+}

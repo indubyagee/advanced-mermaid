@@ -3,6 +3,7 @@ import { normalizeSettings, type AdvancedMermaidSettings } from '../src/settings
 import type { App } from 'obsidian';
 import { TFolder } from './obsidian';
 export { AdvancedMermaidSettingTab } from '../src/ui/settings-tab';
+export { DiagramSyntaxSelector } from '../src/ui/diagram-syntax-selector';
 export { SaveExportModal } from '../src/ui/export-modal';
 export { VaultFolderSuggest } from '../src/ui/folder-suggest';
 export { createSvgSnapshot } from '../src/export/svg';

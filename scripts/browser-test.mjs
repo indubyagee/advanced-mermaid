@@ -11,7 +11,7 @@ import { runInlineLayoutChecks } from './inline-layout-browser.mjs';
 import { runPresetChecks, runEditorModeChecks } from './v02-browser.mjs';
 import { runEditorInteractionChecks, runNavigationChecks } from './v021-browser.mjs';
 import { runEditorStyleChecks } from './editor-style-browser.mjs';
-import { runRendererOwnershipChecks } from './renderer-ownership-browser.mjs';
+import { runOwnershipScopeChecks, runRendererOwnershipChecks } from './renderer-ownership-browser.mjs';
 import { runMermaidPreviewChecks } from './mermaid-preview-browser.mjs';
 import { runZoomStyleChecks } from './zoom-style-browser.mjs';
 import { runFrontmatterChecks } from './frontmatter-browser.mjs';
@@ -39,6 +39,7 @@ try {
 	await runSyntaxChecks(page);
 	await runFrontmatterChecks(page);
 	await runCanvasChecks(page);
+	await runOwnershipScopeChecks(page);
 	const sourceBudget = await page.evaluate(() => {
 		const item = fixture.diagram('---\n' + ' '.repeat(60_000) + '\n---\nflowchart LR\n A-->B');
 		const actions = item.host.querySelector('.advanced-mermaid-actions');

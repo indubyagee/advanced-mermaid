@@ -5,9 +5,9 @@ import { scheduleDiagramEnvironmentRefresh } from './rendering/environment';
 import { AdvancedMermaidSettingTab } from './ui/settings-tab';
 import { createInlineExtension, type InlineExtension } from './editor/extension';
 import { RecoveryModal } from './ui/recovery-modal';
-import { inlineOwner, observeOwnership } from './editor/ownership';
+import { coversBlock, inlineOwner, observeOwnership, type InlineOwner, type OwnershipChange } from './editor/ownership';
 
-interface RenderedBlock { element: HTMLElement; file: string; line: () => number | undefined }
+interface RenderedBlock { element: HTMLElement; file: string; line: () => number | undefined; editor?: HTMLElement }
 
 export default class AdvancedMermaidPlugin extends Plugin {
 	settings!: AdvancedMermaidSettings;
@@ -32,20 +32,20 @@ export default class AdvancedMermaidPlugin extends Plugin {
 		this.addCommand({ id: 'recover-inline-drafts', name: 'Recover inline drafts', callback: () => new RecoveryModal(this.app).open() });
 		this.addSettingTab(new AdvancedMermaidSettingTab(this.app, this, this.settings, () => this.settingsChanged()));
 		const renderDiagram = (source: string, element: HTMLElement, context: MarkdownPostProcessorContext): void => {
-			const info = context.getSectionInfo(element);
+			const initialLine = context.getSectionInfo(element)?.lineStart;
 			const child = new AdvancedMermaidDiagram(element, source, () => this.settings, (diagram, loaded) => {
 				if (loaded) this.diagrams.add(diagram);
 				else { this.diagrams.delete(diagram); this.blocks.delete(diagram); }
 			}, this.app, context.sourcePath);
-			const block = { element, file: context.sourcePath, line: () => context.getSectionInfo(element)?.lineStart ?? info?.lineStart };
+			const block = { element, file: context.sourcePath, line: () => context.getSectionInfo(element)?.lineStart ?? initialLine };
 			this.blocks.set(child, block);
-			this.syncOwnership(child, block);
+			this.applyOwnership(child, block, inlineOwner(element, block.file, initialLine));
 			context.addChild(child);
 		};
 		this.registerMarkdownCodeBlockProcessor('pele', renderDiagram);
 		// Run before Obsidian's built-in Mermaid processor consumes the code block.
 		this.registerMarkdownCodeBlockProcessor('mermaid', renderDiagram, -1);
-		this.register(observeOwnership(() => { for (const [child, block] of this.blocks) this.syncOwnership(child, block); }));
+		this.register(observeOwnership(change => this.syncPaneOwnership(change)));
 		this.registerEvent(this.app.workspace.on('css-change', () => {
 			scheduleDiagramEnvironmentRefresh();
 			this.inline?.remeasure();
@@ -58,10 +58,26 @@ export default class AdvancedMermaidPlugin extends Plugin {
 			this.inline?.destroy();
 		});
 	}
-	private syncOwnership(child: AdvancedMermaidDiagram, block: RenderedBlock): void {
-		const line = block.line();
-		const owner = line === undefined ? undefined : inlineOwner(block.element, block.file, line);
-		child.setInlineOwned(owner !== undefined, owner?.source);
+	private applyOwnership(child: AdvancedMermaidDiagram, block: RenderedBlock, owner?: InlineOwner): void {
+		block.editor = owner?.editor;
+		child.setInlineOwned(owner !== undefined, owner?.ownership.source);
+	}
+
+	private syncPaneOwnership({ editor, previous, current }: OwnershipChange): void {
+		const sameSession = current && previous?.id === current.id && previous.file === current.file;
+		for (const [child, block] of this.blocks) {
+			if (block.file !== previous?.file && block.file !== current?.file) continue;
+			const contained = editor.contains(block.element);
+			const wasOwned = block.editor === editor;
+			if (!contained && !wasOwned) continue;
+			if (!contained && block.element.isConnected) {
+				this.applyOwnership(child, block, inlineOwner(block.element, block.file, block.line()));
+				continue;
+			}
+			// A cached preview follows its session even if its section position is stale.
+			const owns = current && (wasOwned && sameSession || contained && coversBlock(current, block.file, block.line()));
+			if (owns || wasOwned) this.applyOwnership(child, block, owns ? { editor, ownership: current } : undefined);
+		}
 	}
 
 	private settingsChanged(): void {

@@ -1,12 +1,12 @@
 import { Compartment, EditorState, Transaction, type Extension } from '@codemirror/state';
-import { EditorView, keymap, lineNumbers } from '@codemirror/view';
+import { EditorView, keymap, lineNumbers, type ViewUpdate } from '@codemirror/view';
 import { defaultKeymap, indentWithTab, insertNewlineAndIndent, undo, redo } from '@codemirror/commands';
 import type { App } from 'obsidian';
 import { createDetachedEl } from '../dom';
 import type { AdvancedMermaidSettings } from '../settings';
 import { DiagramController } from '../rendering/controller';
 import { encodeLocalStyle, styleRegion, parseStyleCss, decodeLocalStyle } from '../styles/local-codec';
-import { nestedOrigin, type SourceBridge } from './source-bridge';
+import { nestedOrigin, sourceChange, type SourceBridge, type SourceChange } from './source-bridge';
 import { retainDraft } from './drafts';
 import { PreviewScheduler } from './preview-scheduler';
 import { sourceLanguage } from './languages';
@@ -86,8 +86,8 @@ export class LiveEditor {
 		const footer = this.element.createDiv({ cls: 'advanced-mermaid-editor-footer' });
 		const draftActions = footer.createDiv({ cls: 'advanced-mermaid-draft-actions' });
 		this.button(draftActions, 'Copy draft', () => { void win.navigator.clipboard.writeText(this.inputMode === 'css' ? this.css : this.nested.state.doc.toString()).catch(() => { this.draftStatus.textContent = 'Clipboard unavailable. Select and copy the source text.'; }); });
-		this.button(draftActions, 'Discard changes', () => { this.cssDirty = false; this.conflict = false; this.invalid = false; this.sync(true); });
-		this.button(draftActions, 'Use note version', () => { this.cssDirty = false; this.conflict = false; this.sync(true); });
+		this.button(draftActions, 'Discard changes', () => { this.cssDirty = false; this.conflict = false; this.invalid = false; this.sync({ force: true }); });
+		this.button(draftActions, 'Use note version', () => { this.cssDirty = false; this.conflict = false; this.sync({ force: true }); });
 		this.button(draftActions, 'Render now', () => { if (this.flush()) this.scheduler.now(); });
 		const endActions = footer.createDiv({ cls: 'advanced-mermaid-editor-end-actions' });
 		this.sourceBaseline = bridge.source();
@@ -100,12 +100,13 @@ export class LiveEditor {
 			{ key: 'Mod-Enter', run: () => { if (this.flush()) this.scheduler.now(); return true; } },
 			{ key: 'Escape', run: () => { if (this.canClose()) close(); return true; }, stopPropagation: true }, ...defaultKeymap,
 		]), EditorView.updateListener.of(update => {
-			if (!update.docChanged || update.transactions.every(transaction => transaction.annotation(nestedOrigin))) return;
+			if (!update.docChanged || update.transactions.every(transaction => !transaction.docChanged || transaction.annotation(nestedOrigin))) return;
 			if (this.compositionRange) this.compositionRange.to = Math.max(this.compositionRange.to, update.state.selection.main.to);
 			if (this.inputMode === 'mermaid') {
-				if (this.conflict) { this.draftStatus.textContent = 'Draft retained. Use note version before applying further edits.'; return; }
-				bridge.forward(update); this.sourceBaseline = bridge.source(); this.syntax.refresh(); this.invalidatePreview();
-			} else { this.css = update.state.doc.toString(); this.cssDirty = this.css !== this.cssBaseline; this.validateCss(); }
+				this.forwardSource(update);
+				return;
+			}
+			this.css = update.state.doc.toString(); this.cssDirty = this.css !== this.cssBaseline; this.validateCss();
 			if (!update.view.composing && !this.conflict && (this.visible || this.nested.hasFocus)) this.scheduler.schedule(settings().liveEditor.debounceMs);
 		}), EditorView.domEventHandlers({
 			compositionstart: () => { const selection = this.nested.state.selection.main; this.compositionRange = { from: selection.from, to: selection.to }; },
@@ -174,7 +175,7 @@ export class LiveEditor {
 				this.cancelCssTimer = win.clearTimeout.bind(win, timer);
 			}
 		}
-		catch (error) { this.invalid = true; this.controller.invalidate(); this.draftStatus.textContent = 'Unsaved CSS draft: ' + (error instanceof Error ? error.message : String(error)); }
+		catch (error) { this.invalid = true; this.draftStatus.textContent = 'Unsaved CSS draft: ' + (error instanceof Error ? error.message : String(error)); }
 	}
 	private clearCssTimer(): void {
 		this.cancelCssTimer?.();
@@ -185,13 +186,36 @@ export class LiveEditor {
 		this.svgOutput = undefined;
 		this.output.value = '';
 	}
+	private protectDraft(message: string): void {
+		this.conflict = true;
+		this.scheduler.cancel();
+		this.invalidatePreview();
+		this.draftStatus.textContent = message;
+	}
+
+	private forwardSource(update: ViewUpdate): void {
+		if (this.conflict) {
+			this.draftStatus.textContent = 'Draft retained. Use note version before applying further edits.';
+			return;
+		}
+		const before = this.sourceBaseline;
+		// The parent transaction reconciles accepted changes synchronously.
+		this.bridge.forward(update);
+		if (!this.disposed && !this.conflict && this.sourceBaseline === before && this.bridge.range() && update.state.doc.toString() !== before) {
+			this.protectDraft('The note did not accept the edit. Copy the draft or use the note version.');
+		}
+	}
+
 	flush(): boolean {
 		this.clearCssTimer();
 		if (this.conflict || this.invalid) return false;
 		if (!this.cssDirty) return true;
 		try {
 			const source = this.bridge.source(); const current = styleRegion(source)?.css ?? '';
-			if (current !== this.cssBaseline) { this.invalidatePreview(); this.conflict = true; this.draftStatus.textContent = 'The note styles changed externally. Copy the draft or use the note version.'; return false; }
+			if (current !== this.cssBaseline) {
+				this.protectDraft('The note styles changed externally. Copy the draft or use the note version.');
+				return false;
+			}
 			this.cssDirty = false; this.cssBaseline = this.css;
 			this.bridge.commit(encodeLocalStyle(source, this.css)); this.sourceBaseline = this.bridge.source(); this.draftStatus.textContent = ''; return true;
 		} catch (error) { this.invalid = true; this.draftStatus.textContent = String(error); return false; }
@@ -206,7 +230,6 @@ export class LiveEditor {
 			if (source !== this.nested.state.doc.toString()) throw new Error('The note changed. Sync the source before inserting syntax.');
 			const inserted = create(source);
 			if (inserted.source !== source && !this.bridge.commit(inserted.source, inserted)) throw new Error('The source block is no longer available.');
-			this.sync(); this.syntax.refresh();
 			this.nested.dispatch({ selection: { anchor: inserted.from, head: inserted.to }, scrollIntoView: true }); this.nested.focus();
 			this.draftStatus.textContent = inserted.source === source ? 'Existing syntax selected; authored values are kept.' : '';
 		} catch (error) { this.draftStatus.textContent = error instanceof Error ? error.message : String(error); }
@@ -219,7 +242,7 @@ export class LiveEditor {
 			const inserted = option.kind === 'display' ? insertDisplayOverride(source, option.key, value) : insertStyleOverride(source, option.variable, value, target);
 			if (!this.selectInput('mermaid')) return;
 			if (inserted.changed && !this.bridge.commit(inserted.source, inserted)) throw new Error('The source block is no longer available.');
-			this.sync(); this.nested.dispatch({ selection: { anchor: inserted.from, head: inserted.to }, scrollIntoView: true }); this.nested.focus();
+			this.nested.dispatch({ selection: { anchor: inserted.from, head: inserted.to }, scrollIntoView: true }); this.nested.focus();
 			this.draftStatus.textContent = inserted.changed ? 'Local override inserted. Edit the selected value.' : 'Selected the existing override; its value is preserved.';
 		} catch (error) { this.draftStatus.textContent = error instanceof Error ? error.message : String(error); }
 	}
@@ -234,38 +257,48 @@ export class LiveEditor {
 			try { this.css = styleRegion(this.bridge.source())?.css ?? ''; this.cssBaseline = this.css; } catch (error) { this.draftStatus.textContent = String(error); }
 			this.draftStatus.textContent = 'Constrained style variables only; not unrestricted CSS.';
 		}
-		this.replaceNested(mode === 'css' ? this.css : this.bridge.source());
+		const source = mode === 'css' ? this.css : this.bridge.source();
+		this.replaceNested(sourceChange(this.nested.state.doc.toString(), source));
 		return true;
 	}
-	private replaceNested(text: string): void {
-		const previous = this.nested.state.doc.toString(); if (previous === text) return;
-		let start = 0; while (start < previous.length && start < text.length && previous[start] === text[start]) start++;
-		let end = previous.length; let nextEnd = text.length;
-		while (end > start && nextEnd > start && previous[end - 1] === text[nextEnd - 1]) { end--; nextEnd--; }
-		this.nested.dispatch({ changes: { from: start, to: end, insert: text.slice(start, nextEnd) }, annotations: [nestedOrigin.of(true), Transaction.addToHistory.of(false)] });
+	private replaceNested(changes: SourceChange | undefined): void {
+		if (changes) this.nested.dispatch({ changes, annotations: [nestedOrigin.of(true), Transaction.addToHistory.of(false)] });
 	}
-	sync(force = false): void {
-		if (this.disposed) return;
+	syncFromParent(update: ViewUpdate): void {
+		this.sync({ forwarded: this.bridge.isForwarded(update) });
+	}
+	private sync({ force = false, forwarded = false } = {}): void {
+		if (this.disposed || !this.bridge.range()) return;
 		if (force) this.draftStatus.textContent = '';
 		const source = this.bridge.source();
 		if (!force && source === this.sourceBaseline) return;
 		const previous = this.nested.state.doc.toString();
-		let start = 0; while (start < source.length && start < previous.length && source[start] === previous[start]) start++;
-		let end = previous.length; let sourceEnd = source.length;
-		while (end > start && sourceEnd > start && previous[end - 1] === source[sourceEnd - 1]) { end--; sourceEnd--; }
-		const composition = this.compositionRange ?? this.nested.state.selection.main;
-		const overlaps = start <= composition.to && end >= composition.from;
-		if (!force && this.inputMode === 'mermaid' && this.nested.composing && source !== previous && overlaps) {
-			retainDraft({ file: this.file, source: this.nested.state.doc.toString(), css: this.css, reason: 'External change during composition' });
-			this.conflict = true; this.invalidatePreview(); this.draftStatus.textContent = 'External change during composition. Local draft retained; use note version or copy draft.'; return;
-		}
 		let css = ''; try { css = styleRegion(source)?.css ?? ''; } catch (error) { this.draftStatus.textContent = String(error); }
-		if (!force && this.cssDirty && css !== this.cssBaseline) { this.conflict = true; this.invalidatePreview(); this.draftStatus.textContent = 'Note styles changed externally. Copy the draft or use note version.'; return; }
+		if (!force && this.cssDirty && css !== this.cssBaseline) {
+			this.protectDraft('Note styles changed externally. Copy the draft or use the note version.');
+			return;
+		}
+		const cssMode = this.inputMode === 'css';
+		const nextCss = !force && this.cssDirty ? this.css : css;
+		const change = sourceChange(previous, cssMode ? nextCss : source);
+		const composition = this.compositionRange ?? this.nested.state.selection.main;
+		const composing = this.nested.composing;
+		if (composing && change && change.from <= composition.to && change.to >= composition.from) {
+			if (force) {
+				this.protectDraft('Finish composing before loading the note version.');
+			} else {
+				retainDraft({ file: this.file, source: cssMode ? this.sourceBaseline : previous, css: cssMode ? previous : this.css, reason: 'External change during composition' });
+				this.protectDraft('External change during composition. Local draft retained. Copy the draft or use the note version.');
+			}
+			return;
+		}
 		if (force || !this.cssDirty) { this.css = css; this.cssBaseline = css; this.invalid = false; }
 		this.sourceBaseline = source;
 		this.syntax.refresh();
-		if (!this.nested.composing || !overlaps) this.replaceNested(this.inputMode === 'css' ? this.css : source);
-		this.invalidatePreview(); if (this.visible || this.nested.hasFocus) this.scheduler.schedule(this.settings().liveEditor.debounceMs); else this.scheduler.cancel();
+		this.replaceNested(change);
+		this.invalidatePreview();
+		if ((!forwarded || !composing) && (this.visible || this.nested.hasFocus)) this.scheduler.schedule(this.settings().liveEditor.debounceMs);
+		else this.scheduler.cancel();
 	}
 	private presentationExtensions(): Extension[] {
 		const options = this.settings().liveEditor;

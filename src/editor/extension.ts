@@ -7,7 +7,7 @@ import { diagramFences, fenceAt, fenceContaining, fencesBetween, type FenceRange
 import { updateFenceDecorations, type ActiveFence, type FencePresentation } from './fence-decorations';
 import { sourceBridge } from './source-bridge';
 import { LiveEditor } from './live-editor';
-import { setInlineOwner } from './ownership';
+import { releaseInlineOwner, setInlineOwner } from './ownership';
 import { applyEditorStyle } from '../styles/editor-style';
 import { createRenderedPreviews } from './rendered-preview';
 
@@ -17,6 +17,18 @@ const open = StateEffect.define<number | null>();
 const refresh = StateEffect.define<null>();
 const modeChoice = StateEffect.define<{ from: number; static: boolean }>();
 let identity = 0;
+
+function publishOwnership(view: EditorView, active: ActiveFence | null): void {
+	if (!active) { setInlineOwner(view.dom); return; }
+	const { id, range } = active;
+	const current = view.state;
+	setInlineOwner(view.dom, {
+		id, file: current.field(editorInfoField, false)?.file?.path ?? '',
+		fromLine: current.doc.lineAt(range.from).number - 1,
+		toLine: current.doc.lineAt(range.to).number - 1,
+		source: current.sliceDoc(range.bodyFrom, range.bodyTo),
+	});
+}
 
 // A whole-block replacement ends the active session even if its text is identical.
 function mapFence(range: FenceRange, transaction: Transaction): FenceRange | null | undefined {
@@ -123,8 +135,8 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 		toDOM(view: EditorView): HTMLElement {
 			const bridge = sourceBridge(view, () => { const active = view.state.field(state); return active?.id === this.id ? active.range : undefined; });
 			const info = view.state.field(editorInfoField, false);
-			const range = view.state.field(state)?.range;
-			if (range) setInlineOwner(view.dom, { file: info?.file?.path ?? '', fromLine: view.state.doc.lineAt(range.from).number - 1, toLine: view.state.doc.lineAt(range.to).number - 1, source: bridge.source() });
+			const active = view.state.field(state);
+			if (active?.id === this.id) publishOwnership(view, active);
 			const editor = new LiveEditor(app, settings, bridge, info?.file?.path ?? '', () => requestClose(view));
 			editors.set(view, editor);
 			view.dom.ownerDocument.defaultView!.queueMicrotask(() => { if (editors.get(view) === editor) editor.focus(); });
@@ -132,7 +144,9 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 		}
 		ignoreEvent(): boolean { return true; }
 		destroy(dom: HTMLElement): void {
-			for (const [view, editor] of editors) if (editor.element === dom) { editor.destroy(); editors.delete(view); setInlineOwner(view.dom); }
+			for (const [view, editor] of editors) if (editor.element === dom) {
+				editor.destroy(); editors.delete(view); releaseInlineOwner(view.dom, this.id);
+			}
 		}
 	}
 	const decorationContext = (current: EditorState): DecorationContext | null => {
@@ -192,9 +206,11 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 			update(update) {
 				const editor = editors.get(view);
 				const active = view.state.field(state);
-				if (active) setInlineOwner(view.dom, { file: view.state.field(editorInfoField, false)?.file?.path ?? '', fromLine: view.state.doc.lineAt(active.range.from).number - 1, toLine: view.state.doc.lineAt(active.range.to).number - 1, source: view.state.sliceDoc(active.range.bodyFrom, active.range.bodyTo) });
-				else setInlineOwner(view.dom);
-				if (update.docChanged) editor?.sync();
+				const file = view.state.field(editorInfoField, false)?.file?.path;
+				if (update.docChanged || active !== update.startState.field(state) || file !== update.startState.field(editorInfoField, false)?.file?.path) {
+					publishOwnership(view, active);
+				}
+				if (update.docChanged) editor?.syncFromParent(update);
 				if (update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refresh)))) editor?.refresh();
 				if (update.selectionSet && settings().liveEditor.activation === 'focused-block' && !switching) {
 					const target = fenceAt(view.state, view.state.selection.main.head);
@@ -228,7 +244,11 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 		render(checking = false, context) { const view = focused(context); const editor = view && editors.get(view); if (!editor) return false; if (!checking) editor.renderNow(); return true; },
 		refresh() { for (const view of views) { editors.get(view)?.flush(); view.dispatch({ effects: refresh.of(null) }); } previews.refresh(); },
 		remeasure() { for (const editor of editors.values()) editor.remeasure(); },
-		destroy() { for (const editor of editors.values()) editor.destroy(); editors.clear(); previews.destroy(); views.clear(); },
+		destroy() {
+			for (const editor of editors.values()) editor.destroy();
+			for (const view of views) setInlineOwner(view.dom);
+			editors.clear(); previews.destroy(); views.clear();
+		},
 		openAt(file, line, element) {
 			if (!settings().liveEditor.enabled) return false;
 			for (const view of views) {
