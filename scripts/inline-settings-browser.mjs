@@ -5,7 +5,8 @@ export async function runInlineSettingsChecks(page) {
 		const settings = fixture.normalizeSettings(null); settings.alignment = 'right';
 		settings.style.global.colors.text = { light: '#123', dark: '#abc' };
 		settings.style.diagrams.state = { useGlobal: false, overrides: { colors: { text: { dark: '#def' } }, elements: {} } };
-		const tab = new fixture.AdvancedMermaidSettingTab(fixture.app, {}, settings, () => {});
+		const plugin = { manifest: { name: 'Advanced Mermaid', description: 'Manage Mermaid diagrams.', version: '1.2.3' } };
+		const tab = new fixture.AdvancedMermaidSettingTab(fixture.app, plugin, settings, () => {});
 		tab.containerEl = document.body.createDiv(); tab.update();
 		const row = name => [...tab.containerEl.querySelectorAll('.setting-item')].find(item => [...item.querySelectorAll('label')].some(label => label.textContent === name));
 		const open = name => row(name).querySelector('button').click();
@@ -17,7 +18,8 @@ export async function runInlineSettingsChecks(page) {
 			await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 			return disclosure;
 		};
-		const width = tab.containerEl.querySelector('[aria-label="Diagram width"]');
+		const widthControl = () => tab.containerEl.querySelector('[aria-label="Diagram max width"]');
+		const width = widthControl();
 		const widthOptions = [...width.options].map(option => option.textContent);
 		const widthDefaults = width.value === 'default' && !row('Fill available space').querySelector('input').checked;
 		// Native settings can reuse definitions indexed before MTS was installed.
@@ -26,21 +28,27 @@ export async function runInlineSettingsChecks(page) {
 		tab.getSettingDefinitions = () => definitions;
 		fixture.app.plugins.manifests['obsidian-minimal-settings'] = { id: 'obsidian-minimal-settings' };
 		tab.update();
-		const disabledWidthOptions = [...tab.containerEl.querySelector('[aria-label="Diagram width"]').options].map(option => option.textContent);
+		const disabledWidthOptions = [...widthControl().options].map(option => option.textContent);
 		fixture.app.plugins.plugins['obsidian-minimal-settings'] = { settings: { lineWidth: 40, lineWidthWide: 50, maxWidth: 88 } };
 		tab.update();
-		const mtsWidth = tab.containerEl.querySelector('[aria-label="Diagram width"]');
+		const mtsWidth = widthControl();
 		const enabledWidthOptions = [...mtsWidth.options].map(option => option.textContent);
 		mtsWidth.value = 'wide'; mtsWidth.dispatchEvent(new Event('change'));
 		const widthSaved = fixture.normalizeSettings(settings).maxWidth === 'wide';
 		delete fixture.app.plugins.plugins['obsidian-minimal-settings']; tab.update();
-		const legacySelection = tab.containerEl.querySelector('[aria-label="Diagram width"]').value === 'default' && settings.maxWidth === 'wide';
+		const legacySelection = widthControl().value === 'default' && settings.maxWidth === 'wide';
 		delete fixture.app.plugins.manifests['obsidian-minimal-settings'];
 		const widthControlsRemoved = !row('Normal line width') && !row('Wide line width') && !row('Maximum line width');
 		tab.getSettingDefinitions = getDefinitions;
 		const comparisonRemoved = !row('Enable Mermaid comparison');
 		const rootGroups = [...tab.containerEl.querySelectorAll('h3')].map(heading => heading.textContent);
+		const generalPages = tab.settingItems[0].items.map(item => item.name);
+		const displayLabels = ['Diagram alignment', 'Diagram max width', 'Diagram max height'].every(name =>
+			row(name)?.querySelector(`[aria-label="${name}"]`));
 		const editorEssentials = !!row('Editor layout') && !!row('Wrap source') && !row('Preview delay');
+		open('About');
+		const aboutVersion = row('Advanced Mermaid').textContent.includes('Version 1.2.3');
+		back();
 		const displayExample = await showExample();
 		const displayPreview = !!displayExample.querySelector('svg.pele');
 		open('Preview timing');
@@ -86,17 +94,18 @@ export async function runInlineSettingsChecks(page) {
 		open('Preset text'); const invalidModal = document.querySelector('.modal'); const invalid = invalidModal.querySelector('textarea'); invalid.value = 'preset:\n  - alias: Bad\n    fill: url(remote)'; invalid.dispatchEvent(new Event('input'));
 		[...invalidModal.querySelectorAll('button')].find(button => button.textContent === 'Save').click(); const invalidRetained = settings.presets[0].alias === 'Custom' && !!document.querySelector('.modal');
 		[...invalidModal.querySelectorAll('button')].find(button => button.textContent === 'Cancel').click();
-		back(); open('Help and examples');
+		back(); open('Help');
 		const example = await showExample();
 		const preview = example.querySelectorAll('svg.pele').length;
 		back(); const destroyed = !example.querySelector('svg.pele'); tab.hide(); tab.containerEl.remove();
-		return { widthOptions, disabledWidthOptions, enabledWidthOptions, widthSaved, legacySelection, widthControlsRemoved, widthDefaults, comparisonRemoved, rootGroups, editorEssentials, previewTiming, displayPreview, displayCleanup, liveStylePreview, colorRows, paired, rgba, independent, globalReset, inlineUndo, undoScope, inherited, keptFocus, sparse, retained, typeReset, preview, destroyed, fontSize, fontReset, generatedCodeCollapsed, presetSaved, invalidRetained };
+		return { widthOptions, disabledWidthOptions, enabledWidthOptions, widthSaved, legacySelection, widthControlsRemoved, widthDefaults, comparisonRemoved, rootGroups, generalPages, displayLabels, aboutVersion, editorEssentials, previewTiming, displayPreview, displayCleanup, liveStylePreview, colorRows, paired, rgba, independent, globalReset, inlineUndo, undoScope, inherited, keptFocus, sparse, retained, typeReset, preview, destroyed, fontSize, fontReset, generatedCodeCollapsed, presetSaved, invalidRetained };
 	});
 	assert.equal(result.colorRows, 11); assert.equal(result.rgba, '#ff000080'); assert.equal(result.fontSize, 21); assert.equal(result.preview, 1);
 	assert.deepEqual(result.widthOptions, ['Default', 'Full']);
 	assert.deepEqual(result.disabledWidthOptions, ['Default', 'Full']);
 	assert.deepEqual(result.enabledWidthOptions, ['Default', 'Normal', 'Wide', 'Maximum', 'Full Pane']);
-	assert.deepEqual(result.rootGroups, ['Diagram display', 'Live editor', 'Diagram styles']);
+	assert.deepEqual(result.rootGroups, ['General', 'Live Editor', 'Diagram Display', 'Diagram Styles']);
+	assert.deepEqual(result.generalPages, ['About', 'Zoom controls', 'Preset classes', 'Help']);
 	for (const [key, value] of Object.entries(result)) {
 		if (!Array.isArray(value) && typeof value !== 'number' && key !== 'rgba') assert.equal(value, true, key);
 	}

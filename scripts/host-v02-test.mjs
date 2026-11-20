@@ -56,9 +56,31 @@ try {
 		await dialog.waitFor({ timeout: 4000 });
 		return dialog;
 	}));
-	await surface.getByLabel('Diagram width', { exact: true }).selectOption('full');
-	await surface.locator('.advanced-mermaid-settings-example summary').press('Enter');
-	await surface.locator('.advanced-mermaid-settings-example svg.pele').waitFor({ timeout: 4000 });
+	const disclosureTypography = summary => summary.evaluate(element => {
+		const description = element.closest('.setting-item').querySelector('.setting-item-description');
+		const style = getComputedStyle(element);
+		return style.fontSize === getComputedStyle(description).fontSize && Number(style.fontWeight) >= 700;
+	});
+	assert.deepEqual(await surface.locator('.setting-item-heading').allTextContents(), ['General', 'Live Editor', 'Diagram Display', 'Diagram Styles']);
+	await entry('About').press('Enter');
+	const testVersion = await page.evaluate(() => window.advancedMermaidV02Probe.manifest.version);
+	await surface.getByText('Version ' + testVersion, { exact: true }).waitFor({ timeout: 3500 });
+	await back();
+	await waitForFocus('About');
+	await surface.getByLabel('Diagram max width', { exact: true }).selectOption('full');
+	const displayExample = surface.locator('.advanced-mermaid-settings-example');
+	settingsReport.displayTypography = await disclosureTypography(displayExample.locator('summary'));
+	await displayExample.locator('summary').press('Enter');
+	await displayExample.locator('svg.pele').waitFor({ timeout: 4000 });
+	settingsReport.themeDefaults = await displayExample.locator('.advanced-mermaid').evaluate(element => {
+		const css = getComputedStyle(element);
+		const color = name => css.getPropertyValue(name).trim();
+		const background = color('--background-primary');
+		const accent = color('--color-accent');
+		return !!background && !!accent
+			&& color('--pele-surface') === background
+			&& ['--pele-surface-alt', '--pele-border', '--pele-line'].every(token => color(token) === accent);
+	});
 	await entry('Editor appearance').press('Enter');
 	await surface.locator('[aria-label="Source font size"]').fill('23');
 	await page.evaluate(() => window.advancedMermaidV02Probe.persisted);
@@ -84,6 +106,7 @@ try {
 	await surface.locator('[aria-label="Primary text Dark"]:visible').fill('#abcdef');
 	const flowchartExample = surface.locator('.setting-page').filter({ has: surface.locator('.setting-page-title', { hasText: /^Flowchart$/ }) })
 		.locator('.advanced-mermaid-settings-example');
+	settingsReport.diagramTypography = await disclosureTypography(flowchartExample.locator('summary'));
 	await flowchartExample.locator('summary').click();
 	await flowchartExample.locator('svg.pele').waitFor({ timeout: 4000 });
 	await entry('Advanced').press('Enter');
@@ -103,6 +126,7 @@ try {
 	}
 	await search.fill('');
 	await entry('Preset classes').press('Enter');
+	settingsReport.presetTypography = await disclosureTypography(surface.locator('.advanced-mermaid-preset-code summary'));
 	await surface.getByRole('button', { name: 'Create preset', exact: true }).click();
 	let dialog = await findDialog('.advanced-mermaid-preset-dialog');
 	await dialog.locator('[aria-label="Preset class alias"]').fill('NativeCustom'); await dialog.locator('[aria-label="Preset fill"]').fill('#12345680');

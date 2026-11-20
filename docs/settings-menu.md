@@ -7,14 +7,12 @@ Changes save automatically.
 
 Obsidian renders native groups and named sub-pages, in this order:
 
-1. **Diagram display** for placement, width, and height.
-2. **Live editor** for activation, layout, and source options. Open **Editor appearance** for fonts and button colors or **Preview timing** for the preview delay.
-3. **Diagram styles** for theme inheritance, shared defaults under **All diagrams**, and overrides under **By diagram type**.
-4. **Zoom controls** for Zoom colors across all diagram views.
-5. **Preset classes** for reusable styles and the saved preset library.
-6. **Help and examples** for local override syntax and an example diagram.
+1. **General** contains **About**, **Zoom controls**, **Preset classes**, and **Help**. Open **About** to see the installed version.
+2. **Live Editor** covers activation, layout, and source options. Open **Editor appearance** for fonts and button colors or **Preview timing** for the preview delay.
+3. **Diagram Display** covers alignment, maximum width, and maximum height.
+4. **Diagram Styles** provides theme inheritance, shared defaults under **All diagrams**, and overrides under **By diagram type**.
 
-Use Obsidian's **Search settings** to look up controls by name or by terms such as `text wrap`, `line thickness`, and `zoom colors`. Select **Show example** in **Diagram display**, **All diagrams**, or a diagram type page to see your changes. **All diagrams** previews the shared defaults. Each diagram type page previews its own styles and frontmatter.
+Use Obsidian's **Search settings** to look up controls by name or by terms such as `text wrap`, `line thickness`, and `zoom colors`. Select **Show example** in **Diagram Display**, **All diagrams**, or a diagram type page to see your changes. **All diagrams** previews the shared defaults. Each diagram type page previews its own styles and frontmatter.
 
 Use **Back** or press **Alt + Left Arrow** from a page outside a text field. Focus returns to the entry you opened.
 
@@ -22,13 +20,13 @@ Use **Back** or press **Alt + Left Arrow** from a page outside a text field. Foc
 
 | Control | New-configuration default | Behavior |
 | --- | --- | --- |
-| Alignment | Center | Places the diagram left, center, or right. |
-| Diagram width | Default | With Minimal Theme Settings enabled, choose Default, Normal, Wide, Maximum, or Full Pane. When absent or disabled, choose Default or Full. Default preserves native sizing. Full fills the text column, and Full Pane uses the usable pane width. The Live editor uses its preview column as the boundary. |
-| Maximum height | By orientation | Short (30vh), Medium (50vh), Tall (75vh), None, or Custom. By orientation uses None for landscape/square diagrams and Medium for portrait diagrams. |
+| Diagram alignment | Center | Places the diagram left, center, or right. |
+| Diagram max width | Default | With Minimal Theme Settings enabled, choose Default, Normal, Wide, Maximum, or Full Pane. When absent or disabled, choose Default or Full. Default preserves native sizing. Full fills the text column, and Full Pane uses the usable pane width. The Live editor uses its preview column as the boundary. |
+| Diagram max height | By orientation | Short (30vh), Medium (50vh), Tall (75vh), None, or Custom. By orientation uses None for landscape/square diagrams and Medium for portrait diagrams. |
 | Maintain aspect ratio | On | Fits proportionally within the size limits. Turning it off allows independent width/height fitting when both dimensions are bounded. |
 | Fill available space | Off | Enable to enlarge smaller diagrams up to the selected limits. Default width retains native sizing. |
 
-Custom heights accept positive decimal lengths in `vh`, `px`, or `rem`, such as `50vh`, `400px`, or `30rem`. Percentages, expressions, zero, negative, and unitless values are rejected. The reset icon beside maximum height restores orientation defaults.
+Custom heights accept positive decimal lengths in `vh`, `px`, or `rem`, such as `50vh`, `400px`, or `30rem`. Percentages, expressions, zero, negative, and unitless values are rejected. The reset icon beside **Diagram max height** restores orientation defaults.
 
 A diagram's `%% advanced-mermaid:` comment overrides the corresponding global display values. Changing global settings does not rewrite these comments.
 
@@ -70,10 +68,10 @@ Defaults below describe a new configuration with **Follow Obsidian theme** enabl
 | Diagram background | Background behind the diagram. | Inherit Obsidian primary background |
 | Primary text | Main diagram labels and text. | Inherit Obsidian normal text |
 | Secondary text | Muted or supporting text. | Inherit Obsidian muted text |
-| Lines and connectors | Connecting lines and arrows. | Inherit Obsidian normal text color |
-| Primary surface | Main shape and panel surface color. | Inherit Obsidian secondary background |
-| Secondary surface | Alternate shape and panel surface color. | Inherit Obsidian alternate primary background |
-| Borders | General outline and border color. | Inherit Obsidian border color |
+| Lines and connectors | Connecting lines and arrows. | Inherit Obsidian accent color |
+| Primary surface | Main shape and panel surface color. | Inherit Obsidian primary background |
+| Secondary surface | Alternate shape and panel surface color. | Inherit Obsidian accent color |
+| Borders | General outline and border color. | Inherit Obsidian accent color |
 | Accent | Highlight and emphasis color. | Inherit Obsidian interactive accent |
 | Error color | Error-related diagram color. | Inherit Obsidian error text color |
 | Text on light fills | Contrast text used on light authored fills. | Inherit renderer value |
@@ -100,7 +98,7 @@ Defaults below describe a new configuration with **Follow Obsidian theme** enabl
 | Subgraph border width | Subgraph outline thickness, from 0–20px. | Empty; inherit |
 | Reset shared styles | Clears shared overrides and offers **Undo reset**. | Action |
 
-## Live editor
+## Live Editor
 
 | Control | Default | Behavior |
 | --- | --- | --- |
@@ -141,7 +139,7 @@ Select an alias to edit or delete it, or select **Create preset** for a new entr
 
 The plugin uses the 42 built-in classes when a vault has no saved preset library. An explicit empty library stays empty after reload. Existing display/style/editor settings and newer-schema overwrite protection remain.
 
-## Help and examples
+## Help
 
 This settings page explains display directives and constrained style comments. The interactive **Local override** selector lives in the inline editor. It inserts missing syntax using the current effective value or selects an existing value without replacement. Style targeting offers Both themes, Light, and Dark. Invalid/conflicting drafts and malformed comments block insertion; valid insertions are one parent-editor undo step.
 

@@ -5,10 +5,10 @@
 	--pele-bg: var(--background-primary, #ffffff);
 	--pele-fg: var(--text-normal, #222222);
 	--pele-muted: var(--text-muted, #666666);
-	--pele-line: var(--text-normal, #222222);
-	--pele-surface: var(--background-secondary, #f3f3f3);
-	--pele-surface-alt: var(--background-primary-alt, #e6e6e6);
-	--pele-border: var(--background-modifier-border, #888888);
+	--pele-line: var(--color-accent);
+	--pele-surface: var(--background-primary);
+	--pele-surface-alt: var(--color-accent);
+	--pele-border: var(--color-accent);
 	--pele-accent: var(--interactive-accent, #5b7bd5);
 	--pele-critical: var(--text-error, #e45756);
 	--pele-error: var(--text-error, #e45756);
@@ -64,8 +64,12 @@
 .advanced-mermaid-settings-example,
 .advanced-mermaid-preset-code { min-width: 0; }
 .advanced-mermaid-preset-code { flex-basis: 100%; }
-.advanced-mermaid-settings-example summary,
-.advanced-mermaid-preset-code summary { cursor: pointer; }
+.advanced-mermaid-settings-example > summary,
+.advanced-mermaid-preset-code > summary {
+	cursor: pointer;
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-bold, 700);
+}
 .advanced-mermaid-preset-source {
 	width: 100%;
 	min-width: 180px;

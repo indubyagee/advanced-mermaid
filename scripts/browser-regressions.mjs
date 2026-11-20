@@ -320,7 +320,7 @@ export async function runPostTestChecks(page) {
 		let changes = 0;
 		const tab = new fixture.AdvancedMermaidSettingTab(fixture.app, {}, item.settings, () => changes++);
 		tab.containerEl = document.body.createDiv(); tab.display();
-		const heightInput = tab.containerEl.querySelector('input[aria-label="Maximum height"]');
+		const heightInput = tab.containerEl.querySelector('input[aria-label="Diagram max height"]');
 		const heightPreset = tab.containerEl.querySelector('select[aria-label="Height preset"]');
 		heightInput.value = '17rem'; heightInput.dispatchEvent(new Event('input'));
 		const customHeight = item.settings.maxHeight === '17rem' && heightPreset.value === 'custom';

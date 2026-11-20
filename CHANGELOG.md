@@ -8,6 +8,7 @@
 - Reduce diagram scanning during typing and cursor movement in Live Preview.
 - Limit inline edit updates to the affected pane and remove duplicate toolbar and preview refreshes.
 - Group settings by task, add dedicated diagram-type and Zoom pages, and put live examples next to the controls they preview.
+- Put General settings first, clarify diagram sizing labels, and use the Obsidian accent color for alternate surfaces, borders, and lines.
 
 ### Fixed
 

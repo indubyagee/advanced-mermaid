@@ -22,7 +22,7 @@ const bundle = await build({ entryPoints: ['tests/browser-entry.ts'], bundle: tr
 const css = await readFile('styles.css', 'utf8');
 const server = createServer((request, response) => {
 	response.setHeader('Content-Type', request.url === '/fixture.js' ? 'application/javascript; charset=utf-8' : 'text/html; charset=utf-8');
-	response.end(request.url === '/fixture.js' ? bundle.outputFiles[0].text : `<!doctype html><style>body{--background-primary:#fff;--text-normal:#222;--font-text:Arial;font-family:Arial}.fixture-diagram{width:600px}${css}</style><script src="/fixture.js"></script>`);
+	response.end(request.url === '/fixture.js' ? bundle.outputFiles[0].text : `<!doctype html><style>body{--background-primary:#fff;--color-accent:#7650b2;--text-normal:#222;--font-text:Arial;font-family:Arial}.fixture-diagram{width:600px}${css}</style><script src="/fixture.js"></script>`);
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 let browser;

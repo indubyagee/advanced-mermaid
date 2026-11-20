@@ -34,9 +34,9 @@ Both `mermaid` and `pele` code blocks use Advanced Mermaid in Reading view, rend
 
 Open **Settings → Community plugins → Advanced Mermaid** and select the plugin's settings.
 
-**Diagram width** defaults to **Default**. Its options depend on whether Minimal Theme Settings (MTS) is enabled.
+**Diagram max width** defaults to **Default**. Its options depend on whether Minimal Theme Settings (MTS) is enabled.
 
-| MTS state | Diagram width options |
+| MTS state | Diagram max width options |
 | --- | --- |
 | Enabled | Default, Normal, Wide, Maximum, Full Pane |
 | Disabled or absent | Default, Full |
@@ -45,8 +45,8 @@ Open **Settings → Community plugins → Advanced Mermaid** and select the plug
 
 Normal, Wide, and Maximum use the active values configured in MTS. Maximum caps Normal and Wide. Disabling MTS switches to native or text-column sizing and ignores saved MTS width values. These rules apply in Reading view and Live Preview.
 
-- **Alignment:** `left`, `center`, or `right`; defaults to `center`.
-- **Maximum height:** Short (30vh), Medium (50vh), Tall (75vh), None, or a custom positive decimal in `vh`, `px`, or `rem`. **By orientation** selects None for landscape/square diagrams and Medium for portrait diagrams. `vh` uses the diagram window's viewport height. Zero, negative values, percentages, expressions, and unitless values are rejected.
+- **Diagram alignment** offers `left`, `center`, or `right` and defaults to `center`.
+- **Diagram max height** offers Short (30vh), Medium (50vh), Tall (75vh), None, or a custom positive decimal in `vh`, `px`, or `rem`. **By orientation** selects None for landscape/square diagrams and Medium for portrait diagrams. `vh` uses the diagram window's viewport height. Zero, negative values, percentages, expressions, and unitless values are rejected.
 - **Maintain aspect ratio:** enabled by default. Fit proportionally within both limits. When disabled, fill the bounded dimensions independently; an unlimited height remains proportional to the fitted width.
 - **Fill available space** defaults to off. Enable it to enlarge smaller diagrams up to the selected limits. Default width retains native sizing even when this is enabled.
 - Orientation is determined from intrinsic dimensions before fitting. Layout/direction do not change when height limits or pane widths change. Reading view and Live Preview's **Rendered view** use the full diagram block for zoom and pan. The controls sit at the bottom right for left-aligned diagrams and at the bottom left for centered or right-aligned diagrams. The **Live editor** preview places the controls beside the SVG. After zooming, drag to pan or focus the SVG and use the arrow keys.
@@ -74,7 +74,7 @@ The marker is case-sensitive. Use at most one directive, with each key at most o
 
 ## Theme
 
-Diagram text, lines, surfaces, accents, and fonts follow Obsidian by default. Under **Diagram styles**, open **All diagrams** for shared defaults or **By diagram type** for one of 16 families. Open **Advanced** for category colors and each family's custom frontmatter. **Show example** previews the styles on the current page. Each color row has independent **Light** and **Dark** selectors and resets. Fields accept hex, RGB/RGBA, and HSL/HSLA and save normalized hex with alpha. **Use styles from All diagrams** retains custom type values for later use. Scoped reset actions offer undo. Disabling **Follow Obsidian theme** restores Pele color defaults and retains custom values. Fonts continue inheriting Obsidian's local font families.
+Diagram text, lines, surfaces, accents, and fonts follow Obsidian by default. Under **Diagram Styles**, open **All diagrams** for shared defaults or **By diagram type** for one of 16 families. Open **Advanced** for category colors and each family's custom frontmatter. **Show example** previews the styles on the current page. Each color row has independent **Light** and **Dark** selectors and resets. Fields accept hex, RGB/RGBA, and HSL/HSLA and save normalized hex with alpha. **Use styles from All diagrams** retains custom type values for later use. Scoped reset actions offer undo. Disabling **Follow Obsidian theme** restores Pele color defaults and retains custom values. Fonts continue inheriting Obsidian's local font families.
 
 Each family also offers **Use custom frontmatter** and a YAML field for defaults such as `config.flowchart.rankSpacing`. These apply to all Pele instances of that family, including Live editor previews and exports. Frontmatter in an individual source block overrides matching defaults; missing keys inherit. The toggle is independent of **Use global styles** and retains its YAML when disabled. Only valid changes are saved, and notes are never rewritten. See [frontmatter settings and precedence](https://github.com/indubyagee/advanced-mermaid/blob/main/docs/settings-menu.md#styles) for an example and renderer limitations.
 
