@@ -17,6 +17,7 @@ export const sourceTheme = EditorView.theme({
 	'.cm-content': {
 		minHeight: '180px',
 		color: 'var(--advanced-mermaid-source-text)',
+		caretColor: 'currentColor',
 	},
 	'.cm-line': { padding: '0 8px' },
 	'.cm-gutters': {

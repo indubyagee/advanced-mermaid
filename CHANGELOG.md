@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Keep the Live Editor caret visible when switching between light and dark themes.
+
 ## 0.3.3 — 2026-11-19
 
 ### Added

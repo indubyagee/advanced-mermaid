@@ -6,6 +6,7 @@ export async function runEditorStyleChecks(page) {
 	// independently sized by the plugin, as in the installed Obsidian CSS.
 	const hostStyle = await page.addStyleTag({ content: `
 		.editor-style-fixture { --input-height:48px; --input-radius:7px; --button-radius:6px; }
+		.theme-dark .editor-style-fixture { --text-normal: #ddd; }
 		.editor-style-fixture > .cm-editor > .cm-scroller > .cm-content { width: 0; flex-basis: unset !important; }
 		.editor-style-fixture button, .editor-style-fixture :where(select) { box-shadow: 0 1px 2px #666; background-image: linear-gradient(#eee, #ccc); }
 	` });
@@ -37,6 +38,12 @@ export async function runEditorStyleChecks(page) {
 				radius(host.querySelector('.advanced-mermaid-editor select')) === '7px' &&
 				radius(host.querySelector('.advanced-mermaid-export summary')) === '4px';
 			const defaults = themeDefaults();
+			const caretColor = () => getComputedStyle(fixture.sourceRoot(host).querySelector('.cm-content')).caretColor;
+			const lightCaret = caretColor();
+			document.body.classList.add('theme-dark');
+			const darkCaret = caretColor();
+			document.body.classList.remove('theme-dark');
+			const defaultCaret = [lightCaret, darkCaret];
 			edit('Source font size', '21'); edit('Button font size', '17');
 			edit('Button corner radius slider', '14');
 			const values = {
@@ -71,7 +78,7 @@ export async function runEditorStyleChecks(page) {
 				});
 				const rounded = [...buttons.filter(button => !button.closest('.pele-zoom')), ...dropdowns].every(control => radius(control) === '14px');
 				const content = source.querySelector('.cm-content');
-				themes.push({ theme, source: paint(content)[0], token: paint(content.querySelector('span'))[0], background: getComputedStyle(source.querySelector('.cm-editor')).backgroundColor,
+				themes.push({ theme, source: paint(content)[0], caret: caretColor(), token: paint(content.querySelector('span'))[0], background: getComputedStyle(source.querySelector('.cm-editor')).backgroundColor,
 					gutter: getComputedStyle(source.querySelector('.cm-gutters')).backgroundColor,
 					font: getComputedStyle(content).fontSize, flat, dropdownsFlat, rounded, sizes: buttons.map(button => getComputedStyle(button).fontSize),
 					dropdowns: Object.fromEntries(dropdowns.map(select => [select.getAttribute('aria-label'), paint(select)])),
@@ -96,17 +103,20 @@ export async function runEditorStyleChecks(page) {
 			for (const button of tab.containerEl.querySelectorAll('button[aria-label^="Reset "]')) button.click();
 			const reset = settings.liveEditor.fontSizePx === null && settings.liveEditor.style.buttonFontSizePx === null &&
 				settings.liveEditor.style.buttonRadiusPx === null && Object.keys(settings.liveEditor.style.colors).length === 0 && themeDefaults();
+			document.body.classList.remove('theme-dark');
 			const diagramUnchanged = getComputedStyle(host.querySelector('svg.pele text')).fill === originalDiagram && getComputedStyle(host.querySelector('svg.pele text')).fontSize === originalDiagramSize;
 			const summary = exportSummary(); const box = summary.getBoundingClientRect();
 			const range = document.createRange(); range.selectNodeContents(summary); const text = range.getBoundingClientRect();
 			const exportCentered = Math.abs(text.top + text.height / 2 - box.top - box.height / 2) < 1 && Math.abs(text.left + text.width / 2 - box.left - box.width / 2) < 1;
-			return { moved, paired, noClose, sliders, themes, invalidRetained, invalidRadius, alpha, roundTrip, defaults, inheritedExport, reset, diagramUnchanged, exportCentered };
+			return { moved, paired, noClose, sliders, themes, invalidRetained, invalidRadius, alpha, roundTrip, defaults, defaultCaret, inheritedExport, reset, diagramUnchanged, exportCentered };
 		});
 		for (const name of ['moved', 'paired', 'noClose', 'sliders', 'invalidRetained', 'invalidRadius', 'alpha', 'roundTrip', 'defaults', 'reset', 'diagramUnchanged', 'exportCentered']) assert.equal(report[name], true, name);
 		assert.deepEqual(report.inheritedExport, ['rgb(69, 109, 239)', '#567efa'], 'Resetting the dark Export border uses the inactive border and keeps the light override');
+		assert.deepEqual(report.defaultCaret, ['rgb(34, 34, 34)', 'rgb(221, 221, 221)'], 'The source caret follows the Obsidian text color on theme changes');
 		const rgb = hex => `rgb(${hex.match(/../g).map(byte => parseInt(byte, 16)).join(', ')})`;
 		for (const [i, result] of report.themes.entries()) {
 			assert.equal(result.source, rgb(i ? 'abcdef' : '123456')); assert.equal(result.background, rgb(i ? '102030' : 'f0e0d0')); assert.equal(result.gutter, result.background);
+			assert.equal(result.caret, result.source, 'The source caret follows the selected source color');
 			assert.equal(result.token, result.source, 'The selected source color applies to syntax tokens');
 			assert.equal(result.font, '21px'); assert.ok(result.sizes.every(size => size === '17px'), JSON.stringify(result.sizes));
 			assert.ok(result.flat && result.dropdownsFlat && result.rounded, `Flat controls with the configured radius in ${result.theme}`);
