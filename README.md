@@ -1,6 +1,19 @@
 # Advanced Mermaid
 
-Edit a Mermaid diagram and see it update in the same Obsidian note. Advanced Mermaid lets you match diagrams to your light or dark theme, reuse styles across notes, and export diagrams as SVG or PNG. You can also turn a flowchart or Agentflow diagram into an editable Obsidian Canvas.
+Edit a Mermaid diagram and see it update in the same Obsidian note. Advanced Mermaid lets you match diagrams to the vault theme, reuse styles and presets across notes, export diagrams as SVG or PNG, and turn a flowchart or Agentflow diagram into an editable Obsidian Canvas.
+
+````markdown
+```mermaid
+flowchart TD
+    A["Write Mermaid"] --> B["Preview diagram"]
+    B --> C{"Ready to share?"}
+    C -->|Not yet| D["Edit in place"]
+    D -.-> B
+    C -->|Yes| E["Export SVG or PNG"]
+```
+````
+
+![Live editor](docs/media/preview-light-flowchart-0.3.3.png)
 
 **Requires Obsidian 1.14.5 or later on desktop.**
 
@@ -32,6 +45,7 @@ While the plugin is enabled, it renders both `mermaid` and `pele` code blocks us
 
 - [User Guide](docs/user-guide.md) for editing, styling, exporting, and troubleshooting.
 - [Technical reference](docs/technical-reference.md) for configuration syntax, rendering behavior, and development.
+- [Contributing](CONTRIBUTING.md) for reporting issues, testing changes, and opening pull requests.
 - [Changelog](CHANGELOG.md) for release notes.
 
 ## License and credits
@@ -39,3 +53,7 @@ While the plugin is enabled, it renders both `mermaid` and `pele` code blocks us
 Advanced Mermaid and its bundled renderer, Pele, use the MIT license. [Project license](LICENSE) · [Pele source](https://github.com/obsidianmd/pele)
 
 [Support the project on Buy Me a Coffee](https://buymeacoffee.com/indubyagee)
+
+<a href="https://buymeacoffee.com/indubyagee">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy me a coffee" height="30">
+</a>

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- Add a [User Guide](docs/user-guide.md) for installation, editing, styling, and exports, and a [technical reference](docs/technical-reference.md) for configuration and development.
+- Add a [contribution guide](CONTRIBUTING.md) with steps for reporting issues, testing changes, and opening pull requests.
+
 ### Changed
 
 - Reuse rendered diagrams when alignment, sizing, or colors change.
@@ -9,6 +14,7 @@
 - Limit inline edit updates to the affected pane and remove duplicate toolbar and preview refreshes.
 - Group settings by task, add dedicated diagram-type and Zoom pages, and put live examples next to the controls they preview.
 - Put General settings first, clarify diagram sizing labels, and use the Obsidian accent color for alternate surfaces, borders, and lines.
+- Rework the [README](README.md) around installation from the Obsidian community catalog and a copyable first diagram.
 
 ### Fixed
 
