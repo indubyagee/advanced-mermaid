@@ -41,13 +41,13 @@ const relationships = 'A ||--o{ B : includes\nB ||--o{ C : contains';
 export const referenceDeltas = [
 	{ name: 'Flowchart numbered steps', source: '---\nconfig:\n  flowchart:\n    stepDuration: 2\n    stepNumbers: true\n---\n' + step + '\n  first@{ step: 1 }\n  second@{ step: 2 }', control: step, selector: '.edge-step-badge' },
 	{ name: 'Flowchart BPMN start node', source: 'flowchart LR\n  A@{ shape: bpmn-start, label: Start } --> B[Finish]', selector: '.bpmn-event-ring' },
-	{ name: 'Flowchart plain link and circle link', source: 'flowchart LR\n  A --- B\n  B --o C', selector: 'path[marker-end*="circle" i], circle.pele-marker' },
+	{ name: 'Flowchart circle link', source: 'flowchart LR\n  A --o B', control: 'flowchart LR\n  A --- B', selector: 'path[marker-end*="circle" i], circle.pele-marker' },
 	{ name: 'Mindmap depth colors', source: '---\nconfig:\n  mindmap:\n    colorBy: depth\n---\n' + mindmap, control: mindmap, labels: ['First', 'Child', 'Second', 'Leaf'] },
 	{ name: 'Agentflow input shorthand', source: agent, control: agent.replace('a[/Incoming/]', 'a@{ shape: input, label: Incoming }'), labels: ['Incoming'] },
-	{ name: 'Swimlane nested subgraph', source: sw, selector: 'g.cluster, .pele-cluster' },
+	{ name: 'Swimlane nested subgraph', source: sw, selector: 'g.cluster, .pele-cluster', clusters: true },
 	{ name: 'Swimlane BPMN start node', source: sw.replace('A[Review]', 'A@{ shape: bpmn-start, label: Review }'), selector: '.bpmn-event-ring' },
 	{ name: 'ER left-to-right', source: 'erDiagram\n  direction LR\n  ' + relationships, control: 'erDiagram\n  direction TB\n  ' + relationships, labels: ['A', 'B', 'C'] },
-	{ name: 'ER nested subgraph', source: 'erDiagram\n  direction LR\n  subgraph inventory\n    direction TB\n    A ||--o{ B : includes\n  end\n  B ||--o{ C : contains', selector: 'g.cluster, .pele-cluster' },
+	{ name: 'ER nested subgraph', source: 'erDiagram\n  direction LR\n  subgraph inventory\n    direction TB\n    A ||--o{ B : includes\n  end\n  B ||--o{ C : contains', selector: 'g.cluster, .pele-cluster', clusters: true },
 ];
 
 // The timed sources use the same authored diagrams on either branch revision.

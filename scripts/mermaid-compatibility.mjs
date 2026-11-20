@@ -62,7 +62,18 @@ try {
 				}
 				const result = { type };
 				if (diagnostics?.length) result.diagnostics = diagnostics;
-				if (probe.selector) result.matches = diagram.querySelectorAll(probe.selector).length;
+				if (probe.selector) {
+					const matches = [...diagram.querySelectorAll(probe.selector)];
+					result.matches = matches.length;
+					if (probe.clusters) {
+						const boxes = matches.map(group => group.querySelector('rect')?.getBoundingClientRect())
+							.filter(rect => rect && rect.width > 0 && rect.height > 0);
+						result.nonempty = boxes.length;
+						result.nested = boxes.some(outer => boxes.some(inner => outer !== inner &&
+							inner.left >= outer.left && inner.right <= outer.right &&
+							inner.top >= outer.top && inner.bottom <= outer.bottom));
+					}
+				}
 				if (probe.labels) {
 					result.labels = probe.labels.map(label => {
 						const text = [...diagram.querySelectorAll('text, .nodeLabel')].find(element => element.textContent.trim() === label);
@@ -113,19 +124,27 @@ try {
 		}
 	}
 	const result = name => capabilities.find(row => row.name === name).results;
-	assert.equal(result('Flowchart numbered steps')[0].matches, 2);
-	assert.equal(result('Flowchart numbered steps')[0].control.matches, 0);
-	assert.equal(result('Flowchart BPMN start node')[0].matches, 1);
-	assert.ok(result('Flowchart plain link and circle link').every(variant => variant.matches === 1));
-	assert.ok(result('Swimlane nested subgraph').every(variant => variant.matches === 3));
-	assert.ok(result('ER nested subgraph').every(variant => variant.matches === 1));
-	const [mindmap] = result('Mindmap depth colors');
+	const [steps, ...peleSteps] = result('Flowchart numbered steps');
+	assert.equal(steps.matches, 2);
+	assert.equal(steps.control.matches, 0);
+	assert.ok(peleSteps.every(variant => variant.matches === 0 && variant.sameSvg));
+	for (const probe of ['Flowchart BPMN start node', 'Swimlane BPMN start node']) {
+		const [reference, ...peleShapes] = result(probe);
+		assert.equal(reference.matches, 1, probe);
+		assert.ok(peleShapes.every(shape => shape.code === 'semantic' && shape.error.includes('bpmn-start')), probe);
+	}
+	assert.ok(result('Flowchart circle link').every(variant => variant.matches === 1 && variant.control.matches === 0));
+	assert.ok(result('Swimlane nested subgraph').every(variant => variant.matches === 3 && variant.nonempty === 3 && variant.nested));
+	assert.ok(result('ER nested subgraph').every(variant => variant.matches === 1 && variant.nonempty === 1));
+	const [mindmap, ...peleMindmaps] = result('Mindmap depth colors');
 	assert.equal(mindmap.labels[0].fill, mindmap.labels[2].fill);
 	assert.notEqual(mindmap.labels[0].fill, mindmap.labels[1].fill);
 	assert.notEqual(mindmap.control.labels[0].fill, mindmap.control.labels[2].fill);
+	assert.ok(peleMindmaps.every(variant => variant.sameSvg));
 	const [shortInput, ...peleInputs] = result('Agentflow input shorthand');
 	assert.equal(shortInput.labels[0].shape, 'polygon');
 	assert.ok(peleInputs.every(input => input.control.labels[0].shape === 'polygon'));
+	assert.ok(peleInputs.every(input => input.labels[0].shape === 'rect' && input.diagnostics.includes('SHAPE_UNSUPPORTED')));
 	for (const direction of result('ER left-to-right')) {
 		assert.ok(direction.labels[0].x < direction.labels[2].x);
 		assert.ok(direction.control.labels[0].y < direction.control.labels[2].y);
