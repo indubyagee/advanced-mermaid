@@ -18,6 +18,7 @@ import { checkDiagramSource } from './source-budget';
 import { originalSourceError, resolveFrontmatter } from '../styles/frontmatter';
 import { createZoomControls, zoomLimit } from '../ui/zoom-controls';
 import { hasPendingDiagramEnvironmentRefresh, observeDiagramEnvironment } from './environment';
+import { maskClusterTitleOverlaps } from './cluster-title-mask';
 
 export interface ControllerOptions { boundary?: HTMLElement; keepLastValid?: boolean; changed?: (valid: boolean, error?: unknown) => void }
 
@@ -73,7 +74,7 @@ export class DiagramController extends Component {
 		this.disposed = false;
 
 		this.containerEl.addClass('advanced-mermaid');
-		this.register(registerSvgPreparation(this.containerEl, svg => applyPresetClasses(svg, this.presets, this.containerEl.dataset.category ?? '')));
+		this.register(registerSvgPreparation(this.containerEl, svg => this.prepareSvg(svg)));
 		const layout = this.containerEl.createDiv({ cls: 'advanced-mermaid-layout' });
 		const viewport = layout.createDiv({ cls: 'advanced-mermaid-viewport' });
 		const frameEl = viewport.createDiv({ cls: 'advanced-mermaid-frame' });
@@ -160,7 +161,7 @@ export class DiagramController extends Component {
 		this.containerEl.dataset.category = isDiagramCategory(result.type) ? result.type : 'other';
 		this.containerEl.dataset.mermaidType = result.mermaidType;
 		const svg = this.host.querySelector<SVGSVGElement>('svg.pele');
-		if (svg) applyPresetClasses(svg, this.presets, this.containerEl.dataset.category);
+		if (svg) this.prepareSvg(svg);
 		this.containerEl.classList.toggle('advanced-mermaid-fallback', !!this.configurationError);
 		this.host.hidden = false;
 		if (this.display) this.layout.update(result, this.display);
@@ -170,6 +171,12 @@ export class DiagramController extends Component {
 		} else this.feedback.clear();
 		this.containerEl.classList.remove('advanced-mermaid-stale');
 		if (!this.blocked) this.options.changed?.(!this.configurationError, this.configurationError);
+	}
+
+	private prepareSvg(svg: SVGSVGElement): void {
+		const category = this.containerEl.dataset.category ?? '';
+		if (category === 'flowchart') maskClusterTitleOverlaps(svg);
+		applyPresetClasses(svg, this.presets, category);
 	}
 
 	private failed(error: unknown): void {
@@ -182,7 +189,7 @@ export class DiagramController extends Component {
 			const parsed = new doc.defaultView!.DOMParser().parseFromString(this.result.svg, 'image/svg+xml');
 			this.host.replaceChildren(doc.importNode(parsed.documentElement, true));
 			this.containerEl.dataset.category = this.result.type;
-			applyPresetClasses(this.host.querySelector<SVGSVGElement>('svg')!, this.presets, this.result.type);
+			this.prepareSvg(this.host.querySelector<SVGSVGElement>('svg')!);
 			this.host.hidden = false;
 			this.containerEl.classList.add('advanced-mermaid-stale');
 			if (this.display) this.layout.update(this.result, this.display);
