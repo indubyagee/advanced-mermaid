@@ -1,19 +1,22 @@
 # Settings menu
 
 Open **Settings → Community plugins → Advanced Mermaid** and select the plugin's settings.
-Changes use the plugin's settings persistence; there is no separate Apply button.
+Changes save automatically.
 
 ## Menu structure
 
 Obsidian renders native groups and named sub-pages, in this order:
 
-1. **Display settings** — diagram placement and sizing.
-2. **Live editor settings** — activation, layout, preview behavior, and the **Editor style settings** page.
-3. **Style settings** — theme inheritance, **Global style settings**, and **Diagram-specific style settings** pages.
-4. **Preset class settings** — a page for form/text editing and confirmed deletion.
-5. **Local overrides and example** — instructions and a lazy preview.
+1. **Diagram display** for placement, width, and height.
+2. **Live editor** for activation, layout, and source options. Open **Editor appearance** for fonts and button colors or **Preview timing** for the preview delay.
+3. **Diagram styles** for theme inheritance, shared defaults under **All diagrams**, and overrides under **By diagram type**.
+4. **Zoom controls** for Zoom colors across all diagram views.
+5. **Preset classes** for reusable styles and the saved preset library.
+6. **Help and examples** for local override syntax and an example diagram.
 
-Controls are indexed by Obsidian's settings search. **Editor layout** controls the editor inside a note. Settings navigation uses the host's back control and retains the selected diagram and reset undo within this settings session.
+Use Obsidian's **Search settings** to look up controls by name or by terms such as `text wrap`, `line thickness`, and `zoom colors`. Select **Show example** in **Diagram display**, **All diagrams**, or a diagram type page to see your changes. **All diagrams** previews the shared defaults. Each diagram type page previews its own styles and frontmatter.
+
+Use **Back** or press **Alt + Left Arrow** from a page outside a text field. Focus returns to the entry you opened.
 
 ## Display
 
@@ -35,11 +38,11 @@ Normal, Wide, and Maximum use the active values selected in Minimal Theme Settin
 
 **Follow Obsidian theme** is on by default. Turning it off uses Pele's inherited color defaults while retaining custom light/dark values. Fonts continue to inherit Obsidian's local font families.
 
-Open **Global style settings** to edit common colors, local fonts, label size, corner radius, and shared element defaults. Each color occupies one row with Light/Dark selectors and independent resets. Text fields accept hex, RGB/RGBA, or HSL/HSLA; stored values are hex with alpha. Empty overrides inherit. Base label sizes accept 4–128px; corner radii accept 0–32px. Pixel-size controls combine numeric inputs, sliders, and resets; existing fractional style sizes remain valid.
+Open **All diagrams** to edit common colors, local fonts, label size, corner radius, and shared element defaults. Each color occupies one row with Light/Dark selectors and independent resets. Text fields accept hex, RGB/RGBA, or HSL/HSLA and save as hex with alpha. Empty overrides inherit. Base label sizes accept 4–128 px and corner radii accept 0–32 px. Pixel-size controls combine numeric inputs, sliders, and resets. Fractional style sizes are supported.
 
-On **Diagram-specific style settings**, choose a family from **Diagram selection** and turn off **Use global styles** to edit its overrides. Turning inheritance back on retains them. Specialized controls depend on the selected family. Shared Node, Edge, and Subgraph controls open their own pages globally and for Flowchart.
+Under **By diagram type**, open a family such as **Flowchart** and turn off **Use styles from All diagrams** to edit its overrides. Empty values inherit from **All diagrams**. Turning inheritance back on retains your custom values. Specialized controls depend on the family. **Nodes**, **Edges**, and **Subgraphs** have their own pages under **All diagrams** and **Flowchart**.
 
-Each of the 16 families also has **Use custom frontmatter** (off by default) and a **Custom frontmatter** YAML field. This toggle works independently of **Use global styles**. Valid YAML saves automatically; invalid drafts show an error and retain the last saved configuration. Disabling the toggle retains the saved YAML. Optional `---` delimiters are accepted. For example, select Flowchart and enter:
+Open **Advanced** for the eight category colors. On each diagram type page, **Advanced** also contains **Use custom frontmatter** (off by default) and the **Custom frontmatter** YAML field. Frontmatter can apply while styles inherit from **All diagrams**. Valid YAML saves automatically. Invalid drafts show an error and retain the last saved configuration. Disabling the toggle retains the saved YAML. Optional `---` delimiters are accepted. For example, open **Flowchart → Advanced** and enter the following YAML.
 
 ```yaml
 config:
@@ -52,9 +55,9 @@ When enabled, these defaults apply to all diagrams in the selected family in Pel
 
 Use normal Mermaid frontmatter keys such as `title` and `config`, including the correctly capitalized family key (`gitGraph`, `treeView`, `journey`, or `swimlane`, for example). Options take effect only when supported by Pele 1.12.0; accepting YAML does not imply support for every Mermaid option. Configurations are limited to 50,000 characters and bounded nesting; combined render input also follows the renderer's source limit.
 
-- **Reset global styles** clears global style overrides, retaining display, diagram-type, and note styles.
-- **Reset this diagram type** clears that type's style overrides and custom frontmatter, and restores global inheritance.
-- **Undo reset** restores the previous values for that scope during the current settings session; it is not a persistent backup.
+- **Reset shared styles** clears the defaults set under **All diagrams**.
+- Each diagram type has a labeled reset such as **Reset Flowchart styles**. It clears that type's overrides and custom frontmatter and restores inheritance from **All diagrams**.
+- **Undo reset** appears beside the reset confirmation and restores the previous values during that settings session.
 
 Settings inherit through theme → global → diagram type → local. Authored Mermaid styles retain precedence. See the [README theme guide](https://github.com/indubyagee/advanced-mermaid/blob/main/README.md#theme) for supported controls and palette classes.
 
@@ -81,7 +84,7 @@ Defaults below describe a new configuration with **Follow Obsidian theme** enabl
 | Corner radius | Rounding of supported corners, from 0–32px. | Empty; inherit |
 | Base label size | Measured base text size, from 4–128px. | Empty; inherit |
 | Text weights | Informational row for title, heading, and bold weights; editing is unavailable. | Renderer weights; no override |
-| Shared element defaults | Expand legacy node, edge-label, subgraph, and stroke controls where matching elements exist. Available globally and for Flowchart. | Collapsed; no overrides |
+| Shared element defaults | Open **Nodes**, **Edges**, or **Subgraphs** to edit defaults for matching elements in **All diagrams** and **Flowchart**. | Empty, inherit |
 | Node fill | Interior color of nodes. | Empty; inherit |
 | Node border | Outline color of nodes. | Empty; inherit |
 | Node text | Text color inside nodes. | Empty; inherit |
@@ -95,7 +98,7 @@ Defaults below describe a new configuration with **Follow Obsidian theme** enabl
 | Edge width | Connector stroke thickness, from 0–20px. | Empty; inherit |
 | Edge label border width | Connector-label outline thickness, from 0–20px. | Empty; inherit |
 | Subgraph border width | Subgraph outline thickness, from 0–20px. | Empty; inherit |
-| Reset global styles | Clears global overrides and legacy theme values; offers Undo reset. | Action; no stored default |
+| Reset shared styles | Clears shared overrides and offers **Undo reset**. | Action |
 
 ## Live editor
 
@@ -106,10 +109,10 @@ Defaults below describe a new configuration with **Follow Obsidian theme** enabl
 | Wrap source | Off | Wraps long source lines. |
 | Open editor | Manual | Choose Manual or Focused block activation. |
 | Editor layout | Auto | Choose Auto, Side by side, or Stacked. Narrow panes can force stacking even when Side by side is selected. |
-| Preview delay | 250 milliseconds | Accepts whole numbers from 100 to 1000. Source edits save immediately; this controls delayed preview work. |
-| Editor style settings | Opens a page | Source presentation and editor button styles; the original source size preference is retained. |
+| Preview timing → Preview delay | 250 milliseconds | Accepts whole numbers from 100 to 1000. Source edits save immediately. |
+| Editor appearance | Opens a page | Source, editor button, and Export styles. |
 
-### Editor style settings
+### Editor appearance
 
 Live Editor buttons use flat styling with distinct selected states and visible keyboard focus.
 
@@ -123,23 +126,25 @@ Live Editor buttons use flat styling with distinct selected states and visible k
 | Button font colors → Active buttons / Inactive buttons / Export button | Inherit | One pair of light/dark color controls per row. Export inherits inactive colors unless separately overridden. |
 | Button background colors → Active buttons / Inactive buttons / Export button | Inherit | Same controls for button backgrounds. |
 | Button border colors → Active buttons / Inactive buttons / Export button | Inherit | Adds a 1 px border for each configured theme. Export inherits the inactive border if set. |
-| Zoom → Use global styles | Off | Bypasses dedicated Zoom colors without deleting them. Uses the normal inherited diagram/editor colors. Custom Zoom rows are hidden while enabled. |
-| Zoom → Border color / Font color / Background color | Obsidian interface colors | Dedicated light/dark pickers, text inputs, and resets override all diagram and editor colors on the Zoom controls in every Pele view. |
 
 Live editor dropdowns use the inactive button font, background, and border colors. **Export** and its copy and save buttons use the Export colors, shared button font size, and corner radius in all views. All color fields accept hex, RGB/RGBA and HSL/HSLA with alpha. Empty values inherit independently by theme; invalid drafts retain the saved value. These preferences update open editors and are independent of diagram styles. The page uses Obsidian's usual settings back navigation and search. Close Editor and its settings are no longer displayed; old Close color values remain stored but inactive.
 
 Reading view, source mode, and fences nested inside lists, quotes, or callouts do not become inline editors. See the [inline editor guide](https://github.com/indubyagee/advanced-mermaid/blob/main/README.md#inline-editor) for commands, draft recovery, and comparison limitations.
 
-## Preset class settings
+## Zoom controls
 
-Select an alias to edit or delete it, or select **Create** for a new entry. The form and **Edit preset text** dialog save a complete validated library. Deletion is confirmed; renaming/deleting does not rewrite notes. The generated code block always reflects saved settings. See [preset classes](https://github.com/indubyagee/advanced-mermaid/blob/main/docs/preset-classes.md) for the restricted text format, class syntax in all six supported families, alpha, order, and text-only applicability.
+**Zoom border color**, **Zoom font color**, and **Zoom background color** apply to Zoom controls in every Pele view. Empty values use the Obsidian interface colors. Turn on **Use inherited colors** to take colors from diagram and editor styles. Saved Zoom overrides are retained and reappear when the toggle is off.
+
+## Preset classes
+
+Select an alias to edit or delete it, or select **Create preset** for a new entry. The form and **Edit preset text** dialog save a complete validated library. Deletion requires confirmation. **Show generated code** displays the saved library as read-only text. The [preset class guide](https://github.com/indubyagee/advanced-mermaid/blob/main/docs/preset-classes.md) explains the text format and syntax for the six supported diagram types.
 
 The plugin uses the 42 built-in classes when a vault has no saved preset library. An explicit empty library stays empty after reload. Existing display/style/editor settings and newer-schema overwrite protection remain.
 
-## Local overrides and example
+## Help and examples
 
 This settings page explains display directives and constrained style comments. The interactive **Local override** selector lives in the inline editor. It inserts missing syntax using the current effective value or selects an existing value without replacement. Style targeting offers Both themes, Light, and Dark. Invalid/conflicting drafts and malformed comments block insertion; valid insertions are one parent-editor undo step.
 
-The settings example refreshes when controls change and is cleaned up when the settings page is hidden.
+An open example refreshes as you change settings. Collapsing it or leaving the page releases the renderer.
 
 This guide describes the available controls. Behavior on untested Obsidian versions and devices requires separate validation.

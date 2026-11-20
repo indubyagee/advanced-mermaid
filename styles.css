@@ -46,6 +46,26 @@
 
 .advanced-mermaid-number-row input[type="number"] { width: 85px; }
 .advanced-mermaid-number-row input[type="range"] { max-width: 150px; min-width: 70px; }
+.setting-page-back-button[aria-keyshortcuts="Alt+ArrowLeft"]:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 2px;
+}
+.advanced-mermaid-example-row.setting-item {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 8px;
+}
+.advanced-mermaid-example-row .setting-item-control {
+	display: block;
+	width: 100%;
+	margin-inline-start: 0;
+	text-align: start;
+}
+.advanced-mermaid-settings-example,
+.advanced-mermaid-preset-code { min-width: 0; }
+.advanced-mermaid-preset-code { flex-basis: 100%; }
+.advanced-mermaid-settings-example summary,
+.advanced-mermaid-preset-code summary { cursor: pointer; }
 .advanced-mermaid-preset-source {
 	width: 100%;
 	min-width: 180px;

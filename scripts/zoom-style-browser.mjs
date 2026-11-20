@@ -15,9 +15,9 @@ export async function runZoomStyleChecks(page) {
 		reading.child = new fixture.DiagramController(reading.host, source, () => settings, fixture.app, 'Zoom.md'); reading.child.load();
 		const tab = new fixture.AdvancedMermaidSettingTab(fixture.app, {}, settings, () => { inline.refresh(); reading.child.updateSettings(); });
 		tab.containerEl = root.createDiv(); tab.display();
-		[...tab.containerEl.querySelectorAll('.setting-item')].find(row => row.textContent.includes('Editor style settings')).querySelector('button').click();
+		[...tab.containerEl.querySelectorAll('.setting-item')].find(row => [...row.querySelectorAll('label')].some(label => label.textContent === 'Zoom controls')).querySelector('button').click();
 		const edit = (label, value) => { const input = tab.containerEl.querySelector(`[aria-label="${label}"]`); input.value = value; input.dispatchEvent(new Event('input')); return input; };
-		const toggle = () => [...tab.containerEl.querySelectorAll('.setting-item')].find(row => [...row.querySelectorAll('label')].some(label => label.textContent === 'Use global styles')).querySelector('input').click();
+		const toggle = () => [...tab.containerEl.querySelectorAll('.setting-item')].find(row => [...row.querySelectorAll('label')].some(label => label.textContent === 'Use inherited colors')).querySelector('input').click();
 		const wait = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 		const colors = host => {
 			const zoom = host.querySelector('.pele-zoom'); const button = zoom.querySelector('button');
@@ -39,7 +39,7 @@ export async function runZoomStyleChecks(page) {
 			const invalidRetained = invalid.getAttribute('aria-invalid') === 'true' && JSON.stringify(settings.liveEditor.style.zoom.colors) === saved;
 			toggle(); await wait();
 			const global = { live: colors(root.querySelector('.advanced-mermaid-editor')), reading: colors(reading.host) };
-			const globalHidesOverrides = !tab.containerEl.querySelector('[aria-label="Zoom border color Light"]');
+			const globalHidesOverrides = !!tab.containerEl.querySelector('[aria-label="Zoom border color Light"]').closest('[hidden]');
 			const retained = JSON.stringify(settings.liveEditor.style.zoom.colors) === saved;
 			toggle(); await wait(); const returned = colors(reading.host).border === 'rgb(34, 51, 68)';
 			const legacyCloseRetained = settings.liveEditor.style.colors.closeButtonText.light === '#abcdef' && !root.querySelector('[data-pele-button="close"]') && !tab.containerEl.textContent.includes('Close button');

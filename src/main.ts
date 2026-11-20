@@ -30,7 +30,9 @@ export default class AdvancedMermaidPlugin extends Plugin {
 		this.addCommand({ id: 'toggle-inline-editor', name: 'Toggle inline editor', editorCheckCallback: (checking, editor) => this.inline?.toggle(checking, editor) ?? false });
 		this.addCommand({ id: 'render-inline-diagram', name: 'Render inline diagram', editorCheckCallback: (checking, editor) => this.inline?.render(checking, editor) ?? false });
 		this.addCommand({ id: 'recover-inline-drafts', name: 'Recover inline drafts', callback: () => new RecoveryModal(this.app).open() });
-		this.addSettingTab(new AdvancedMermaidSettingTab(this.app, this, this.settings, () => this.settingsChanged()));
+		const settingsTab = new AdvancedMermaidSettingTab(this.app, this, this.settings, () => this.settingsChanged());
+		this.addSettingTab(settingsTab);
+		this.register(() => settingsTab.hide());
 		const renderDiagram = (source: string, element: HTMLElement, context: MarkdownPostProcessorContext): void => {
 			const initialLine = context.getSectionInfo(element)?.lineStart;
 			const child = new AdvancedMermaidDiagram(element, source, () => this.settings, (diagram, loaded) => {

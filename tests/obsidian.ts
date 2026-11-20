@@ -15,9 +15,9 @@ export class MarkdownRenderChild {
 	private cleanup: (() => void)[] = [];
 	constructor(readonly containerEl: HTMLElement) {}
 	register(callback: () => void): void { this.cleanup.push(callback); }
-	registerDomEvent(element: EventTarget, name: string, callback: EventListener): void {
-		element.addEventListener(name, callback);
-		this.register(() => element.removeEventListener(name, callback));
+	registerDomEvent(element: EventTarget, name: string, callback: EventListener, options?: boolean | AddEventListenerOptions): void {
+		element.addEventListener(name, callback, options);
+		this.register(() => element.removeEventListener(name, callback, options));
 	}
 	onload(): void {}
 	onunload(): void {}
@@ -62,12 +62,14 @@ export class PluginSettingTab {
 	settingItems: SettingDefinitionItem[] = [];
 	private path: string[] = [];
 	private disposers: (() => void)[] = [];
+	private visibility = new Map<HTMLElement, NonNullable<SettingDefinitionItem['visible']>>();
 	constructor(readonly app: unknown, _plugin: unknown) {}
 	getSettingDefinitions(): SettingDefinitionItem[] { return []; }
 	display(): void { this.update(); }
 	/** A fixture renderer for public definitions; native navigation/search need host tests. */
 	update(): void {
 		for (const cleanup of this.disposers.splice(0)) cleanup();
+		this.visibility.clear();
 		this.settingItems = this.getSettingDefinitions(); let items = this.settingItems;
 		const page = (definitions: SettingDefinitionItem[], name: string): SettingDefinitionPage | undefined => {
 			for (const item of definitions) {
@@ -79,22 +81,37 @@ export class PluginSettingTab {
 		for (const name of this.path) { const found = page(items, name); if (found) items = found.items ?? []; }
 		this.containerEl.empty();
 		if (this.path.length) this.containerEl.createEl('button', { text: 'Back', attr: { 'aria-label': 'Back' } }).addEventListener('click', () => { this.path.pop(); this.update(); });
-		const render = (definitions: SettingDefinitionItem[]): void => {
+		const track = (element: HTMLElement, item: SettingDefinitionItem): void => {
+			if (item.visible !== undefined) this.visibility.set(element, item.visible);
+		};
+		const render = (definitions: SettingDefinitionItem[], host: HTMLElement): void => {
 			const description = (value: string | DocumentFragment | undefined): string => typeof value === 'string' ? value : value?.textContent ?? '';
 			for (const item of definitions) {
-				if ('visible' in item && (typeof item.visible === 'function' ? !item.visible() : item.visible === false)) continue;
 				if ('type' in item && (item.type === 'group' || item.type === 'list')) {
-					const group = item as SettingDefinitionGroup; if (group.heading) this.containerEl.createEl('h3', { text: group.heading }); render(group.items ?? []); continue;
+					const group = item as SettingDefinitionGroup;
+					const groupEl = host.createDiv();
+					track(groupEl, group);
+					if (group.heading) groupEl.createEl('h3', { text: group.heading });
+					render(group.items ?? [], groupEl);
+					continue;
 				}
 				if ('type' in item && item.type === 'page') {
-					new Setting(this.containerEl).setName(item.name).setDesc(description(item.desc)).addButton(button => button.setButtonText('Open').onClick(() => { this.path.push(item.name); this.update(); })); continue;
+					const row = new Setting(host).setName(item.name).setDesc(description(item.desc));
+					track(row.settingEl, item);
+					row.addButton(button => button.setButtonText('Open').onClick(() => { this.path.push(item.name); this.update(); }));
+					continue;
 				}
 				if (!('name' in item)) continue;
-				const row = new Setting(this.containerEl).setName(item.name).setDesc(description(item.desc));
+				const row = new Setting(host).setName(item.name).setDesc(description(item.desc));
+				track(row.settingEl, item);
 				if ('render' in item && item.render) { const cleanup = item.render(row as unknown as import('obsidian').Setting, {} as SettingGroup); if (cleanup) this.disposers.push(cleanup); }
 			}
 		};
-		render(items);
+		render(items, this.containerEl);
+		this.refreshDomState();
+	}
+	refreshDomState(): void {
+		for (const [element, visible] of this.visibility) element.hidden = !(typeof visible === 'function' ? visible() : visible);
 	}
 }
 

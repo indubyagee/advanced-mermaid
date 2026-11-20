@@ -35,7 +35,7 @@ export default class V02HostProbe extends Plugin {
 			const path = update.state.field(editorInfoField, false)?.file?.path; if (path) this.parents.set(path, update.view);
 		})]);
 		this.addSettingTab(this.tab);
-		this.register(() => { this.inline.destroy(); this.parents.clear(); });
+		this.register(() => { this.tab.hide(); this.inline.destroy(); this.parents.clear(); });
 		(window as unknown as { advancedMermaidV02Probe?: V02HostProbe }).advancedMermaidV02Probe = this;
 		this.register(() => { delete (window as unknown as { advancedMermaidV02Probe?: V02HostProbe }).advancedMermaidV02Probe; });
 	}

@@ -1,42 +1,54 @@
 import assert from 'node:assert/strict';
 
 export async function runFrontmatterChecks(page) {
-	const settingsReport = await page.evaluate(() => {
+	const settingsReport = await page.evaluate(async () => {
 		const settings = fixture.normalizeSettings(null);
 		let changes = 0;
 		const tab = new fixture.AdvancedMermaidSettingTab(fixture.app, {}, settings, () => changes++);
 		tab.containerEl = document.body.createDiv(); tab.update();
 		const row = name => [...tab.containerEl.querySelectorAll('.setting-item')].find(item => [...item.querySelectorAll('label')].some(label => label.textContent === name));
-		row('Diagram-specific style settings').querySelector('button').click();
-		const select = category => { const input = tab.containerEl.querySelector('[aria-label="Diagram selection"]'); input.value = category; input.dispatchEvent(new Event('change')); };
+		const open = name => row(name).querySelector('button').click();
+		const back = () => tab.containerEl.querySelector('button[aria-label="Back"]').click();
+		open('By diagram type');
 		const edit = yaml => { const input = tab.containerEl.querySelector('textarea'); input.value = yaml; input.dispatchEvent(new Event('input')); return input; };
-		const categories = [...tab.containerEl.querySelector('select').options].map(option => option.value).filter(Boolean);
-		const families = categories.map(category => {
-			select(category); const initial = !row('Use custom frontmatter').querySelector('input').checked;
+		const categories = Object.entries(fixture.DIAGRAM_REGISTRY);
+		const failures = [];
+		for (const [category, { label }] of categories) {
+			open(label);
+			const example = tab.containerEl.querySelector('.advanced-mermaid-settings-example');
+			example.open = true;
+			await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+			if (!example.querySelector('svg.pele')) failures.push(label + ' preview');
+			open('Advanced');
+			const initial = !row('Use custom frontmatter').querySelector('input').checked;
 			const yaml = `title: ${category} defaults\nconfig:\n  ${category}: {}`;
 			edit(yaml); row('Use custom frontmatter').querySelector('input').click();
 			const saved = settings.style.diagrams[category];
-			return initial && saved.useGlobal && saved.frontmatter.enabled && saved.frontmatter.yaml === yaml;
-		});
-		select('flowchart');
+			if (!(initial && saved.useGlobal && saved.frontmatter.enabled && saved.frontmatter.yaml === yaml)) failures.push(label + ' frontmatter');
+			back(); back();
+		}
+		open('Flowchart'); open('Advanced');
 		const saved = settings.style.diagrams.flowchart.frontmatter.yaml; const before = changes;
 		const invalid = edit('config: [');
 		const rejectsInvalid = invalid.getAttribute('aria-invalid') === 'true' && !!tab.containerEl.querySelector('[role="status"]').textContent && settings.style.diagrams.flowchart.frontmatter.yaml === saved && changes === before;
 		edit(saved); row('Use custom frontmatter').querySelector('input').click();
 		const disabledRetains = !settings.style.diagrams.flowchart.frontmatter.enabled && settings.style.diagrams.flowchart.frontmatter.yaml === saved;
-		row('Use global styles').querySelector('input').click(); row('Use global styles').querySelector('input').click();
+		back();
+		row('Use styles from All diagrams').querySelector('input').click(); row('Use styles from All diagrams').querySelector('input').click();
+		open('Advanced');
 		const inheritanceRetains = settings.style.diagrams.flowchart.frontmatter.yaml === saved && tab.containerEl.querySelector('textarea').value === saved;
-		row('Reset this diagram type').querySelector('button').click();
+		back(); open('Reset Flowchart styles');
 		const reset = !settings.style.diagrams.flowchart && settings.style.diagrams.sequence.frontmatter.enabled;
-		row('Styles reset').querySelector('button').click();
+		row('Reset Flowchart styles').querySelector('button:last-child').click();
 		const undo = settings.style.diagrams.flowchart.frontmatter.yaml === saved && !settings.style.diagrams.flowchart.frontmatter.enabled;
 		const roundTrip = { saved: settings, loaded: fixture.normalizeSettings(settings) };
 		tab.hide(); tab.containerEl.remove();
-		return { count: families.length, families: families.every(Boolean), rejectsInvalid, disabledRetains, inheritanceRetains, reset, undo, roundTrip };
+		return { count: categories.length, failures, rejectsInvalid, disabledRetains, inheritanceRetains, reset, undo, roundTrip };
 	});
 	assert.equal(settingsReport.count, 16);
+	assert.deepEqual(settingsReport.failures, []);
 	assert.deepEqual(settingsReport.roundTrip.loaded, settingsReport.roundTrip.saved);
-	for (const [key, value] of Object.entries(settingsReport)) if (!['count', 'roundTrip'].includes(key)) assert.equal(value, true, key);
+	for (const [key, value] of Object.entries(settingsReport)) if (!['count', 'failures', 'roundTrip'].includes(key)) assert.equal(value, true, key);
 
 	const renderingReport = await page.evaluate(async () => {
 		const yaml = 'title: Default title\nconfig:\n  flowchart:\n    nodeSpacing: 75\n    rankSpacing: 150';

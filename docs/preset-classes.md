@@ -1,7 +1,7 @@
 # Preset classes
 
-Open **Settings → Advanced Mermaid → Preset class settings**. Create a class with the
-form or select **Edit preset text** to edit the whole library. Both editors save
+Open **Settings → Advanced Mermaid → Preset classes**. Select **Create preset** to
+use the form or **Edit preset text** to edit the whole library. Both editors save
 only complete, valid entries. Cancel leaves the saved library alone; deletion
 requires confirmation. A renamed alias is not updated in notes.
 

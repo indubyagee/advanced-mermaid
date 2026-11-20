@@ -22,12 +22,12 @@ export async function runEditorStyleChecks(page) {
 	try {
 		const report = await page.evaluate(async () => {
 			const { host, settings, tab } = editorStyles;
-			const pageRow = [...tab.containerEl.querySelectorAll('.setting-item')].find(row => row.textContent.includes('Editor style settings'));
+			const pageRow = [...tab.containerEl.querySelectorAll('.setting-item')].find(row => row.textContent.includes('Editor appearance'));
 			const moved = !tab.containerEl.querySelector('[aria-label="Source font size"]'); pageRow.querySelector('button').click();
 			const edit = (label, value) => { const input = tab.containerEl.querySelector(`input[aria-label="${label}"]`); input.value = value; input.dispatchEvent(new Event('input')); return input; };
 			const originalDiagram = getComputedStyle(host.querySelector('svg.pele text')).fill;
 			const originalDiagramSize = getComputedStyle(host.querySelector('svg.pele text')).fontSize;
-			const paired = tab.containerEl.querySelectorAll('input[type="color"]').length === 28;
+			const paired = tab.containerEl.querySelectorAll('input[type="color"]').length === 22;
 			const noClose = !tab.containerEl.textContent.includes('Close button') && ![...host.querySelectorAll('button')].some(button => button.textContent === 'Close Editor');
 			const sliders = tab.containerEl.querySelectorAll('input[type="range"]').length === 3;
 			const radius = element => getComputedStyle(element).borderTopLeftRadius;

@@ -1,7 +1,4 @@
-import { Setting } from 'obsidian';
-
 export function localOverridesGuide(host: HTMLElement): void {
-	new Setting(host).setName('Local overrides').setHeading();
 	host.createEl('p', { text: 'Choose rendered view, live editor, or static editor above a complete top-level pele or Mermaid fence in live preview. Static editor opens the original fenced Markdown. Rendered view restores the rendered diagram and keeps focused activation off for that block until you explicitly reopen it. The choice lasts for this note pane session.' });
 	host.createEl('p', { text: 'Select a local override to insert valid syntax and edit its selected value. Existing overrides are selected without replacement. Style templates can target both themes, light, or dark; inherited values capture the current appearance.' });
 	host.createEl('p', { text: 'Styles inherit from theme → global → type → local. Authored Mermaid styles keep precedence. CSS accepts registered style variables only, with literal hex colors, local fonts, and bounded px lengths.' });

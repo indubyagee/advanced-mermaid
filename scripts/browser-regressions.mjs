@@ -326,7 +326,7 @@ export async function runPostTestChecks(page) {
 		const customHeight = item.settings.maxHeight === '17rem' && heightPreset.value === 'custom';
 		heightPreset.value = 'short'; heightPreset.dispatchEvent(new Event('change'));
 		const presetHeight = item.settings.maxHeight === 'short' && heightInput.value === 'short';
-		const globalPage = [...tab.containerEl.querySelectorAll('.setting-item')].find(row => [...row.querySelectorAll('label')].some(label => label.textContent === 'Global style settings'));
+		const globalPage = [...tab.containerEl.querySelectorAll('.setting-item')].find(row => [...row.querySelectorAll('label')].some(label => label.textContent === 'All diagrams'));
 		globalPage.querySelector('button').click();
 		const text = tab.containerEl.querySelector('input[aria-label="Primary text Light"]');
 		text.value = '#12345678'; text.dispatchEvent(new Event('input'));

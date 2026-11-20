@@ -113,7 +113,7 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 				preview: getComputedStyle(layoutFixture.host.querySelector('svg.pele text')).fontSize };
 			const tab = new fixture.AdvancedMermaidSettingTab(fixture.app, {}, layoutFixture.settings, () => layoutFixture.inline.refresh());
 			tab.containerEl = document.body.createDiv(); tab.display(); layoutFixture.fontTab = tab;
-			[...tab.containerEl.querySelectorAll('.setting-item')].find(row => row.textContent.includes('Editor style settings')).querySelector('button').click();
+			[...tab.containerEl.querySelectorAll('.setting-item')].find(row => row.textContent.includes('Editor appearance')).querySelector('button').click();
 			return sizes;
 		});
 		const fontSize = page.getByRole('spinbutton', { name: 'Source font size', exact: true });

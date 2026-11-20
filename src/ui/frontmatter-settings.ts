@@ -7,7 +7,7 @@ export function frontmatterDefinitions(category: DiagramCategory, profile: TypeS
 	const settings = profile.frontmatter ?? { enabled: false, yaml: '' };
 	const commit = (): void => { profile.frontmatter = settings; changed(); };
 	return [
-		rowDefinition('Use custom frontmatter', 'Apply saved frontmatter to every ' + DIAGRAM_REGISTRY[category].label + ' diagram. Source-block values override matching defaults. Independent of Use global styles.', row => row.addToggle(input => {
+		rowDefinition('Use custom frontmatter', 'Apply the saved YAML to every ' + DIAGRAM_REGISTRY[category].label + ' diagram, including those using styles from All diagrams. Source values override matching defaults.', row => row.addToggle(input => {
 			input.setValue(settings.enabled).onChange(value => { settings.enabled = value; commit(); });
 		})),
 		rowDefinition('Custom frontmatter', 'Enter YAML with title and config keys, with optional --- delimiters. Valid changes save automatically; disabling retains them. Pele determines which options take effect.', row => {

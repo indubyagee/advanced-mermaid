@@ -3,28 +3,15 @@ import type { AdvancedMermaidSettings } from '../settings';
 import { numberDefinition, rowDefinition } from './setting-controls';
 import { editorStyleDefinitions } from './editor-style-settings';
 
-export function liveEditorDefinitions(settings: AdvancedMermaidSettings, changed: () => void, refresh: () => void): (SettingDefinition | SettingDefinitionPage)[] {
+export function liveEditorDefinitions(settings: AdvancedMermaidSettings, changed: () => void): (SettingDefinition | SettingDefinitionPage)[] {
 	const editor = settings.liveEditor;
-	const toggles = ([
-		[
-			'enabled', 'Enable inline editor',
-			'Allow inline editing for complete, top-level pele and mermaid fences in Live Preview. Reading view keeps its usual renderer.'
-		],
-		[
-			'lineNumbers',
-			'Show line numbers',
-			'Show line numbers beside Mermaid and CSS source.'
-		],
-		[
-			'wrapSource',
-			'Wrap source',
-			'Wrap long source lines within the editor pane.'
-		],
-	] as const).map(([key, name, desc]) => rowDefinition(name, desc, row => row.addToggle(toggle => toggle.setValue(editor[key]).onChange(value => { editor[key] = value; changed(); }))));
-	return [...toggles,
+	const toggle = (key: 'enabled' | 'lineNumbers' | 'wrapSource', name: string, desc: string): SettingDefinition =>
+		rowDefinition(name, desc, row => row.addToggle(input => input.setValue(editor[key]).onChange(value => { editor[key] = value; changed(); })));
+	return [
+		toggle('enabled', 'Enable inline editor', 'Edit complete, top-level pele and mermaid blocks in Live Preview.'),
 		rowDefinition(
 			'Open editor',
-			'Open manually, or activate the focused eligible block. An explicit static choice lasts for this note pane session.',
+			'Open the editor manually or when a diagram block gets focus.',
 			row => row.addDropdown(input => input.addOptions({
 				manual: 'Manual',
 				'focused-block': 'Focused block'
@@ -43,23 +30,24 @@ export function liveEditorDefinitions(settings: AdvancedMermaidSettings, changed
 				if (value === 'auto' || value === 'side-by-side' || value === 'stacked') { editor.layout = value; changed(); }
 			}))
 		),
-		numberDefinition(
-			'Preview delay',
-			'100–1000 milliseconds. Source edits save immediately; only preview work is delayed.',
-			() => editor.debounceMs, value => { editor.debounceMs = value ?? 250; changed(); },
-			{
-				min: 100,
-				max: 1000,
-				step: 1,
-				fallback: 250,
-				unit: 'ms'
-			}
-		),
+		{
+			...toggle('wrapSource', 'Wrap source', 'Wrap long source lines within the editor pane.'),
+			aliases: ['text wrap', 'word wrap'],
+		},
+		toggle('lineNumbers', 'Show line numbers', 'Show line numbers beside Mermaid and CSS source.'),
 		{
 			type: 'page',
-			name: 'Editor style settings',
-			desc: 'Source text, pane background, button sizes and paired theme colors.',
-			items: editorStyleDefinitions(settings, changed, refresh)
+			name: 'Editor appearance',
+			desc: 'Source text, editor buttons, and shared Export styles.',
+			items: editorStyleDefinitions(settings, changed),
+		},
+		{
+			type: 'page',
+			name: 'Preview timing',
+			desc: 'Choose how long the preview waits after a source edit.',
+			items: [numberDefinition('Preview delay', '100–1000 milliseconds. Source edits save immediately.',
+				() => editor.debounceMs, value => { editor.debounceMs = value ?? 250; changed(); },
+				{ min: 100, max: 1000, step: 1, fallback: 250, unit: 'ms' })],
 		},
 	];
 }

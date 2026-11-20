@@ -2,9 +2,8 @@ import type { SettingDefinition, SettingDefinitionItem } from 'obsidian';
 import type { AdvancedMermaidSettings } from '../settings';
 import { BUTTON_RADIUS_RANGE, EDITOR_COLORS, type EditorColor } from '../styles/editor-style';
 import { colorPairDefinition, numberDefinition } from './setting-controls';
-import { zoomStyleDefinitions } from './zoom-style-settings';
 
-export function editorStyleDefinitions(settings: AdvancedMermaidSettings, changed: () => void, refresh: () => void): SettingDefinitionItem[] {
+export function editorStyleDefinitions(settings: AdvancedMermaidSettings, changed: () => void): SettingDefinitionItem[] {
 	const editor = settings.liveEditor;
 	const color = (key: EditorColor, name: string, description: string, kind?: 'font' | 'background' | 'border'): SettingDefinition => colorPairDefinition(name, description,
 		() => editor.style.colors[key], pair => {
@@ -31,6 +30,5 @@ export function editorStyleDefinitions(settings: AdvancedMermaidSettings, change
 			color('inactiveButtonBorder', 'Inactive buttons', 'Border for unselected buttons and editor actions.', 'border'),
 			color('exportButtonBorder', 'Export button', 'Border for Export and its actions. Inherits the inactive border if set.', 'border'),
 		] },
-		zoomStyleDefinitions(editor.style.zoom, changed, refresh),
 	];
 }

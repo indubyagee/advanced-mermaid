@@ -1,5 +1,5 @@
-import type { SettingDefinitionGroup, SettingDefinitionPage } from 'obsidian';
-import { COLOR_TOKENS, COMPATIBILITY_CONTROLS, type StyleProfile, type ColorPair } from '../styles/registry';
+import type { SettingDefinition, SettingDefinitionGroup, SettingDefinitionPage } from 'obsidian';
+import { COLOR_TOKENS, COMPATIBILITY_CONTROLS, type DiagramCategory, type StyleProfile, type ColorPair } from '../styles/registry';
 import { validStyleFont } from '../styles/validate';
 import { SEMANTIC_CONTROLS } from '../styles/semantic-controls';
 import { colorPairDefinition, numberDefinition, rowDefinition } from './setting-controls';
@@ -20,7 +20,10 @@ const descriptions: Partial<Record<keyof typeof COLOR_TOKENS, string>> = {
 const words = (text: string): string => text.replace(/[A-Z]/g, char => ' ' + char.toLowerCase()).replace(/^./, char => char.toUpperCase());
 
 /** Definitions contain metadata only until Obsidian renders the selected page. */
-export function profileDefinitions(profile: StyleProfile, changed: () => void, compatibility = false, category?: string): SettingDefinitionGroup[] {
+export function profileDefinitions(profile: StyleProfile, changed: () => void, example: SettingDefinition, category?: DiagramCategory): {
+	groups: SettingDefinitionGroup[];
+	categoryColors: SettingDefinitionGroup;
+} {
 	const colors = (Object.keys(COLOR_TOKENS) as (keyof typeof COLOR_TOKENS)[]).map(key => colorPairDefinition(colorLabels[key], descriptions[key] ?? 'Palette slot for categories or data series; use depends on diagram type.',
 		() => profile.colors[key], value => { if (value) profile.colors[key] = value; else delete profile.colors[key]; changed(); }, COLOR_TOKENS[key]));
 	const fonts = (['font', 'monospace'] as const).map(field => rowDefinition(field === 'font' ? 'Diagram font source' : 'Monospace font source', 'Use inherited typography or enter local font families. No fonts are downloaded.', row => {
@@ -40,20 +43,25 @@ export function profileDefinitions(profile: StyleProfile, changed: () => void, c
 			value => { if (value) profile.elements[id] = value; else delete profile.elements[id]; changed(); });
 	});
 	const shared: SettingDefinitionPage[] = [];
-	if (compatibility) for (const group of ['Node', 'Edge', 'Subgraph']) {
+	if (!category || category === 'flowchart') for (const [group, label] of Object.entries({ Node: 'Nodes', Edge: 'Edges', Subgraph: 'Subgraphs' })) {
 		const items = Object.entries(COMPATIBILITY_CONTROLS).filter(([key]) => key.startsWith(group.toLowerCase())).map(([key, control]) => {
 			const id = key as keyof typeof COMPATIBILITY_CONTROLS; const name = words(key);
 			return control.kind === 'color' ? colorPairDefinition(name, 'Default for matching elements; authored Mermaid styles retain precedence.', () => profile.elements[id] as ColorPair | undefined,
 				value => { if (value) profile.elements[id] = value; else delete profile.elements[id]; changed(); })
-				: numberDefinition(name, 'Outline thickness, 0–20 px. Reset to inherit.', () => typeof profile.elements[id] === 'number' ? profile.elements[id] : undefined,
-					value => { if (value === undefined) delete profile.elements[id]; else profile.elements[id] = value; changed(); }, { min: 0, max: 20, fallback: 1, optional: true, unit: 'px' });
+				: { ...numberDefinition(name, 'Outline thickness, 0–20 px. Reset to inherit.', () => typeof profile.elements[id] === 'number' ? profile.elements[id] : undefined,
+					value => { if (value === undefined) delete profile.elements[id]; else profile.elements[id] = value; changed(); }, { min: 0, max: 20, fallback: 1, optional: true, unit: 'px' }),
+					...(id === 'edgeWidth' ? { aliases: ['line thickness', 'connector width', 'stroke width'] } : {}),
+				};
 		});
-		shared.push({ type: 'page', name: group + ' style settings', desc: 'Shared defaults for matching ' + group.toLowerCase() + ' elements.', items });
+		shared.push({ type: 'page', name: label, desc: 'Defaults for matching ' + group.toLowerCase() + ' elements.', items: [example, ...items] });
 	}
-	return [
-		{ type: 'group', heading: 'Colors', items: [...colors.slice(0, 11), { type: 'page', name: category ? words(category) + ' category colors' : 'Category colors', desc: 'Eight palette slots for categories and data series.', items: colors.slice(11) }] },
-		{ type: 'group', heading: 'Typography and shape', items: [...fonts, ...numbers, { name: 'Text weights', desc: 'Renderer weights are retained; measured per-role weight overrides are unavailable in Pele 1.12.0.' }] },
-		...(semantic.length ? [{ type: 'group' as const, heading: 'Diagram elements', items: semantic }] : []),
-		...(shared.length ? [{ type: 'group' as const, heading: 'Shared element defaults', items: shared }] : []),
-	];
+	return {
+		groups: [
+			{ type: 'group', heading: 'Colors', items: colors.slice(0, 11) },
+			{ type: 'group', heading: 'Typography and shape', items: [...fonts, ...numbers, { name: 'Text weights', desc: 'Renderer weights are retained; measured per-role weight overrides are unavailable in Pele 1.12.0.' }] },
+			...(semantic.length ? [{ type: 'group' as const, heading: 'Diagram elements', items: semantic }] : []),
+			...(shared.length ? [{ type: 'group' as const, heading: 'Shared element defaults', items: shared }] : []),
+		],
+		categoryColors: { type: 'group', heading: 'Category colors', items: colors.slice(11) },
+	};
 }
