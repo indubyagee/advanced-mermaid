@@ -12,15 +12,19 @@ export async function runSyntaxChecks(page) {
 		window.syntaxFixture = { host, settings, inline, view, source, nested: () => fixture.EditorView.findFromDOM(fixture.sourceRoot(host).querySelector('.cm-editor')) };
 	});
 	const diagrams = page.getByRole('combobox', { name: 'Diagram type', exact: true });
+	const orientations = page.getByRole('combobox', { name: 'Orientation', exact: true });
 	const components = page.getByRole('combobox', { name: 'Insert diagram component', exact: true });
-	assert.equal(await diagrams.inputValue(), 'flowchart LR');
-	await diagrams.selectOption('flowchart TB');
+	const configuration = page.getByRole('button', { name: 'Insert configuration', exact: true });
+	const note = () => page.evaluate(() => syntaxFixture.view.state.doc.toString());
+	assert.equal(await diagrams.inputValue(), 'flowchart');
+	assert.equal(await orientations.inputValue(), 'LR');
+	await orientations.selectOption('TB');
 	assert.equal(await page.evaluate(() => syntaxFixture.view.state.doc.toString()), 'Before\n\n```pele\nflowchart TB\n A[Old]\n```\n\nAfter');
 	await page.keyboard.press('Control+z');
 	assert.equal(await page.evaluate(() => syntaxFixture.view.state.doc.toString()), await page.evaluate(() => syntaxFixture.source));
-	assert.equal(await diagrams.inputValue(), 'flowchart LR');
+	assert.equal(await orientations.inputValue(), 'LR');
 	await page.keyboard.press('Control+Shift+Z');
-	assert.equal(await diagrams.inputValue(), 'flowchart TB');
+	assert.equal(await orientations.inputValue(), 'TB');
 	await page.evaluate(() => { const view = syntaxFixture.nested(); const from = view.state.doc.toString().indexOf('A[Old]'); view.dispatch({ selection: { anchor: from, head: from + 6 } }); view.focus(); });
 	await components.selectOption({ label: 'A["node"]' });
 	assert.ok(await page.evaluate(() => syntaxFixture.view.state.doc.toString().includes(' A["node"]')));
@@ -44,19 +48,56 @@ export async function runSyntaxChecks(page) {
 	const allChoices = await page.evaluate(() => {
 		const host = syntaxFixture.host;
 		const selector = host.querySelector('[aria-label="Diagram type"]');
+		const orientation = host.querySelector('[aria-label="Orientation"]');
 		const results = [];
-		for (const option of [...selector.options].filter(option => option.value)) {
+		for (const diagram of fixture.DIAGRAM_SYNTAX) {
 			const nested = syntaxFixture.nested(); nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert: '' } });
-			selector.value = option.value; selector.dispatchEvent(new Event('change'));
-			const source = syntaxFixture.nested().state.doc.toString();
-			results.push({ declaration: option.value, initialized: source === option.value + '\n', components: host.querySelector('[aria-label="Insert diagram component"]').options.length > 1 });
+			selector.value = diagram.declaration; selector.dispatchEvent(new Event('change'));
+			const pending = syntaxFixture.nested().state.doc.length === 0;
+			const disabled = orientation.disabled;
+			let declaration = diagram.declaration;
+			if (!disabled) {
+				const value = orientation.options[1].value;
+				if (diagram.orientation.placement === 'body') declaration += '\n  direction ' + value;
+				else declaration += ' ' + value + (diagram.type === 'gitGraph' ? ':' : '');
+				orientation.value = value; orientation.dispatchEvent(new Event('change'));
+			}
+			results.push({
+				declaration, initialized: syntaxFixture.nested().state.doc.toString() === declaration + '\n',
+				correctPending: pending === Boolean(diagram.orientation) && disabled === !diagram.orientation,
+				components: host.querySelector('[aria-label="Insert diagram component"]').options.length > 1,
+			});
 		}
 		return results;
 	});
-	assert.ok(allChoices.length > 45); for (const result of allChoices) assert.ok(result.initialized && result.components, result.declaration);
+	assert.equal(allChoices.length, 41);
+	for (const result of allChoices) assert.ok(result.initialized && result.correctPending && result.components, result.declaration);
 
 	await page.evaluate(() => { const nested = syntaxFixture.nested(); nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert: 'sequenceDiagram\n A->>B: Hello' } }); });
 	assert.equal(await diagrams.inputValue(), 'sequenceDiagram');
+	assert.equal(await orientations.inputValue(), '');
+	assert.ok(await orientations.isDisabled());
+	const beforePending = await note();
+	await diagrams.selectOption('flowchart');
+	assert.equal(await note(), beforePending);
+	assert.equal(await orientations.inputValue(), '');
+	assert.ok(await components.isDisabled());
+	assert.ok(await configuration.isDisabled());
+	assert.ok(await page.getByRole('combobox', { name: 'Insert local override', exact: true }).isDisabled());
+	await orientations.selectOption('TD');
+	assert.equal(await note(), beforePending.replace('sequenceDiagram', 'flowchart TD'));
+	await page.keyboard.press('Control+z');
+	assert.equal(await note(), beforePending);
+	await diagrams.selectOption('flowchart');
+	await page.evaluate(() => {
+		const view = syntaxFixture.view;
+		const from = view.state.doc.toString().indexOf('Hello');
+		view.dispatch({ changes: { from, to: from + 5, insert: 'Updated' } });
+	});
+	assert.equal(await diagrams.inputValue(), 'sequenceDiagram');
+	assert.ok(await orientations.isDisabled());
+	assert.ok(await components.isEnabled());
+	assert.ok(await configuration.isEnabled());
 	assert.equal(await components.locator('option').filter({ hasText: 'A["node"]' }).count(), 0);
 	await components.selectOption({ label: 'Note right of A: Note' });
 	assert.ok(await page.evaluate(() => syntaxFixture.view.state.doc.toString().includes('Note right of A: Note')));

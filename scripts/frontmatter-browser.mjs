@@ -169,7 +169,8 @@ async function checkAgentflowAliases(page) {
 			});
 			await page.waitForFunction(() => agentflowFixture.host.querySelector('.advanced-mermaid-editor-render svg.pele')?.textContent.includes('Agentflow defaults'));
 			const editor = page.locator('.agentflow-alias-fixture');
-			assert.equal(await editor.getByRole('combobox', { name: 'Diagram type' }).inputValue(), 'agentflow-beta LR');
+			assert.equal(await editor.getByRole('combobox', { name: 'Diagram type' }).inputValue(), 'agentflow-beta');
+			assert.equal(await editor.getByRole('combobox', { name: 'Orientation' }).inputValue(), 'LR');
 			assert.ok(await page.evaluate(() => agentflowFixture.view.state.doc.toString() === agentflowFixture.note), fence + ' source preserved');
 			await page.evaluate(() => {
 				const nested = fixture.EditorView.findFromDOM(fixture.sourceRoot(agentflowFixture.host).querySelector('.cm-editor'));
@@ -178,7 +179,8 @@ async function checkAgentflowAliases(page) {
 				nested.dispatch({ changes: { from: 0, to: text.length, insert: beta } });
 			});
 			await page.waitForFunction(() => agentflowFixture.host.querySelector('.advanced-mermaid-editor-render svg.pele')?.textContent.includes('Beta intake'));
-			assert.equal(await editor.getByRole('combobox', { name: 'Diagram type' }).inputValue(), 'agentflow-beta LR');
+			assert.equal(await editor.getByRole('combobox', { name: 'Diagram type' }).inputValue(), 'agentflow-beta');
+			assert.equal(await editor.getByRole('combobox', { name: 'Orientation' }).inputValue(), 'LR');
 			await page.evaluate(() => {
 				const nested = fixture.EditorView.findFromDOM(fixture.sourceRoot(agentflowFixture.host).querySelector('.cm-editor'));
 				nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert: 'agentflow LR; @' } });

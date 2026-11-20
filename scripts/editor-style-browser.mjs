@@ -126,7 +126,7 @@ export async function runEditorStyleChecks(page) {
 				export: i ? ['99aabb', '456def', '678fab'] : ['8899aa', '345cde', '567efa'],
 			};
 			for (const [key, values] of Object.entries(colors)) assert.deepEqual(result[key], values.map(rgb), key);
-			assert.deepEqual(Object.keys(result.dropdowns), ['Diagram type', 'Insert diagram component', 'Insert local override', 'Local style theme']);
+			assert.deepEqual(Object.keys(result.dropdowns), ['Diagram type', 'Orientation', 'Insert diagram component', 'Insert local override', 'Local style theme']);
 			for (const [label, paint] of Object.entries(result.dropdowns)) assert.deepEqual(paint, result.inactive, label);
 			assert.deepEqual(result.mode, result.active); assert.deepEqual(result.inactiveMode, result.inactive);
 			assert.deepEqual(Object.keys(result.exportActions), ['Copy SVG', 'Save SVG', 'Copy PNG', 'Save PNG', 'Save canvas']);
