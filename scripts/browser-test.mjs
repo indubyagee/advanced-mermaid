@@ -23,7 +23,20 @@ const bundle = await build({ entryPoints: ['tests/browser-entry.ts'], bundle: tr
 const css = await readFile('styles.css', 'utf8');
 const server = createServer((request, response) => {
 	response.setHeader('Content-Type', request.url === '/fixture.js' ? 'application/javascript; charset=utf-8' : 'text/html; charset=utf-8');
-	response.end(request.url === '/fixture.js' ? bundle.outputFiles[0].text : `<!doctype html><style>body{--background-primary:#fff;--color-accent:#7650b2;--text-normal:#222;--font-text:Arial;font-family:Arial}.fixture-diagram{width:600px}${css}</style><script src="/fixture.js"></script>`);
+	response.end(request.url === '/fixture.js' ? bundle.outputFiles[0].text : `<!doctype html><style>
+		body {
+			--background-primary: #fff;
+			--text-normal: #222;
+			--text-on-accent: #fff;
+			--text-muted: #52525b;
+			--color-accent: #7650b2;
+			--interactive-accent: #62449a;
+			--color-base-50: #bdbdbd;
+			--font-text: Arial;
+			font-family: Arial;
+		}
+		.fixture-diagram { width: 600px; }
+		${css}</style><script src="/fixture.js"></script>`);
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 let browser;
@@ -116,8 +129,18 @@ try {
 	assert.equal(result.removed, 0);
 	assert.equal(result.reloaded, 1);
 	const exports = await page.evaluate(async () => {
-		const source = 'flowchart LR\n A["Start & Ω"] --> B["Finish"]';
+		const source = 'flowchart LR\n A["Start & Ω"] -->|Label| B["Finish"]';
 		const item = fixture.diagram(source);
+		const styleOf = selector => getComputedStyle(item.host.querySelector(selector));
+		const defaultColors = {
+			text: styleOf('.pele-node .pele-label').fill,
+			surface: styleOf('.pele-node > rect').fill,
+			border: styleOf('.pele-node > rect').stroke,
+			line: styleOf('.pele-edge > path').stroke,
+			edgeLabel: styleOf('.pele-edge-label > text').fill,
+			surfaceAlt: getComputedStyle(item.host).getPropertyValue('--pele-surface-alt').trim(),
+			accent: getComputedStyle(item.host).getPropertyValue('--pele-accent').trim(),
+		};
 		const rendered = fixture.render(source, { images: false, fontFamily: 'Arial' });
 		const limit = item.host.createEl('style', { text: 'body .fixture-diagram svg.pele { max-width: 24px; max-height: 24px; }' });
 		const readStyle = window.getComputedStyle;
@@ -169,7 +192,11 @@ try {
 		const copiedPng = copies[1]['image/png'].type;
 		const leftover = document.querySelectorAll('.advanced-mermaid-snapshot').length;
 		item.child.unload();
-		return { visible, size, dimensions, ink, transparent, style, files, copiedSvgValid: copiedSvg.startsWith('<svg') && !copiedSvg.includes('var('), copiedPng, leftover };
+		return { visible, size, dimensions, ink, transparent, style, files, defaultColors, copiedSvgValid: copiedSvg.startsWith('<svg') && !copiedSvg.includes('var('), copiedPng, leftover };
+	});
+	assert.deepEqual(exports.defaultColors, {
+		text: 'rgb(255, 255, 255)', surface: 'rgb(118, 80, 178)', border: 'rgb(98, 68, 154)', line: 'rgb(98, 68, 154)',
+		edgeLabel: 'rgb(82, 82, 91)', surfaceAlt: '#bdbdbd', accent: '#62449a',
 	});
 	assert.equal(exports.visible, true);
 	assert.equal(exports.dimensions.width, Math.ceil(exports.size.width * 2));
@@ -198,7 +225,7 @@ try {
 		const copiedViewBox = new DOMParser().parseFromString(copied, 'image/svg+xml').documentElement.getAttribute('viewBox');
 		item.settings.maxHeight = 'none'; item.child.updateSettings();
 		const unlimitedHeight = item.host.querySelector('svg.pele').getBoundingClientRect().height;
-		item.host.parentElement.style.setProperty('--text-normal', '#abcdef');
+		item.host.style.setProperty('--text-on-accent', '#abcdef');
 		item.child.refreshTheme();
 		const themed = getComputedStyle(item.host.querySelector('svg.pele text')).fill;
 		item.settings.theme.text = '#123456'; item.child.updateSettings();

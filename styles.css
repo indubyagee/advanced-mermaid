@@ -3,13 +3,13 @@
    defaults; the fallbacks also support contexts without Obsidian variables. */
 .advanced-mermaid:not([data-follow-theme="false"]), .advanced-mermaid-settings:not([data-follow-theme="false"]) {
 	--pele-bg: var(--background-primary, #ffffff);
-	--pele-fg: var(--text-normal, #222222);
+	--pele-fg: var(--text-on-accent);
 	--pele-muted: var(--text-muted, #666666);
-	--pele-line: var(--color-accent);
-	--pele-surface: var(--background-primary);
-	--pele-surface-alt: var(--color-accent);
-	--pele-border: var(--color-accent);
-	--pele-accent: var(--interactive-accent, #5b7bd5);
+	--pele-surface: var(--color-accent);
+	--pele-surface-alt: var(--color-base-50);
+	--pele-border: var(--interactive-accent);
+	--pele-line: var(--interactive-accent);
+	--pele-accent: var(--interactive-accent);
 	--pele-critical: var(--text-error, #e45756);
 	--pele-error: var(--text-error, #e45756);
 	--pele-font: var(--font-text, sans-serif);
@@ -114,7 +114,7 @@
 	stroke-width: var(--pele-edge-width, 1px);
  }
 .advanced-mermaid .pele-edge-labels {
-	fill: var(--pele-edge-label-text, var(--pele-fg));
+	fill: var(--pele-edge-label-text, var(--pele-muted));
 }
 .advanced-mermaid .pele-edge-label > rect {
 	fill: var(--pele-edge-label-bg, var(--pele-bg));

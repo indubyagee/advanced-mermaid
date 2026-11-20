@@ -1,6 +1,13 @@
 # Advanced Mermaid
 
-Edit a Mermaid diagram and see it update in the same Obsidian note. Advanced Mermaid lets you match diagrams to the vault theme, reuse styles and presets across notes, export diagrams as SVG or PNG, and turn a flowchart or Agentflow diagram into an editable Obsidian Canvas.
+[![Latest release](https://img.shields.io/github/v/release/indubyagee/advanced-mermaid?logo=github&logoColor=white)](https://github.com/indubyagee/advanced-mermaid/releases/latest)
+[![GitHub stars](https://img.shields.io/github/stars/indubyagee/advanced-mermaid?style=flat&logo=github&logoColor=white)](https://github.com/indubyagee/advanced-mermaid)
+[![MIT license](https://img.shields.io/github/license/indubyagee/advanced-mermaid)](LICENSE)
+[![Obsidian downloads](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json&query=%24%5B%27advanced-mermaid%27%5D.downloads&label=Obsidian%20downloads&logo=obsidian&logoColor=white&color=483699&cacheSeconds=3600)](https://community.obsidian.md/plugins/advanced-mermaid)
+[![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-24292F?logo=kofi&logoColor=FF6433)][ko-fi]
+[![Support on Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_a_Coffee-24292F?logo=buymeacoffee&logoColor=FFDD00)][buy-me-a-coffee]
+
+Edit a Mermaid diagram and see it update in the same Obsidian note. Advanced Mermaid lets you match diagrams to the vault theme, reuse styles and presets across notes, export diagrams as SVG or PNG, and turn Flowchart and Agentflow diagrams into editable Obsidian Canvases.
 
 ````markdown
 ```mermaid
@@ -13,7 +20,7 @@ flowchart TD
 ```
 ````
 
-![Live editor](docs/media/preview-light-flowchart-0.3.3.png)
+![Live editor](docs/media/preview-light-flowchart-latest.png)
 
 **Requires Obsidian 1.14.5 or later on desktop.**
 
@@ -52,8 +59,7 @@ While the plugin is enabled, it renders both `mermaid` and `pele` code blocks us
 
 Advanced Mermaid and its bundled renderer, Pele, use the MIT license. [Project license](LICENSE) · [Pele source](https://github.com/obsidianmd/pele)
 
-[Support the project on Buy Me a Coffee](https://buymeacoffee.com/indubyagee)
+Support the project on [Ko-fi][ko-fi] or [Buy Me a Coffee][buy-me-a-coffee].
 
-<a href="https://buymeacoffee.com/indubyagee">
-  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy me a coffee" height="30">
-</a>
+[ko-fi]: https://ko-fi.com/C0N32AZ7AW
+[buy-me-a-coffee]: https://buymeacoffee.com/indubyagee

@@ -66,12 +66,12 @@ Defaults below describe a new configuration with **Follow Obsidian theme** enabl
 | Setting | Description | Default |
 | --- | --- | --- |
 | Diagram background | Background behind the diagram. | Inherit Obsidian primary background |
-| Primary text | Main diagram labels and text. | Inherit Obsidian normal text |
+| Primary text | Main diagram labels and text. | Inherit Obsidian text on accent |
 | Secondary text | Muted or supporting text. | Inherit Obsidian muted text |
-| Lines and connectors | Connecting lines and arrows. | Inherit Obsidian accent color |
-| Primary surface | Main shape and panel surface color. | Inherit Obsidian primary background |
-| Secondary surface | Alternate shape and panel surface color. | Inherit Obsidian accent color |
-| Borders | General outline and border color. | Inherit Obsidian accent color |
+| Lines and connectors | Connecting lines and arrows. | Inherit Obsidian interactive accent |
+| Primary surface | Main shape and panel surface color. | Inherit Obsidian accent color |
+| Secondary surface | Alternate shape and panel surface color. | Inherit Obsidian base color (`--color-base-50`) |
+| Borders | General outline and border color. | Inherit Obsidian interactive accent |
 | Accent | Highlight and emphasis color. | Inherit Obsidian interactive accent |
 | Error color | Error-related diagram color. | Inherit Obsidian error text color |
 | Text on light fills | Contrast text used on light authored fills. | Inherit renderer value |
@@ -87,7 +87,7 @@ Defaults below describe a new configuration with **Follow Obsidian theme** enabl
 | Node border | Outline color of nodes. | Empty; inherit |
 | Node text | Text color inside nodes. | Empty; inherit |
 | Edge label fill | Background behind connector labels. | Empty; inherit |
-| Edge label text | Text color of connector labels. | Empty; inherit |
+| Edge label text | Text color of connector labels. | Empty; inherit secondary text |
 | Edge label border | Outline color around connector labels. | Empty; inherit |
 | Subgraph fill | Interior color of subgraph containers. | Empty; inherit |
 | Subgraph border | Outline color of subgraph containers. | Empty; inherit |

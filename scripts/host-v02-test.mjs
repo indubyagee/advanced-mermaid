@@ -75,11 +75,16 @@ try {
 	settingsReport.themeDefaults = await displayExample.locator('.advanced-mermaid').evaluate(element => {
 		const css = getComputedStyle(element);
 		const color = name => css.getPropertyValue(name).trim();
-		const background = color('--background-primary');
-		const accent = color('--color-accent');
-		return !!background && !!accent
-			&& color('--pele-surface') === background
-			&& ['--pele-surface-alt', '--pele-border', '--pele-line'].every(token => color(token) === accent);
+		const defaults = {
+			'--pele-bg': '--background-primary',
+			'--pele-fg': '--text-on-accent',
+			'--pele-surface': '--color-accent',
+			'--pele-surface-alt': '--color-base-50',
+			'--pele-border': '--interactive-accent',
+			'--pele-line': '--interactive-accent',
+			'--pele-accent': '--interactive-accent',
+		};
+		return Object.entries(defaults).every(([token, themeToken]) => !!color(themeToken) && color(token) === color(themeToken));
 	});
 	await entry('Editor appearance').press('Enter');
 	await surface.locator('[aria-label="Source font size"]').fill('23');

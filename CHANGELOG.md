@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Added badge icons to the README and refreshed screenshot.
+- Use Obsidian's accent fill and text colors for nodes, a neutral base color for subgraphs, the interactive accent for borders and connectors, and muted text for edge labels.
+
 ### Fixed
 
 - Keep the Live Editor caret visible when switching between light and dark themes.
