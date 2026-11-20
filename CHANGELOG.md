@@ -10,6 +10,10 @@
 
 - Accept `agentflow` as an Advanced Mermaid declaration alongside `agentflow-beta` in previews, Live Editor, and Canvas export.
 
+### Fixed
+
+- Show authored line numbers in syntax errors when family defaults add frontmatter.
+
 ## 0.3.4 — 2026-11-20
 
 ### Changed

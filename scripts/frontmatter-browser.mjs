@@ -175,6 +175,14 @@ async function checkAgentflowAliases(page) {
 			});
 			await page.waitForFunction(() => agentflowFixture.host.querySelector('.advanced-mermaid-editor-render svg.pele')?.textContent.includes('Beta intake'));
 			assert.equal(await editor.getByRole('combobox', { name: 'Diagram type' }).inputValue(), 'agentflow-beta LR');
+			await page.evaluate(() => {
+				const nested = fixture.EditorView.findFromDOM(fixture.sourceRoot(agentflowFixture.host).querySelector('.cm-editor'));
+				nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert: 'agentflow LR; @' } });
+			});
+			const diagnostic = editor.locator('.advanced-mermaid-error-message');
+			await diagnostic.waitFor({ timeout: 5000 });
+			assert.match(await diagnostic.textContent(), /line 1, column 15: Lexical error on line 1\./);
+			assert.doesNotMatch(await diagnostic.textContent(), /agentflow-beta/);
 		} finally {
 			await page.evaluate(() => {
 				const { reading, host, plugin, view } = agentflowFixture;

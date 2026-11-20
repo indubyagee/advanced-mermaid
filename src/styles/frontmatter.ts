@@ -97,6 +97,9 @@ export function resolveFrontmatter(source: string, diagrams: Partial<Record<Diag
 }
 
 export function originalSourceError(error: unknown, lineOffset: number): unknown {
-	if (!(error instanceof PeleError) || !lineOffset || error.line <= 0) return error;
-	return new PeleError(error.message, error.code, { ...error, line: Math.max(1, error.line - lineOffset) });
+	if (!(error instanceof PeleError) || error.line <= 0) return error;
+	const line = Math.max(1, error.line - lineOffset);
+	const message = error.message.replace(/^((?:Parse|Lexical) error on line )\d+(?=[.:])/, (_match, prefix: string) => prefix + line);
+	if (line === error.line && message === error.message) return error;
+	return new PeleError(message, error.code, { ...error, line });
 }

@@ -91,8 +91,10 @@ void test('rendering diagnostics point to original body lines with or without au
 		const configured = resolveFrontmatter(source, profiles('config: {flowchart: {rankSpacing: 90}}'));
 		assert.throws(() => render(configured.source), error => {
 			const mapped = originalSourceError(error, configured.lineOffset);
-			assert.ok(mapped instanceof PeleError); assert.equal(mapped.line, source.split('\n').length);
+			const authoredLine = source.split('\n').length;
+			assert.ok(mapped instanceof PeleError); assert.equal(mapped.line, authoredLine);
 			assert.equal(mapped.column, (error as PeleError).column); assert.match(mapped.snippet, /unclosed/);
+			assert.match(mapped.message, new RegExp('^Parse error on line ' + authoredLine + ':'));
 			return true;
 		});
 	}
