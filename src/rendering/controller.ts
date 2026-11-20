@@ -15,6 +15,7 @@ import type { PresetClass } from '../styles/presets';
 import { applyZoomStyle } from '../styles/zoom-style';
 import { applyExportButtonStyle } from '../styles/editor-style';
 import { checkDiagramSource } from './source-budget';
+import { preparePeleSource } from './pele-source';
 import { originalSourceError, resolveFrontmatter } from '../styles/frontmatter';
 import { createZoomControls, zoomLimit } from '../ui/zoom-controls';
 import { hasPendingDiagramEnvironmentRefresh, observeDiagramEnvironment } from './environment';
@@ -110,7 +111,7 @@ export class DiagramController extends Component {
 			const resolved = resolveDiagramStyle(this.source, settings.style.global, settings.style.diagrams, local);
 			const configured = resolveFrontmatter(this.source, settings.style.diagrams);
 			// Canvas conversion uses the configured source across visual refreshes.
-			if (this.diagram?.source !== configured.source || this.configurationError) this.canvasRevision++;
+			if (this.request?.source !== configured.source || this.configurationError) this.canvasRevision++;
 			lineOffset = configured.lineOffset;
 			applyStyle(this.containerEl, settings, resolved.profile);
 			const editorStyle = settings.liveEditor.style;
@@ -137,16 +138,20 @@ export class DiagramController extends Component {
 		this.request = request;
 		this.renderedSource = undefined;
 		this.actions.setValid(false);
+		const prepared = preparePeleSource(request.source);
 		const options: MountOptions = {
 			// The plugin fits the intrinsic SVG. Keep Pele independent of the fitted width.
 			zoom: this.zoomOptions, images: false, responsive: false, autoDirection: false,
 			maxWidth: Number.MAX_SAFE_INTEGER,
 			fontSize: request.fontSize,
+			limit: prepared.limit,
 			onRender: result => { if (this.request === request) this.rendered(result, request.source); },
-			onError: error => { if (this.request === request) this.failed(originalSourceError(error, request.lineOffset)); },
+			onError: error => {
+				if (this.request === request) this.failed(originalSourceError(prepared.restoreError?.(error) ?? error, request.lineOffset));
+			},
 		};
-		if (this.diagram) this.diagram.update(request.source, options);
-		else this.diagram = mount(this.host, request.source, options);
+		if (this.diagram) this.diagram.update(prepared.source, options);
+		else this.diagram = mount(this.host, prepared.source, options);
 		this.diagram.refresh();
 	}
 

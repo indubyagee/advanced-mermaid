@@ -27,7 +27,10 @@ const structure = snippets('Structure and styling', [
 
 export const flowchartComponents = [...classic, ...expanded, ...edges, ...structure];
 export const swimlaneComponents = [
-	...snippets('Lanes', [['Lane', 'subgraph lane [Lane]\n  A["Task"]\nend']]),
+	...snippets('Lanes', [
+		['Lane', 'subgraph lane [Lane]\n  A["Task"]\nend'],
+		['Lane with a nested group', 'subgraph lane [Review]\n  subgraph phase [Drafting]\n    A["Draft"] --> B["Review"]\n  end\nend'],
+	]),
 	...flowchartComponents,
 ];
 export const agentflowComponents = [

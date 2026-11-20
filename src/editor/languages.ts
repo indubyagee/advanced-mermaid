@@ -6,7 +6,7 @@ const mermaid = StreamLanguage.define({
 		if (stream.eatSpace()) return null;
 		if (stream.match('%%')) { stream.skipToEnd(); return 'comment'; }
 		if (stream.match(/"[^"\n]*"|'[^'\n]*'/)) return 'string';
-		if (stream.match(/(?:flowchart|graph|sequenceDiagram|stateDiagram-v2|mindmap|participant|activate|deactivate|subgraph|end|classDef|style|class|Note|LR|TD|TB|BT|RL)\b/)) return 'keyword';
+		if (stream.match(/(?:flowchart|graph|sequenceDiagram|stateDiagram-v2|mindmap|agentflow(?:-beta)?|participant|activate|deactivate|subgraph|end|classDef|style|class|Note|LR|TD|TB|BT|RL)\b/)) return 'keyword';
 		if (stream.match(/[-=]+[>.]?|[{}[\]()|:]/)) return 'operator';
 		if (stream.match(/\d+(?:\.\d+)?/)) return 'number';
 		stream.next(); return null;

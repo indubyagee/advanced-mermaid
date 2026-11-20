@@ -3,9 +3,9 @@ import type { DiagramType } from 'pele';
 export type ConfigurationValue = string | number | boolean | null | ConfigurationValue[] | { [key: string]: ConfigurationValue };
 export type Configuration = { [key: string]: ConfigurationValue };
 
-/** Editable Mermaid defaults, based on the variable tables. Pele consumes a subset.
- * Theme-dependent palettes and options without literal defaults are intentionally omitted.
- * Version 12.3 animation options are excluded from the pinned 12.1 syntax contract.
+/** Editable Mermaid defaults, checked against the Mermaid 12.3.0 schema.
+ * Omit theme-dependent palettes and newer settings Pele ignores on render,
+ * including flowchart stepping and Mindmap depth coloring.
  */
 export const DIAGRAM_CONFIGURATION: Readonly<Record<DiagramType, Configuration>> = {
 	flowchart: { theme: 'redux-color', look: 'neo', layout: 'elk', flowchart: {

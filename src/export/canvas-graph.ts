@@ -1,5 +1,6 @@
 import { parse } from 'pele';
 import { checkDiagramSource } from '../rendering/source-budget';
+import { preparePeleSource } from '../rendering/pele-source';
 
 export const MAX_CANVAS_NODES = 300;
 export const MAX_CANVAS_EDGES = 1_000;
@@ -43,7 +44,7 @@ function direction(value?: string): CanvasDirection | undefined {
 
 function labelText(value: string): string {
 	return value.replace(/\r\n?|<br\s*\/?>/gi, '\n')
-		// Pele 1.12 marks Mermaid #entity; escapes in the parsed label.
+		// Pele marks Mermaid #entity; escapes in the parsed label.
 		.replace(/&?ﬂ°(°?\w+)¶ß|&(#x[\da-f]+|#\d+|\w+);/gi, (match: string, mermaid: string | undefined, html: string | undefined) => {
 			const entity = mermaid ?? html ?? '';
 			const numeric = /^(?:°|#)(\d+)$|^#x([\da-f]+)$/i.exec(entity);
@@ -57,7 +58,10 @@ function labelText(value: string): string {
 
 export function parseCanvasGraph(source: string): CanvasGraph {
 	checkDiagramSource(source);
-	const model = parse(source);
+	const prepared = preparePeleSource(source);
+	let model: ReturnType<typeof parse>;
+	try { model = parse(prepared.source, { limit: prepared.limit }); }
+	catch (error) { throw prepared.restoreError?.(error) ?? error; }
 	if (model.type !== 'flowchart' && model.type !== 'agentflow') throw new Error('Choose a Flowchart or Agentflow to save as a canvas.');
 	const semantic = model.type === 'agentflow' ? model.semanticModel() : undefined;
 	const diagnostic = semantic?.diagnostics.find(issue => issue.severity === 'error');

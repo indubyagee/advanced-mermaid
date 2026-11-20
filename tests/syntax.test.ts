@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { supports, detectType, parse, render } from 'pele';
+import { supports, parse, render, PeleError } from 'pele';
 import { DIAGRAM_SYNTAX } from '../src/editor/syntax/catalog';
 import { flowchartComponents, agentflowComponents, swimlaneComponents } from '../src/editor/syntax/graph-components';
 import { sequenceComponents, stateComponents, hierarchyComponents, workflowComponents } from '../src/editor/syntax/structured-components';
@@ -12,14 +12,17 @@ import { insertConfiguration } from '../src/editor/syntax/configuration-insertio
 import { parseFrontmatter } from '../src/styles/frontmatter';
 import { frontmatterEnd } from '../src/styles/local-codec';
 import { diagramComponents } from '../src/editor/syntax/components';
+import { diagramCategory } from '../src/styles/registry';
+import { detectDiagramType, preparePeleSource } from '../src/rendering/pele-source';
+import { MAX_DIAGRAM_SOURCE_LENGTH } from '../src/rendering/source-budget';
 import { syntaxBodies } from './syntax-fixtures';
 
 void test('diagram choices cover every pinned renderer family and use recognized declarations', () => {
 	assert.equal(new Set(DIAGRAM_SYNTAX.map(choice => choice.type)).size, 33);
 	assert.equal(new Set(DIAGRAM_SYNTAX.map(choice => choice.declaration)).size, DIAGRAM_SYNTAX.length);
 	for (const diagram of DIAGRAM_SYNTAX) {
-		assert.equal(supports(diagram.declaration), true, diagram.declaration);
-		assert.equal(detectType(diagram.declaration), diagram.type, diagram.declaration);
+		assert.equal(supports(preparePeleSource(diagram.declaration).source), true, diagram.declaration);
+		assert.equal(detectDiagramType(diagram.declaration), diagram.type, diagram.declaration);
 	}
 });
 
@@ -27,7 +30,8 @@ void test('every selected diagram variant renders with its generated configurati
 	for (const diagram of DIAGRAM_SYNTAX) {
 		const body = diagram.type === 'railroad' ? diagramComponents(diagram)[0]!.text : syntaxBodies[diagram.type];
 		const source = insertConfiguration(diagram.declaration + '\n' + body, diagram).source;
-		const rendered = render(source, { images: false });
+		const prepared = preparePeleSource(source);
+		const rendered = render(prepared.source, { images: false, limit: prepared.limit });
 		assert.ok(rendered.width > 0 && rendered.height > 0, diagram.declaration);
 		assert.match(rendered.svg, /<svg\b/);
 		assert.equal(insertConfiguration(source, diagram).source, source, diagram.declaration);
@@ -81,6 +85,43 @@ void test('diagram selection initializes empty sources and preserves YAML, direc
 	assert.equal(diagramDeclaration('%% comment\n\n').text, '');
 	assert.throws(() => initializeDiagram('---\ntitle: unfinished', diagram), /frontmatter/);
 	assert.throws(() => initializeDiagram('unknown\nImportant text', diagram), /unrecognized/);
+});
+
+void test('Agentflow declarations share selection and styles with existing beta source', () => {
+	const prefix = '---\r\ntitle: agentflow example\r\n---\r\n%% agentflow mention\r\n%%{init: {"theme":"base"}}%%\r\n';
+	for (const keyword of ['agentflow', 'agentflow-beta']) {
+		const source = prefix + keyword + ' LR\r\n A[Start] --> B[Review]';
+		const declaration = diagramDeclaration(source);
+		assert.equal(declaration.text, keyword + ' LR');
+		assert.equal(declaration.from, prefix.length);
+		assert.equal(selectedDiagram(declaration.text)?.declaration, 'agentflow-beta LR');
+		assert.equal(diagramCategory(source), 'agentflow');
+	}
+	assert.equal(diagramCategory('agentflow-unrecognized LR\n A --> B'), null);
+	assert.equal(diagramCategory('%% agentflow LR\nflowchart LR\n A["agentflow"] --> B'), 'flowchart');
+});
+
+void test('the Agentflow alias preserves the source limit and inline diagnostic position', () => {
+	const source = 'agentflow LR\n A --> B\n%% ';
+	const longest = source + 'x'.repeat(MAX_DIAGRAM_SOURCE_LENGTH - source.length);
+	const prepared = preparePeleSource(longest);
+	assert.equal(render(prepared.source, { limit: prepared.limit }).type, 'agentflow');
+	const tooLong = preparePeleSource(longest + 'x');
+	assert.throws(() => render(tooLong.source, { limit: tooLong.limit }), { code: 'limit' });
+
+	const invalid = '---\r\ntitle: Example\r\n---\r\n%% comment\r\nagentflow LR; @';
+	const bad = preparePeleSource(invalid);
+	assert.throws(() => {
+		try { render(bad.source); }
+		catch (error) { throw bad.restoreError?.(error) ?? error; }
+	}, error => {
+		assert.ok(error instanceof PeleError);
+		assert.equal(error.line, 5);
+		assert.equal(error.column, 15);
+		assert.match(error.snippet, /^agentflow LR; @\n-{14}\^$/);
+		assert.ok(!error.message.includes('agentflow-beta'));
+		return true;
+	});
 });
 
 void test('component insertion follows selections, line endings, indentation and source bounds', () => {

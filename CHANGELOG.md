@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+
+- Upgrade to Pele 1.13.0. Authored Mermaid palettes now color GitGraph, Mindmap, Timeline, Radar, Treemap, Pie, XY, and Venn diagrams and their exports.
+
+### Added
+
+- Accept `agentflow` as an Advanced Mermaid declaration alongside `agentflow-beta` in previews, Live Editor, and Canvas export.
+
 ## 0.3.4 — 2026-11-20
 
 ### Changed

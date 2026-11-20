@@ -1,4 +1,5 @@
-import { detectType, type DiagramType } from 'pele';
+import type { DiagramType } from 'pele';
+import { detectDiagramType } from '../../rendering/pele-source';
 
 export interface DiagramSyntax {
 	readonly type: DiagramType;
@@ -51,7 +52,7 @@ export const DIAGRAM_SYNTAX: readonly DiagramSyntax[] = Object.entries(declarati
 /** Declaration recognition works while the diagram body is incomplete. */
 export function selectedDiagram(declaration: string): DiagramSyntax | undefined {
 	let type: DiagramType | null;
-	try { type = detectType(declaration); } catch { return undefined; }
+	try { type = detectDiagramType(declaration); } catch { return undefined; }
 	const choices = DIAGRAM_SYNTAX.filter(choice => choice.type === type);
 	const exact = choices.find(choice => choice.declaration.toLowerCase() === declaration.toLowerCase());
 	if (exact) return exact;

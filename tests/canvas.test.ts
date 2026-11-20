@@ -52,6 +52,12 @@ void test('Canvas export uses the parsed family and direction, with stable posit
 	}
 });
 
+void test('Canvas export accepts either Agentflow declaration with the same configured graph', () => {
+	const prefix = '---\ntitle: Agentflow export\n---\n%% Before the declaration\n';
+	const body = ' LR\n  A@{shape: input, label: "Intake"} --> B[Review]';
+	assert.deepEqual(convert(prefix + 'agentflow' + body), convert(prefix + 'agentflow-beta' + body));
+});
+
 void test('groups contain their members, and complex links retain their endpoints and individual IDs', () => {
 	const { nodes, edges } = convert([
 		'flowchart TB',
