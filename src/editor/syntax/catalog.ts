@@ -5,6 +5,7 @@ export interface DiagramSyntax {
 	readonly type: DiagramType;
 	readonly label: string;
 	readonly declaration: string;
+	readonly syntaxDocs: string;
 	readonly orientation?: OrientationSyntax;
 }
 
@@ -32,45 +33,46 @@ const orientations: Partial<Record<DiagramType, OrientationSyntax>> = {
 };
 
 /** Separate from the style registry: Pele also renders families without type-specific styles. */
-const declarations: Record<DiagramType, readonly [label: string, ...declarations: string[]]> = {
-	flowchart: ['Flowchart', 'flowchart'],
-	sequence: ['Sequence', 'sequenceDiagram'],
-	class: ['Class', 'classDiagram'],
-	state: ['State', 'stateDiagram-v2', 'stateDiagram'],
-	er: ['Entity relationship', 'erDiagram'],
-	pie: ['Pie', 'pie'],
-	gantt: ['Gantt', 'gantt'],
-	gitGraph: ['Git graph', 'gitGraph'],
-	mindmap: ['Mindmap', 'mindmap'],
-	timeline: ['Timeline', 'timeline'],
-	journey: ['User journey', 'journey'],
-	xychart: ['XY chart', 'xychart-beta'],
-	quadrantChart: ['Quadrant chart', 'quadrantChart'],
-	requirement: ['Requirement', 'requirementDiagram'],
-	c4: ['C4', 'C4Context', 'C4Container', 'C4Component', 'C4Dynamic', 'C4Deployment'],
-	sankey: ['Sankey', 'sankey-beta'],
-	block: ['Block', 'block-beta'],
-	packet: ['Packet', 'packet-beta'],
-	kanban: ['Kanban', 'kanban'],
-	architecture: ['Architecture', 'architecture-beta'],
-	radar: ['Radar', 'radar-beta'],
-	treemap: ['Treemap', 'treemap-beta'],
-	info: ['Info', 'info'],
-	agentflow: ['Agentflow', 'agentflow-beta'],
-	usecase: ['Use case', 'usecase-beta'],
-	railroad: ['Railroad', 'railroad-beta', 'railroad-ebnf-beta', 'railroad-abnf-beta', 'railroad-peg-beta'],
-	treeView: ['Tree view', 'treeView-beta'],
-	venn: ['Venn', 'venn-beta'],
-	cynefin: ['Cynefin', 'cynefin-beta'],
-	wardley: ['Wardley map', 'wardley-beta'],
-	swimlane: ['Swimlanes', 'swimlane-beta'],
-	ishikawa: ['Ishikawa', 'ishikawa-beta'],
-	eventmodeling: ['Event modeling', 'eventmodeling'],
+const declarations: Record<DiagramType, readonly [label: string, docsPage: string, declaration: string, ...variants: string[]]> = {
+	flowchart: ['Flowchart', 'flowchart', 'flowchart'],
+	sequence: ['Sequence', 'sequenceDiagram', 'sequenceDiagram'],
+	class: ['Class', 'classDiagram', 'classDiagram'],
+	state: ['State', 'stateDiagram', 'stateDiagram-v2', 'stateDiagram'],
+	er: ['Entity relationship', 'entityRelationshipDiagram', 'erDiagram'],
+	pie: ['Pie', 'pie', 'pie'],
+	gantt: ['Gantt', 'gantt', 'gantt'],
+	gitGraph: ['Git graph', 'gitgraph', 'gitGraph'],
+	mindmap: ['Mindmap', 'mindmap', 'mindmap'],
+	timeline: ['Timeline', 'timeline', 'timeline'],
+	journey: ['User journey', 'userJourney', 'journey'],
+	xychart: ['XY chart', 'xyChart', 'xychart-beta'],
+	quadrantChart: ['Quadrant chart', 'quadrantChart', 'quadrantChart'],
+	requirement: ['Requirement', 'requirementDiagram', 'requirementDiagram'],
+	c4: ['C4', 'c4', 'C4Context', 'C4Container', 'C4Component', 'C4Dynamic', 'C4Deployment'],
+	sankey: ['Sankey', 'sankey', 'sankey-beta'],
+	block: ['Block', 'block', 'block-beta'],
+	packet: ['Packet', 'packet', 'packet-beta'],
+	kanban: ['Kanban', 'kanban', 'kanban'],
+	architecture: ['Architecture', 'architecture', 'architecture-beta'],
+	radar: ['Radar', 'radar', 'radar-beta'],
+	treemap: ['Treemap', 'treemap', 'treemap-beta'],
+	info: ['Info', 'https://pele.run/compatibility#diagram-types', 'info'],
+	agentflow: ['Agentflow', 'agentflow', 'agentflow-beta'],
+	usecase: ['Use case', 'usecase', 'usecase-beta'],
+	railroad: ['Railroad', 'railroad', 'railroad-beta', 'railroad-ebnf-beta', 'railroad-abnf-beta', 'railroad-peg-beta'],
+	treeView: ['Tree view', 'treeView', 'treeView-beta'],
+	venn: ['Venn', 'venn', 'venn-beta'],
+	cynefin: ['Cynefin', 'cynefin', 'cynefin-beta'],
+	wardley: ['Wardley map', 'wardley', 'wardley-beta'],
+	swimlane: ['Swimlanes', 'swimlanes', 'swimlane-beta'],
+	ishikawa: ['Ishikawa', 'ishikawa', 'ishikawa-beta'],
+	eventmodeling: ['Event modeling', 'eventmodeling', 'eventmodeling'],
 };
 
-export const DIAGRAM_SYNTAX: readonly DiagramSyntax[] = Object.entries(declarations).flatMap(([type, [label, ...variants]]) => variants.map(declaration => ({
+export const DIAGRAM_SYNTAX: readonly DiagramSyntax[] = Object.entries(declarations).flatMap(([type, [label, docsPage, ...variants]]) => variants.map(declaration => ({
 	type: type as DiagramType, declaration,
 	label: variants.length === 1 ? label : declaration,
+	syntaxDocs: docsPage.startsWith('https://') ? docsPage : 'https://mermaid.ai/open-source/syntax/' + docsPage + '.html',
 	orientation: orientations[type as DiagramType],
 }))).sort((left, right) => left.label.localeCompare(right.label));
 
@@ -83,5 +85,5 @@ export function selectedDiagram(declaration: string): DiagramSyntax | undefined 
 	let type: DiagramType | null;
 	try { type = detectDiagramType(declaration); } catch { return undefined; }
 	return DIAGRAM_SYNTAX.find(choice => choice.type === type && choice.declaration.toLowerCase() === keyword.toLowerCase())
-		?? DIAGRAM_SYNTAX.find(choice => type && choice.declaration === declarations[type][1]);
+		?? DIAGRAM_SYNTAX.find(choice => type && choice.declaration === declarations[type][2]);
 }

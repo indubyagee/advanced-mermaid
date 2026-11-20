@@ -6,6 +6,7 @@
 
 - Upgrade to Pele 1.13.0. Authored Mermaid palettes now color GitGraph, Mindmap, Timeline, Radar, Treemap, Pie, XY, and Venn diagrams and their exports.
 - Choose the diagram and its orientation separately in the Live Editor.
+- See descriptive names alongside component syntax and open the selected diagram's reference from **Syntax Docs**.
 
 ### Added
 

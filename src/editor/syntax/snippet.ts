@@ -4,6 +4,6 @@ export interface SyntaxSnippet {
 	readonly group: string;
 }
 
-export function snippets(group: string, entries: readonly (string | readonly [label: string, text: string])[]): SyntaxSnippet[] {
-	return entries.map(entry => typeof entry === 'string' ? { group, label: entry, text: entry } : { group, label: entry[0], text: entry[1] });
+export function snippets(group: string, entries: readonly (readonly [label: string, text: string])[]): SyntaxSnippet[] {
+	return entries.map(([label, text]) => ({ group, label, text }));
 }

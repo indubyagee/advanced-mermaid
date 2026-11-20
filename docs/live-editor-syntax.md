@@ -6,10 +6,11 @@ Open a complete top-level `pele` or `mermaid` code block in **Live editor**. The
 | --- | --- |
 | **Diagram** | Select from 33 families and 41 declaration choices, including State variants, C4 levels and Railroad notations. For a family with orientations, this stages the choice. |
 | **Orientation** | Select the direction to apply a staged diagram or update its existing direction. The menu is empty for families without a verified direction and stays blank when the source omits an explicit direction. |
-| **Component** | Select a diagram-specific snippet to insert at the source position or replace selected body text. The placeholder resets so the same snippet can be inserted again. |
+| **Component** | Choose a snippet by its name and source syntax. The menu inserts it at the cursor or replaces the selected body text. |
 | **Insert configuration** | Add YAML frontmatter at the top of the source, or fill missing configuration keys in existing frontmatter. Selects the resulting YAML for editing. |
+| **Syntax Docs** | Open the official syntax page for the selected diagram, including a staged selection. Info opens Pele's diagram reference. |
 
-For example, select **Flowchart**, then choose **TB** from **Orientation**. Place the cursor on the next line and select `A["node"]` or `A@{ shape: rect, label: process }` from **Component**. Both produce a rectangular node. Other groups offer connections, containers, metadata and styles. Insert indented snippets, such as Mindmap branches or Kanban tasks, at the desired nesting level under a parent.
+For example, select **Flowchart**, then choose **TB** from **Orientation**. Place the cursor on the next line and choose **Process (rectangle)** under **Expanded nodes** to insert `A@{ shape: rect, label: process }`. Other groups offer connections, containers, metadata and styles. Insert indented snippets, such as Mindmap branches or Kanban tasks, at the desired nesting level under a parent.
 
 The component list follows the declaration even when it is edited manually. Declaration aliases such as `graph LR` and `agentflow-beta LR` use the corresponding family's snippets. An unrecognized declaration or incomplete frontmatter disables component/configuration insertion until repaired. The controls are hidden in the CSS tab. Active text composition and invalid/conflicting CSS drafts must be resolved before a syntax action can modify the note.
 

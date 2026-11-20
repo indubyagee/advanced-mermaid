@@ -22,6 +22,7 @@ export class DiagramSyntaxSelector extends Component {
 	private orientations!: HTMLSelectElement;
 	private components!: HTMLSelectElement;
 	private configuration!: HTMLButtonElement;
+	private docs!: HTMLButtonElement;
 
 	constructor(private readonly host: HTMLElement, private readonly source: () => string, private readonly actions: SyntaxActions) { super(); }
 
@@ -37,6 +38,7 @@ export class DiagramSyntaxSelector extends Component {
 		const componentLabel = this.host.createEl('label', { cls: 'advanced-mermaid-component-field', text: 'Component' });
 		this.components = componentLabel.createEl('select', { attr: { 'aria-label': 'Insert diagram component', title: 'Insert syntax at the current source position, replacing any selection.' } });
 		this.configuration = this.host.createEl('button', { text: 'Insert configuration', attr: { type: 'button', title: 'Add missing frontmatter configuration keys. Existing values are kept. Pele supports a subset of Mermaid configuration.' } });
+		this.docs = this.host.createEl('button', { text: 'Syntax Docs', attr: { type: 'button', title: 'Open official syntax documentation.' } });
 		this.registerDomEvent(this.diagrams, 'change', () => {
 			const diagram = DIAGRAM_SYNTAX.find(choice => choice.declaration === this.diagrams.value);
 			this.pending = diagram?.orientation && diagram !== this.authoredDiagram ? { diagram, source: this.source() } : undefined;
@@ -58,6 +60,10 @@ export class DiagramSyntaxSelector extends Component {
 			this.components.value = '';
 		});
 		this.registerDomEvent(this.configuration, 'click', () => { if (this.diagram) this.actions.configuration(this.diagram); });
+		this.registerDomEvent(this.docs, 'click', () => {
+			const diagram = this.pending?.diagram ?? this.authoredDiagram;
+			if (diagram && !this.host.hidden) this.host.ownerDocument.defaultView?.open(diagram.syntaxDocs, '_blank', 'noopener,noreferrer');
+		});
 		this.refresh(true);
 	}
 
@@ -76,6 +82,7 @@ export class DiagramSyntaxSelector extends Component {
 		const selected = this.pending?.diagram ?? authored;
 		const rule = selected?.orientation;
 		this.diagrams.value = selected?.declaration ?? '';
+		this.docs.disabled = !selected;
 		if (rule !== this.orientationRule) {
 			this.orientationRule = rule;
 			this.orientations.empty();
@@ -97,7 +104,7 @@ export class DiagramSyntaxSelector extends Component {
 		this.choices.forEach((component, index) => {
 			let group = groups.get(component.group);
 			if (!group) { group = this.components.createEl('optgroup', { attr: { label: component.group } }); groups.set(component.group, group); }
-			group.createEl('option', { text: component.label, attr: { value: String(index) } });
+			group.createEl('option', { text: component.label + ': ' + component.text, attr: { value: String(index) } });
 		});
 		this.components.disabled = !diagram;
 		this.configuration.disabled = !diagram;
