@@ -4,6 +4,7 @@ import type { App } from 'obsidian';
 import { TFolder } from './obsidian';
 export { AdvancedMermaidSettingTab } from '../src/ui/settings-tab';
 export { DIAGRAM_REGISTRY } from '../src/styles/registry';
+export { styleExampleSources } from '../src/ui/settings-example';
 export { DiagramSyntaxSelector } from '../src/ui/diagram-syntax-selector';
 export { SaveExportModal } from '../src/ui/export-modal';
 export { VaultFolderSuggest } from '../src/ui/folder-suggest';

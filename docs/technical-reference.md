@@ -59,7 +59,7 @@ Preferences use Obsidian’s plugin data API. The current settings schema is 6. 
 | Preset classes | Matching aliases can supply fill, border, text, or stroke width. When multiple aliases apply, later library entries win for the fields they specify. Explicit node and subgraph text and authored paint can take precedence. |
 | Frontmatter | With **Use custom frontmatter** enabled for the diagram type, merge its YAML defaults with the block’s YAML. Nested mappings merge, missing keys inherit, and lists, scalars, and `null` replace defaults. Pele applies its normal precedence for initialization directives and body statements. |
 
-Frontmatter and style inheritance have separate toggles. Pele supports a subset of Mermaid configuration, so YAML acceptance and renderer support are separate checks. The style settings cover 16 diagram families, and the Live editor’s syntax menus offer declarations for 33 families. [Settings menu](settings-menu.md#styles) · [Preset classes](preset-classes.md) · [Syntax controls](live-editor-syntax.md)
+Frontmatter and style inheritance have separate toggles. Pele supports a subset of Mermaid configuration, so YAML acceptance and renderer support are separate checks. The style settings cover 20 diagram families, and the Live editor’s syntax menus offer declarations for 33 families. [Settings menu](settings-menu.md#styles) · [Preset classes](preset-classes.md) · [Syntax controls](live-editor-syntax.md)
 
 ## Per-diagram configuration
 

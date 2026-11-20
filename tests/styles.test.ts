@@ -4,8 +4,8 @@ import { DIAGRAM_CATEGORIES, DIAGRAM_REGISTRY, diagramCategory, emptyStyleProfil
 import { validateStyleProfile, validStyleColor, validStyleFont } from '../src/styles/validate';
 import { resolveDiagramStyle, resolveStyleProfile } from '../src/styles/resolve';
 
-void test('all 22 declaration forms resolve to the 16 style categories', () => {
-	assert.equal(DIAGRAM_CATEGORIES.length, 16);
+void test('all registered declaration forms resolve to their style categories', () => {
+	assert.equal(DIAGRAM_CATEGORIES.length, 20);
 	let count = 0;
 	for (const category of DIAGRAM_CATEGORIES) {
 		for (const declaration of DIAGRAM_REGISTRY[category].declarations) {
@@ -17,8 +17,8 @@ void test('all 22 declaration forms resolve to the 16 style categories', () => {
 			}
 		}
 	}
-	assert.equal(count, 22);
-	assert.equal(diagramCategory('pie\n "First": 40'), null);
+	assert.equal(count, 26);
+	assert.equal(diagramCategory('C4Context\n Person(reader, "Reader")'), null);
 	assert.equal(diagramCategory('not a diagram'), null);
 	assert.equal(diagramCategory(''), null);
 	// Detection is deliberately independent of syntax validity.

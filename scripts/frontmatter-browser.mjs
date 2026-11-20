@@ -16,10 +16,12 @@ export async function runFrontmatterChecks(page) {
 		for (const [category, { label }] of categories) {
 			open(label);
 			const example = tab.containerEl.querySelector('.advanced-mermaid-settings-example');
+			if (example.open || example.querySelector('svg.pele')) failures.push(label + ' loads before disclosure');
 			example.open = true;
 			await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 			if (!example.querySelector('svg.pele')) failures.push(label + ' preview');
 			open('Advanced');
+			if (example.querySelector('svg.pele') || tab.containerEl.querySelector('svg.pele')) failures.push(label + ' preview remains mounted');
 			const initial = !row('Use custom frontmatter').querySelector('input').checked;
 			const yaml = `title: ${category} defaults\nconfig:\n  ${category}: {}`;
 			edit(yaml); row('Use custom frontmatter').querySelector('input').click();
@@ -45,7 +47,7 @@ export async function runFrontmatterChecks(page) {
 		tab.hide(); tab.containerEl.remove();
 		return { count: categories.length, failures, rejectsInvalid, disabledRetains, inheritanceRetains, reset, undo, roundTrip };
 	});
-	assert.equal(settingsReport.count, 16);
+	assert.equal(settingsReport.count, 20);
 	assert.deepEqual(settingsReport.failures, []);
 	assert.deepEqual(settingsReport.roundTrip.loaded, settingsReport.roundTrip.saved);
 	for (const [key, value] of Object.entries(settingsReport)) if (!['count', 'failures', 'roundTrip'].includes(key)) assert.equal(value, true, key);
@@ -117,7 +119,7 @@ export async function runFrontmatterChecks(page) {
 		await page.evaluate(() => { frontmatterFixture.view.destroy(); frontmatterFixture.inline.destroy(); frontmatterFixture.host.remove(); delete window.frontmatterFixture; });
 	}
 	await checkAgentflowAliases(page);
-	console.log('Frontmatter passed: 16 settings families, validation, persistence, scoped reset/undo, reading/layout, SVG/PNG exports, and authored overrides and Agentflow aliases in both Live Editor fence languages.');
+	console.log(`Frontmatter passed: ${settingsReport.count} settings families, lazy previews, validation, persistence, scoped reset/undo, reading/layout, SVG/PNG exports, and authored overrides and Agentflow aliases in both Live Editor fence languages.`);
 }
 
 async function checkAgentflowAliases(page) {
