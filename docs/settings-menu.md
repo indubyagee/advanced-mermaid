@@ -51,7 +51,7 @@ config:
 
 When enabled, these defaults apply to all diagrams in the selected family in Reading view, Live Preview, and exports. Frontmatter authored in a Live editor or source block overrides matching keys recursively. Omitted keys inherit, while lists, scalar values and `null` replace their defaults. Source init directives and diagram-body statements retain the renderer's normal precedence. The plugin merges defaults when it prepares the diagram for rendering.
 
-Use normal Mermaid frontmatter keys such as `title` and `config`, including the correctly capitalized family key (`gitGraph`, `treeView`, `journey`, or `swimlane`, for example). Options take effect only when supported by Pele 1.12.0; accepting YAML does not imply support for every Mermaid option. Configurations are limited to 50,000 characters and bounded nesting; combined render input also follows the renderer's source limit.
+Use normal Mermaid frontmatter keys such as `title` and `config`, including the correctly capitalized family key (`gitGraph`, `treeView`, `journey`, or `swimlane`, for example). Options take effect when supported by Pele 1.13.0. Configurations are limited to 50,000 characters and bounded nesting. Combined render input also follows the renderer's source limit.
 
 - **Reset shared styles** clears the defaults set under **All diagrams**.
 - Each diagram type has a labeled reset such as **Reset Flowchart styles**. It clears that type's overrides and custom frontmatter and restores inheritance from **All diagrams**.

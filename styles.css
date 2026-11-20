@@ -467,7 +467,7 @@ body:not(.theme-dark) .advanced-mermaid-editor[data-source-color-light="true"],
    authored inline paint and source palette classes retain precedence.
    src/styles/apply.ts lists active controls in data-style-controls; ~= matches
    one control in that space-separated list. Category guards scope each mapping
-   to its diagram type and translate settings into Pele 1.12.0 semantic tokens. */
+   to its diagram type and translate settings into Pele semantic tokens. */
 /* Sequence participants, notes, and activation bars use distinct fill tokens. */
 .advanced-mermaid[data-style-controls~="sequenceParticipantFill"][data-category="sequence"] .pele-actor {
 	--_s: var(--pele-palette-fill, var(--advanced-mermaid-sequence-participant-fill));

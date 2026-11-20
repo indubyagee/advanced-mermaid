@@ -1,5 +1,5 @@
 import type { SettingDefinition, SettingDefinitionGroup, SettingDefinitionPage } from 'obsidian';
-import { COLOR_TOKENS, COMPATIBILITY_CONTROLS, type DiagramCategory, type StyleProfile, type ColorPair } from '../styles/registry';
+import { COLOR_TOKENS, COMPATIBILITY_CONTROLS, STYLE_RENDERER_VERSION, type DiagramCategory, type StyleProfile, type ColorPair } from '../styles/registry';
 import { validStyleFont } from '../styles/validate';
 import { SEMANTIC_CONTROLS } from '../styles/semantic-controls';
 import { colorPairDefinition, numberDefinition, rowDefinition } from './setting-controls';
@@ -58,7 +58,7 @@ export function profileDefinitions(profile: StyleProfile, changed: () => void, e
 	return {
 		groups: [
 			{ type: 'group', heading: 'Colors', items: colors.slice(0, 11) },
-			{ type: 'group', heading: 'Typography and shape', items: [...fonts, ...numbers, { name: 'Text weights', desc: 'Renderer weights are retained; measured per-role weight overrides are unavailable in Pele 1.12.0.' }] },
+			{ type: 'group', heading: 'Typography and shape', items: [...fonts, ...numbers, { name: 'Text weights', desc: `Pele ${STYLE_RENDERER_VERSION} determines text weights when measuring diagram labels.` }] },
 			...(semantic.length ? [{ type: 'group' as const, heading: 'Diagram elements', items: semantic }] : []),
 			...(shared.length ? [{ type: 'group' as const, heading: 'Shared element defaults', items: shared }] : []),
 		],

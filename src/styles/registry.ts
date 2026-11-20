@@ -2,7 +2,7 @@ import { detectType } from 'pele';
 import { SEMANTIC_CONTROLS } from './semantic-controls';
 
 /** Contract for the pinned renderer; declaration recognition is not syntax validation. */
-export const STYLE_RENDERER_VERSION = '1.12.0';
+export const STYLE_RENDERER_VERSION = '1.13.0';
 
 export const DIAGRAM_CATEGORIES = [
 	'agentflow', 'eventmodeling', 'flowchart', 'gantt', 'gitGraph', 'ishikawa',

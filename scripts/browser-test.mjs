@@ -16,6 +16,7 @@ import { runOwnershipScopeChecks, runRendererOwnershipChecks } from './renderer-
 import { runMermaidPreviewChecks } from './mermaid-preview-browser.mjs';
 import { runZoomStyleChecks } from './zoom-style-browser.mjs';
 import { runFrontmatterChecks } from './frontmatter-browser.mjs';
+import { runPelePaletteChecks } from './pele-palettes-browser.mjs';
 import { runSyntaxChecks } from './syntax-browser.mjs';
 import { runCanvasChecks } from './canvas-browser.mjs';
 
@@ -53,6 +54,7 @@ try {
 	await runMermaidPreviewChecks(page);
 	await runSyntaxChecks(page);
 	await runFrontmatterChecks(page);
+	await runPelePaletteChecks(page);
 	await runCanvasChecks(page);
 	await runOwnershipScopeChecks(page);
 	const sourceBudget = await page.evaluate(() => {
