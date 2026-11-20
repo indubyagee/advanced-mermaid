@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.4 — 2026-11-20
+
 ### Changed
 
 - Added badge icons to the README and refreshed screenshot.
