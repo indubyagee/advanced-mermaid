@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.3.3 — 2026-11-19
+
 ### Added
 
 - Add a [User Guide](docs/user-guide.md) for installation, editing, styling, and exports, and a [technical reference](docs/technical-reference.md) for configuration and development.
