@@ -17,6 +17,8 @@ export const styleExampleSources: Readonly<Record<DiagramCategory, string>> = {
 	kanban: 'kanban\n todo[To do]\n  draft[Draft]',
 	mindmap: 'mindmap\n root((Project))\n  Plan\n  Review',
 	packet: 'packet\n  0-7: "Version"\n  8-23: "Length"\n  24-47: "Payload"',
+	pie: 'pie\n  "Written": 8\n  "Reviewed": 5\n  "Published": 3',
+	quadrantChart: 'quadrantChart\n  title Release priorities\n  x-axis Low effort --> High effort\n  y-axis Low impact --> High impact\n  quadrant-1 Plan\n  Quick fix: [0.2, 0.8]',
 	radar: 'radar-beta\n axis A, B, C\n curve Targets{2, 3, 4}',
 	requirement: 'requirementDiagram\n  requirement backup {\n    id: 1\n    text: "Keep recoverable copies"\n    risk: medium\n    verifymethod: test\n  }\n  element archive {\n    type: system\n  }\n  archive - satisfies -> backup',
 	sankey: 'sankey\nDraft,"Review, edit",12\n"Review, edit",Published,8\n"Review, edit",Deferred,4',
@@ -28,6 +30,8 @@ export const styleExampleSources: Readonly<Record<DiagramCategory, string>> = {
 	treeView: 'treeView-beta\nproject/\n  plan.md\n  review.md',
 	journey: 'journey\n title Publishing\n Draft: 4: Author\n Review: 5: Reviewer',
 	usecase: 'usecase-beta\n  actor Reader\n  systemBoundary "Library"\n    Borrow("Borrow book")\n    Renew("Renew loan")\n  end\n  Reader --> Borrow\n  Reader --> Renew',
+	venn: 'venn-beta\n  set A["Writing"]: 18\n  set B["Review"]: 12\n  union A,B["Both"]: 5',
+	xychart: 'xychart\n  x-axis [Jan, Feb, Mar]\n  bar [3, 5, 2]\n  line [2, 4, 3]',
 };
 
 /** One lazily mounted example; hidden/closed settings never retain a renderer. */

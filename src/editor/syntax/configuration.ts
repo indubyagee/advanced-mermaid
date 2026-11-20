@@ -67,7 +67,10 @@ export const DIAGRAM_CONFIGURATION: Readonly<Record<DiagramType, Configuration>>
 	er: { er: { rankSpacing: 80 } },
 	pie: { pie: { useMaxWidth: true, textPosition: 0.75 } },
 	xychart: { xyChart: { width: 700, height: 500, showTitle: true, chartOrientation: 'vertical' } },
-	quadrantChart: { quadrantChart: { chartWidth: 500, chartHeight: 500, pointRadius: 5 } },
+	quadrantChart: { quadrantChart: {
+		chartWidth: 500, chartHeight: 500, pointRadius: 5, titleFontSize: 20,
+		xAxisLabelFontSize: 16, yAxisLabelFontSize: 16, quadrantLabelFontSize: 16, pointLabelFontSize: 12,
+	} },
 	requirement: { requirement: { useMaxWidth: true } },
 	c4: { c4: { diagramMarginX: 50, diagramMarginY: 10, c4ShapeMargin: 50, useMaxWidth: true } },
 	sankey: { sankey: { width: 600, height: 400, useMaxWidth: false, showValues: true, linkColor: 'gradient', nodeAlignment: 'justify' } },

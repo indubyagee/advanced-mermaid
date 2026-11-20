@@ -57,6 +57,8 @@ For Class diagrams, `config.class.hideEmptyMembersBox` controls empty member com
 
 Set `config.packet.bitsPerRow` to control how a packet wraps and `config.block.padding` to change the space around block content. Set `config.sankey.linkColor` to `gradient` or `source` to control the colors of Sankey links.
 
+Pie, XY, and Venn use the category colors on their **Advanced** pages. The corresponding Mermaid palette variables in `config.themeVariables` can override those colors for an individual diagram. Use `config.pie.textPosition` to position slice labels, `config.xyChart` for chart dimensions and orientation, and `config.quadrantChart` for title, axis, quadrant, and point label sizes. [Pele palette variables](https://pele.run/theming#series-palettes)
+
 - **Reset shared styles** clears the defaults set under **All diagrams**.
 - Each diagram type has a labeled reset such as **Reset Flowchart styles**. It clears that type's overrides and custom frontmatter and restores inheritance from **All diagrams**.
 - **Undo reset** appears beside the reset confirmation and restores the previous values during that settings session.

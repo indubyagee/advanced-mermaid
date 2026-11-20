@@ -6,8 +6,8 @@ export const STYLE_RENDERER_VERSION = '1.13.0';
 
 export const DIAGRAM_CATEGORIES = [
 	'agentflow', 'block', 'class', 'er', 'eventmodeling', 'flowchart', 'gantt', 'gitGraph', 'ishikawa',
-	'kanban', 'mindmap', 'packet', 'radar', 'requirement', 'sankey', 'sequence', 'state', 'swimlane', 'timeline',
-	'treemap', 'treeView', 'journey', 'usecase',
+	'kanban', 'mindmap', 'packet', 'pie', 'quadrantChart', 'radar', 'requirement', 'sankey',
+	'sequence', 'state', 'swimlane', 'timeline', 'treemap', 'treeView', 'journey', 'usecase', 'venn', 'xychart',
 ] as const;
 export type DiagramCategory = typeof DIAGRAM_CATEGORIES[number];
 
@@ -27,6 +27,8 @@ export const DIAGRAM_REGISTRY: Readonly<Record<DiagramCategory, {
 	kanban: { label: 'Kanban', declarations: ['kanban'] },
 	mindmap: { label: 'Mindmap', declarations: ['mindmap'] },
 	packet: { label: 'Packet', declarations: ['packet', 'packet-beta'] },
+	pie: { label: 'Pie chart', declarations: ['pie'] },
+	quadrantChart: { label: 'Quadrant chart', declarations: ['quadrantChart'] },
 	radar: { label: 'Radar', declarations: ['radar-beta'] },
 	requirement: { label: 'Requirement', declarations: ['requirementDiagram'] },
 	sankey: { label: 'Sankey', declarations: ['sankey', 'sankey-beta'] },
@@ -38,6 +40,8 @@ export const DIAGRAM_REGISTRY: Readonly<Record<DiagramCategory, {
 	treeView: { label: 'TreeView', declarations: ['treeView-beta'] },
 	journey: { label: 'User Journey', declarations: ['journey'] },
 	usecase: { label: 'Use case', declarations: ['usecase-beta'] },
+	venn: { label: 'Venn', declarations: ['venn-beta'] },
+	xychart: { label: 'XY chart', declarations: ['xychart', 'xychart-beta'] },
 };
 
 export function isDiagramCategory(value: unknown): value is DiagramCategory {

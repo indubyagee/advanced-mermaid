@@ -23,7 +23,9 @@ export async function runFrontmatterChecks(page) {
 			open('Advanced');
 			if (example.querySelector('svg.pele') || tab.containerEl.querySelector('svg.pele')) failures.push(label + ' preview remains mounted');
 			const initial = !row('Use custom frontmatter').querySelector('input').checked;
-			const yaml = `title: ${category} defaults\nconfig:\n  ${category}: {}`;
+			const configKey = category === 'xychart' ? 'xyChart' : category;
+			if (tab.containerEl.querySelector('textarea').placeholder !== 'config:\n  ' + configKey + ': {}') failures.push(label + ' config key');
+			const yaml = `title: ${category} defaults\nconfig:\n  ${configKey}: {}`;
 			edit(yaml); row('Use custom frontmatter').querySelector('input').click();
 			const saved = settings.style.diagrams[category];
 			if (!(initial && saved.useGlobal && saved.frontmatter.enabled && saved.frontmatter.yaml === yaml)) failures.push(label + ' frontmatter');
@@ -47,7 +49,7 @@ export async function runFrontmatterChecks(page) {
 		tab.hide(); tab.containerEl.remove();
 		return { count: categories.length, failures, rejectsInvalid, disabledRetains, inheritanceRetains, reset, undo, roundTrip };
 	});
-	assert.equal(settingsReport.count, 23);
+	assert.equal(settingsReport.count, 27);
 	assert.deepEqual(settingsReport.failures, []);
 	assert.deepEqual(settingsReport.roundTrip.loaded, settingsReport.roundTrip.saved);
 	for (const [key, value] of Object.entries(settingsReport)) if (!['count', 'failures', 'roundTrip'].includes(key)) assert.equal(value, true, key);

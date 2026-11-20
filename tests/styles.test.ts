@@ -5,7 +5,7 @@ import { validateStyleProfile, validStyleColor, validStyleFont } from '../src/st
 import { resolveDiagramStyle, resolveStyleProfile } from '../src/styles/resolve';
 
 void test('all registered declaration forms resolve to their style categories', () => {
-	assert.equal(DIAGRAM_CATEGORIES.length, 23);
+	assert.equal(DIAGRAM_CATEGORIES.length, 27);
 	let count = 0;
 	for (const category of DIAGRAM_CATEGORIES) {
 		for (const declaration of DIAGRAM_REGISTRY[category].declarations) {
@@ -17,7 +17,7 @@ void test('all registered declaration forms resolve to their style categories', 
 			}
 		}
 	}
-	assert.equal(count, 32);
+	assert.equal(count, 37);
 	assert.equal(diagramCategory('C4Context\n Person(reader, "Reader")'), null);
 	assert.equal(diagramCategory('not a diagram'), null);
 	assert.equal(diagramCategory(''), null);

@@ -9,7 +9,7 @@
 ### Added
 
 - Accept `agentflow` as an Advanced Mermaid declaration alongside `agentflow-beta` in previews, Live Editor, and Canvas export.
-- Add per-diagram styles and custom frontmatter for Class, Entity relationship, Requirement, Use case, Packet, Block, and Sankey diagrams.
+- Add per-diagram styles and custom frontmatter for Class, Entity relationship, Requirement, Use case, Packet, Block, Sankey, Pie, Quadrant, XY, and Venn diagrams.
 
 ### Fixed
 

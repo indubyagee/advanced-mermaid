@@ -1,10 +1,20 @@
 import assert from 'node:assert/strict';
 
 export async function runDiagramStyleChecks(page) {
-	const failures = await page.evaluate(async () => {
+	const report = await page.evaluate(async () => {
 		const width = svg => Number(svg.getAttribute('width'));
 		const height = svg => Number(svg.getAttribute('height'));
 		const gradientIds = svg => [...svg.querySelectorAll('linearGradient[id]')].map(gradient => gradient.id);
+		const sliceLabelX = svg => Number(svg.querySelector('.pele-slice-labels text')?.getAttribute('x'));
+		const quadrantFonts = size => ({
+			titleFontSize: size, xAxisLabelFontSize: size, yAxisLabelFontSize: size,
+			quadrantLabelFontSize: size, pointLabelFontSize: size,
+		});
+		const quadrantLabels = ['Release priorities', 'Low effort', 'High impact', 'Plan', 'Quick fix'];
+		const labelSize = (svg, text) => {
+			const label = [...svg.querySelectorAll('text')].find(label => label.textContent === text);
+			return label ? getComputedStyle(label).fontSize : undefined;
+		};
 		const cases = {
 			class: {
 				defaults: { config: { class: { hideEmptyMembersBox: true } } },
@@ -60,6 +70,33 @@ export async function runDiagramStyleChecks(page) {
 				},
 				exportImages: true,
 			},
+			pie: {
+				defaults: { config: { pie: { textPosition: 0.5 } } },
+				authored: { config: { pie: { textPosition: 0.9 } } },
+				labels: ['Written', 'Reviewed', 'Published', '50%'],
+				effect: (configured, authored) => sliceLabelX(configured) < sliceLabelX(authored),
+			},
+			quadrantChart: {
+				defaults: { config: { quadrantChart: quadrantFonts(24) } },
+				authored: { config: { quadrantChart: quadrantFonts(16) } },
+				labels: quadrantLabels,
+				effect: (configured, authored) => quadrantLabels.every(label =>
+					labelSize(configured, label) === '24px' && labelSize(authored, label) === '16px'),
+			},
+			xychart: {
+				defaults: { config: { xyChart: { width: 900 } } },
+				authored: { config: { xyChart: { width: 640 } } },
+				labels: ['Jan', 'Feb', 'Mar'],
+				effect: (configured, authored) => width(configured) === 900 && width(authored) === 640 &&
+					!!configured.querySelector('.pele-series.pele-bars') && !!configured.querySelector('.pele-series.pele-line'),
+			},
+			venn: {
+				defaults: { config: { themeVariables: { venn1: '#df6021' } } },
+				authored: { config: { themeVariables: { venn1: '#267e00' } } },
+				labels: ['Writing', 'Review', 'Both'],
+				effect: (configured, authored) => getComputedStyle(configured.querySelector('.pele-venn-set')).fill === 'rgb(223, 96, 33)' &&
+					getComputedStyle(authored.querySelector('.pele-venn-set')).fill === 'rgb(38, 126, 0)',
+			},
 		};
 		const legacy = {
 			schemaVersion: 6,
@@ -69,13 +106,14 @@ export async function runDiagramStyleChecks(page) {
 			},
 		};
 		const background = 'rgb(215, 234, 228)';
-		const scoped = Object.fromEntries(Object.entries(cases).map(([category, test]) => [category, {
+		const registry = Object.entries(fixture.DIAGRAM_REGISTRY);
+		const scoped = Object.fromEntries(registry.map(([category]) => [category, {
 			useGlobal: false,
 			overrides: { colors: {
 				background: { light: '#d7eae4', dark: '#d7eae4' },
 				series1: { light: '#af1843', dark: '#af1843' },
 			} },
-			frontmatter: { enabled: true, yaml: JSON.stringify(test.defaults) },
+			...(cases[category] ? { frontmatter: { enabled: true, yaml: JSON.stringify(cases[category].defaults) } } : {}),
 		}]));
 		const plugin = new fixture.AdvancedMermaidPlugin(fixture.app, { id: 'diagram-style-fixture' });
 		plugin.data = { ...legacy, style: { ...legacy.style, diagrams: { ...legacy.style.diagrams, ...scoped } } };
@@ -83,6 +121,14 @@ export async function runDiagramStyleChecks(page) {
 		await plugin.onload();
 
 		const failures = [];
+		const familySources = new Map(registry.map(([category, { declarations }]) => [category, declarations.map(declaration => [
+			declaration, fixture.styleExampleSources[category].replace(/^[^\n]*/, declaration),
+		])]));
+		for (const diagram of fixture.DIAGRAM_SYNTAX) {
+			if (familySources.has(diagram.type)) continue;
+			const body = diagram.type === 'railroad' ? fixture.diagramComponents(diagram)[0].text : fixture.syntaxBodies[diagram.type];
+			familySources.set(diagram.type, [[diagram.declaration, diagram.declaration + '\n' + body]]);
+		}
 		const language = new fixture.Language(fixture.defineLanguageFacet(), fixture.markdownParser);
 		const renderReading = (source, fence) => {
 			const host = document.body.createDiv({ cls: 'fixture-diagram' });
@@ -122,15 +168,17 @@ export async function runDiagramStyleChecks(page) {
 		};
 
 		try {
-			for (const [category, test] of Object.entries(cases)) {
-				for (const [index, declaration] of fixture.DIAGRAM_REGISTRY[category].declarations.entries()) {
-					const source = fixture.styleExampleSources[category].replace(/^[^\n]*/, declaration);
-					const fence = index % 2 ? 'pele' : 'mermaid';
+			let checked = 0;
+			for (const [category, sources] of familySources) {
+				const test = cases[category];
+				const styled = Object.hasOwn(fixture.DIAGRAM_REGISTRY, category);
+				for (const [declaration, source] of sources) {
+					const fence = checked++ % 2 ? 'pele' : 'mermaid';
 					const noteStart = 'Before\n\n\x60\x60\x60' + fence + '\n';
 					const note = noteStart + source + '\n\x60\x60\x60\n\nAfter';
-					const inherited = fixture.diagram(source, legacy);
+					const inherited = test && fixture.diagram(source, legacy);
 					const reading = renderReading(source, fence);
-					const authored = renderReading('---\n' + JSON.stringify(test.authored) + '\n---\n' + source, fence);
+					const authored = test && renderReading('---\n' + JSON.stringify(test.authored) + '\n---\n' + source, fence);
 					const host = document.body.createDiv({ cls: 'fixture-diagram' });
 					const view = new fixture.EditorView({ parent: host, state: fixture.EditorState.create({
 						doc: note, selection: { anchor: noteStart.length },
@@ -141,31 +189,37 @@ export async function runDiagramStyleChecks(page) {
 						if (!plugin.inline.toggle()) throw new Error('Could not open Live Editor for ' + declaration);
 						await nextFrame();
 						const defaults = renderedSvg(reading.host);
-						const overridden = renderedSvg(authored.host);
 						const inline = renderedSvg(host);
+						if (view.state.doc.toString() !== note) failures.push(declaration + ' note text changed');
+						if (![defaults, inline].every(svg => svg?.closest('.advanced-mermaid')?.dataset.category === (styled ? category : 'other'))) {
+							failures.push(declaration + ' renders in Reading view and Live Editor');
+							continue;
+						}
+						const paint = styled ? background : 'rgb(237, 242, 247)';
+						if ([defaults, inline].some(svg => getComputedStyle(svg).backgroundColor !== paint)) failures.push(declaration + ' diagram background');
+						if (!test) continue;
+						const overridden = renderedSvg(authored.host);
 						if (![defaults, overridden, inline].every(svg => svg && test.labels.every(label => svg.textContent.includes(label)))) {
-							failures.push(declaration + ' labels in Reading view and Live Editor');
+							failures.push(declaration + ' example labels');
 							continue;
 						}
 						if (!test.effect(defaults, overridden) || !test.effect(inline, overridden)) failures.push(declaration + ' authored/default configuration');
-						if ([defaults, overridden, inline].some(svg => getComputedStyle(svg).backgroundColor !== background)) failures.push(declaration + ' scoped background');
 						if (getComputedStyle(renderedSvg(inherited.host)).backgroundColor !== 'rgb(237, 242, 247)') failures.push(declaration + ' inherited background');
 						if (category === 'sankey' && gradientIds(defaults).some(id => gradientIds(inline).includes(id))) failures.push(declaration + ' duplicate gradient IDs');
 						if (test.exportImages) await verifyImages(source, test, declaration, defaults);
-						if (view.state.doc.toString() !== note) failures.push(declaration + ' note text changed');
 					} finally {
 						view.destroy();
 						host.remove();
-						authored.destroy();
+						authored?.destroy();
 						reading.destroy();
-						inherited.child.unload();
-						inherited.host.remove();
+						inherited?.child.unload();
+						inherited?.host.remove();
 					}
 				}
 			}
+			return { families: familySources.size, declarations: checked, failures };
 		} finally { plugin.unload(); }
-		return failures;
 	});
-	assert.deepEqual(failures, []);
-	console.log('Scoped diagram styles passed: inheritance, authored configuration, Reading view, Live Editor, and SVG/PNG export.');
+	assert.deepEqual(report, { families: 33, declarations: 43, failures: [] });
+	console.log('Diagram styles passed: 33 families through Reading view and Live Editor, scoped styles for 27, authored configuration, and SVG/PNG export.');
 }
