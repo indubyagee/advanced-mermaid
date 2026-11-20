@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { resolve } from 'node:path';
 import { runDiagramEnvironmentChecks, runDiagramErrorChecks, runDiagramRefreshChecks, runPostTestChecks } from './browser-regressions.mjs';
 import { runInlineEditorChecks, runSvgOutputChecks } from './inline-editor-browser.mjs';
+import { runSubgraphTitleChecks } from './subgraph-title-browser.mjs';
 import { runInlineSettingsChecks } from './inline-settings-browser.mjs';
 import { runInlineLayoutChecks } from './inline-layout-browser.mjs';
 import { runPresetChecks, runEditorModeChecks } from './v02-browser.mjs';
@@ -35,6 +36,7 @@ try {
 	await runDiagramEnvironmentChecks(page);
 	await runDiagramErrorChecks(page);
 	await runSvgOutputChecks(page);
+	await runSubgraphTitleChecks(page);
 	await runMermaidPreviewChecks(page);
 	await runSyntaxChecks(page);
 	await runFrontmatterChecks(page);

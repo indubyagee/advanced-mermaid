@@ -5,6 +5,7 @@
 ### Fixed
 
 - Keep the Live Editor caret visible when switching between light and dark themes.
+- Keep flowchart subgraph titles readable when a connector crosses them in Rendered view and the Live Editor.
 
 ## 0.3.3 — 2026-11-19
 
