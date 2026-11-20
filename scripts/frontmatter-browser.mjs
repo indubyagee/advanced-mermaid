@@ -47,7 +47,7 @@ export async function runFrontmatterChecks(page) {
 		tab.hide(); tab.containerEl.remove();
 		return { count: categories.length, failures, rejectsInvalid, disabledRetains, inheritanceRetains, reset, undo, roundTrip };
 	});
-	assert.equal(settingsReport.count, 20);
+	assert.equal(settingsReport.count, 23);
 	assert.deepEqual(settingsReport.failures, []);
 	assert.deepEqual(settingsReport.roundTrip.loaded, settingsReport.roundTrip.saved);
 	for (const [key, value] of Object.entries(settingsReport)) if (!['count', 'failures', 'roundTrip'].includes(key)) assert.equal(value, true, key);

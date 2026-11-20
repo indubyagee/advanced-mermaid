@@ -5,8 +5,8 @@ import { SEMANTIC_CONTROLS } from './semantic-controls';
 export const STYLE_RENDERER_VERSION = '1.13.0';
 
 export const DIAGRAM_CATEGORIES = [
-	'agentflow', 'class', 'er', 'eventmodeling', 'flowchart', 'gantt', 'gitGraph', 'ishikawa',
-	'kanban', 'mindmap', 'radar', 'requirement', 'sequence', 'state', 'swimlane', 'timeline',
+	'agentflow', 'block', 'class', 'er', 'eventmodeling', 'flowchart', 'gantt', 'gitGraph', 'ishikawa',
+	'kanban', 'mindmap', 'packet', 'radar', 'requirement', 'sankey', 'sequence', 'state', 'swimlane', 'timeline',
 	'treemap', 'treeView', 'journey', 'usecase',
 ] as const;
 export type DiagramCategory = typeof DIAGRAM_CATEGORIES[number];
@@ -16,6 +16,7 @@ export const DIAGRAM_REGISTRY: Readonly<Record<DiagramCategory, {
 	readonly declarations: readonly string[];
 }>> = {
 	agentflow: { label: 'Agentflow', declarations: ['agentflow', 'agentflow-beta'] },
+	block: { label: 'Block', declarations: ['block', 'block-beta'] },
 	class: { label: 'Class', declarations: ['classDiagram'] },
 	er: { label: 'Entity relationship', declarations: ['erDiagram'] },
 	eventmodeling: { label: 'Event Modeling', declarations: ['eventmodeling'] },
@@ -25,8 +26,10 @@ export const DIAGRAM_REGISTRY: Readonly<Record<DiagramCategory, {
 	ishikawa: { label: 'Ishikawa', declarations: ['ishikawa', 'ishikawa-beta'] },
 	kanban: { label: 'Kanban', declarations: ['kanban'] },
 	mindmap: { label: 'Mindmap', declarations: ['mindmap'] },
+	packet: { label: 'Packet', declarations: ['packet', 'packet-beta'] },
 	radar: { label: 'Radar', declarations: ['radar-beta'] },
 	requirement: { label: 'Requirement', declarations: ['requirementDiagram'] },
+	sankey: { label: 'Sankey', declarations: ['sankey', 'sankey-beta'] },
 	sequence: { label: 'Sequence', declarations: ['sequenceDiagram'] },
 	state: { label: 'State', declarations: ['stateDiagram', 'stateDiagram-v2'] },
 	swimlane: { label: 'Swimlanes', declarations: ['swimlane-beta'] },

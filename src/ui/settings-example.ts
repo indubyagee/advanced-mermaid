@@ -6,6 +6,7 @@ import { rowDefinition } from './setting-controls';
 
 export const styleExampleSources: Readonly<Record<DiagramCategory, string>> = {
 	agentflow: 'agentflow-beta LR\n A[Input] --> B[Task]',
+	block: 'block\n  columns 2\n  block:workspace:2\n    columns 2\n    Draft["Draft"]\n    block:cycle\n      Review["Review"]\n      Revise["Revise"]\n    end\n  end\n  Publish["Publish"]\n  Review --> Publish',
 	class: 'classDiagram\n  class Book {\n    +String title\n    +lend()\n  }\n  class Reader\n  Reader "1" --> "*" Book : borrows',
 	er: 'erDiagram\n  READER ||--o{ LOAN : borrows\n  LOAN }o--|| BOOK : includes\n  BOOK {\n    string title\n  }',
 	eventmodeling: 'eventmodeling\n tf 01 cmd Submit',
@@ -15,8 +16,10 @@ export const styleExampleSources: Readonly<Record<DiagramCategory, string>> = {
 	ishikawa: 'ishikawa-beta\nDelay\n  Process\n    Review',
 	kanban: 'kanban\n todo[To do]\n  draft[Draft]',
 	mindmap: 'mindmap\n root((Project))\n  Plan\n  Review',
+	packet: 'packet\n  0-7: "Version"\n  8-23: "Length"\n  24-47: "Payload"',
 	radar: 'radar-beta\n axis A, B, C\n curve Targets{2, 3, 4}',
 	requirement: 'requirementDiagram\n  requirement backup {\n    id: 1\n    text: "Keep recoverable copies"\n    risk: medium\n    verifymethod: test\n  }\n  element archive {\n    type: system\n  }\n  archive - satisfies -> backup',
+	sankey: 'sankey\nDraft,"Review, edit",12\n"Review, edit",Published,8\n"Review, edit",Deferred,4',
 	sequence: 'sequenceDiagram\n Author->>Reviewer: Send draft\n Reviewer-->>Author: Return notes',
 	state: 'stateDiagram-v2\n [*] --> Draft\n Draft --> Published',
 	swimlane: 'swimlane-beta LR\n subgraph lane [Review]\n A[Read draft] --> B[Send notes]\n end',

@@ -4,6 +4,7 @@ export async function runDiagramStyleChecks(page) {
 	const failures = await page.evaluate(async () => {
 		const width = svg => Number(svg.getAttribute('width'));
 		const height = svg => Number(svg.getAttribute('height'));
+		const gradientIds = svg => [...svg.querySelectorAll('linearGradient[id]')].map(gradient => gradient.id);
 		const cases = {
 			class: {
 				defaults: { config: { class: { hideEmptyMembersBox: true } } },
@@ -32,6 +33,33 @@ export async function runDiagramStyleChecks(page) {
 				effect: (configured, authored) => width(configured) > width(authored) &&
 					configured.querySelectorAll('.pele-boundary').length === 1,
 			},
+			packet: {
+				defaults: { config: { packet: { bitsPerRow: 16 } } },
+				authored: { config: { packet: { bitsPerRow: 32 } } },
+				labels: ['Version', 'Length', 'Payload', '47'],
+				effect: (configured, authored) => height(configured) > height(authored) && width(configured) < width(authored),
+				exportImages: true,
+			},
+			block: {
+				defaults: { config: { block: { padding: 32 } } },
+				authored: { config: { block: { padding: 8 } } },
+				labels: ['Draft', 'Review', 'Revise', 'Publish'],
+				effect: (configured, authored) => height(configured) > height(authored) &&
+					configured.querySelectorAll('.pele-cluster').length === 2,
+				exportImages: true,
+			},
+			sankey: {
+				defaults: { config: { sankey: { linkColor: 'gradient' } } },
+				authored: { config: { sankey: { linkColor: 'source' } } },
+				labels: ['Draft', 'Review, edit', 'Published', 'Deferred'],
+				effect: (configured, authored) => {
+					const ids = gradientIds(configured);
+					const links = [...configured.querySelectorAll('.pele-sankey-link')];
+					return ids.length === 3 && links.length === 3 && gradientIds(authored).length === 0 &&
+						links.every(link => ids.some(id => link.getAttribute('fill')?.includes('url(#' + id + ')')));
+				},
+				exportImages: true,
+			},
 		};
 		const legacy = {
 			schemaVersion: 6,
@@ -43,11 +71,15 @@ export async function runDiagramStyleChecks(page) {
 		const background = 'rgb(215, 234, 228)';
 		const scoped = Object.fromEntries(Object.entries(cases).map(([category, test]) => [category, {
 			useGlobal: false,
-			overrides: { colors: { background: { light: '#d7eae4', dark: '#d7eae4' } } },
+			overrides: { colors: {
+				background: { light: '#d7eae4', dark: '#d7eae4' },
+				series1: { light: '#af1843', dark: '#af1843' },
+			} },
 			frontmatter: { enabled: true, yaml: JSON.stringify(test.defaults) },
 		}]));
 		const plugin = new fixture.AdvancedMermaidPlugin(fixture.app, { id: 'diagram-style-fixture' });
 		plugin.data = { ...legacy, style: { ...legacy.style, diagrams: { ...legacy.style.diagrams, ...scoped } } };
+		const settings = fixture.normalizeSettings(plugin.data);
 		await plugin.onload();
 
 		const failures = [];
@@ -62,6 +94,32 @@ export async function runDiagramStyleChecks(page) {
 		};
 		const renderedSvg = host => host.querySelector('.advanced-mermaid-mount > svg.pele');
 		const nextFrame = () => new Promise(resolve => requestAnimationFrame(resolve));
+		const verifyImages = async (source, test, declaration, liveSvg) => {
+			const host = document.body.createDiv({ cls: 'fixture-diagram' });
+			const controller = new fixture.DiagramController(host, source, () => settings, fixture.app, 'Styles.md');
+			try {
+				controller.load();
+				const snapshot = await controller.snapshot();
+				const svg = new DOMParser().parseFromString(snapshot.svg, 'image/svg+xml').documentElement;
+				if (svg.localName !== 'svg' || !test.labels.every(label => svg.textContent.includes(label)) ||
+					snapshot.width !== width(liveSvg) || snapshot.height !== height(liveSvg)) failures.push(declaration + ' exported SVG geometry and labels');
+				if (test === cases.sankey) {
+					const fills = [...renderedSvg(host).querySelectorAll('linearGradient stop')].map(stop => getComputedStyle(stop).stopColor);
+					const exported = [...svg.querySelectorAll('linearGradient stop')].map(stop => stop.style.stopColor);
+					if (!fills.includes('rgb(175, 24, 67)') || exported.join() !== fills.join()) failures.push(declaration + ' exported gradient stop colors');
+				}
+				const png = await fixture.createPng(snapshot, document, new AbortController().signal);
+				const bitmap = await createImageBitmap(png);
+				try {
+					const canvas = document.createElement('canvas');
+					canvas.width = canvas.height = 1;
+					const context = canvas.getContext('2d');
+					context.drawImage(bitmap, 0, 0);
+					const firstPixel = context.getImageData(0, 0, 1, 1).data;
+					if (firstPixel.join() !== '215,234,228,255') failures.push(declaration + ' exported PNG background');
+				} finally { bitmap.close(); }
+			} finally { controller.destroy(); host.remove(); }
+		};
 
 		try {
 			for (const [category, test] of Object.entries(cases)) {
@@ -92,6 +150,8 @@ export async function runDiagramStyleChecks(page) {
 						if (!test.effect(defaults, overridden) || !test.effect(inline, overridden)) failures.push(declaration + ' authored/default configuration');
 						if ([defaults, overridden, inline].some(svg => getComputedStyle(svg).backgroundColor !== background)) failures.push(declaration + ' scoped background');
 						if (getComputedStyle(renderedSvg(inherited.host)).backgroundColor !== 'rgb(237, 242, 247)') failures.push(declaration + ' inherited background');
+						if (category === 'sankey' && gradientIds(defaults).some(id => gradientIds(inline).includes(id))) failures.push(declaration + ' duplicate gradient IDs');
+						if (test.exportImages) await verifyImages(source, test, declaration, defaults);
 						if (view.state.doc.toString() !== note) failures.push(declaration + ' note text changed');
 					} finally {
 						view.destroy();
@@ -107,5 +167,5 @@ export async function runDiagramStyleChecks(page) {
 		return failures;
 	});
 	assert.deepEqual(failures, []);
-	console.log('Scoped diagram styles passed: inherited and scoped paint, authored configuration precedence, Reading view and Live Editor.');
+	console.log('Scoped diagram styles passed: inheritance, authored configuration, Reading view, Live Editor, and SVG/PNG export.');
 }
