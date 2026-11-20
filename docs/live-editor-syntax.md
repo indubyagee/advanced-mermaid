@@ -7,6 +7,7 @@ Open a complete top-level `pele` or `mermaid` code block in **Live editor**. The
 | **Diagram** | Select from 33 families and 41 declaration choices, including State variants, C4 levels and Railroad notations. For a family with orientations, this stages the choice. |
 | **Orientation** | Select the direction to apply a staged diagram or update its existing direction. The menu is empty for families without a verified direction and stays blank when the source omits an explicit direction. |
 | **Component** | Choose a snippet by its name and source syntax. The menu inserts it at the cursor or replaces the selected body text. |
+| **Presets / Palette** | Insert a saved preset class or fill missing series colors from the category palette. The menu shows the choices available for the active diagram. |
 | **Insert configuration** | Add YAML frontmatter at the top of the source, or fill missing configuration keys in existing frontmatter. Selects the resulting YAML for editing. |
 | **Syntax Docs** | Open the official syntax page for the selected diagram, including a staged selection. Info opens Pele's diagram reference. |
 
@@ -23,6 +24,12 @@ Components use the last source selection even after focus moves to a menu. Body 
 Configuration generation retains existing titles, unrelated configuration namespaces, explicit `false`, zero, arrays and null values. Repeated generation does not duplicate a frontmatter block or replace existing values. Block YAML is extended without rewriting comments. Compact or flow-style YAML may be reformatted through Obsidian's YAML serializer; if that would discard comments, the action leaves the source unchanged and asks for block mappings. Invalid YAML is never replaced automatically.
 
 Each action is a single step in the parent note's undo history. Note text outside the source block and the enclosing fence language remain unchanged. These controls do not change plugin settings or type-level frontmatter defaults.
+
+## Presets and palettes
+
+Choose an alias from **Preset classes** to insert its family-specific syntax. The editor selects the example node ID, label, or filename so you can edit the target. For Flowchart and State, enter an existing node ID in the assignment. For indentation-based diagrams, place the cursor at the intended nesting level before inserting. [Supported class syntax](preset-classes.md#assigning-classes)
+
+Choose **Category palette** under **Series palettes** to fill missing `config.themeVariables` keys with the saved `CATEGORY1` through `CATEGORY8` fills. All eight fills are required for the option to appear. Existing keys and comments are preserved, including an authored XY chart palette string. The colors are written to that diagram's source and used in its preview and image exports. [Palette keys](https://pele.run/theming#series-palettes)
 
 ## Configuration compatibility
 

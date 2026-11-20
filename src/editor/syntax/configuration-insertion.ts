@@ -71,13 +71,17 @@ function extendBlockYaml(yaml: string, local: Configuration, defaults: Configura
 	return result;
 }
 
-/** Repeated generation fills missing keys only; authored scalars, arrays and nulls win. */
 export function insertConfiguration(source: string, diagram: DiagramSyntax): SourceInsertion {
+	return insertConfigDefaults(source, { theme: 'default', ...DIAGRAM_CONFIGURATION[diagram.type] });
+}
+
+/** Repeated generation fills missing keys only; authored scalars, arrays and nulls win. */
+export function insertConfigDefaults(source: string, config: Configuration): SourceInsertion {
 	const eol = sourceEol(source); const end = frontmatterEnd(source, true);
 	const opening = /^(?:[ \t]*\r?\n)*---\r?\n/.exec(source);
 	const yaml = opening ? source.slice(opening[0].length, end).replace(/(?:^|\r?\n)(?:---|\.\.\.)[ \t]*(?:\r?\n)?$/, '') : '';
 	const local: Configuration = parseFrontmatter(yaml);
-	const defaults: Configuration = { config: { theme: 'default', ...DIAGRAM_CONFIGURATION[diagram.type] } };
+	const defaults: Configuration = { config };
 	const merged = mergeMissing(local, defaults);
 	if (opening && equivalent(local, merged)) return { source, from: opening[0].length, to: opening[0].length + yaml.length };
 	let updatedYaml = extendBlockYaml(yaml, local, defaults, 0, eol);
@@ -88,7 +92,7 @@ export function insertConfiguration(source: string, diagram: DiagramSyntax): Sou
 		if (hasYamlComments(yaml)) throw new Error('Use block YAML mappings to add configuration while keeping existing comments.');
 		updatedYaml = stringifyYaml(merged).trimEnd().replace(/\r?\n/g, eol) + eol;
 	}
-	const prefix = '---' + eol + updatedYaml + '---' + eol;
+	const prefix = '---' + eol + updatedYaml + (updatedYaml.endsWith('\n') ? '' : eol) + '---' + eol;
 	const updated = prefix + source.slice(opening ? end : 0);
 	checkDiagramSource(updated);
 	return { source: updated, from: 3 + eol.length, to: prefix.length - 3 - eol.length };

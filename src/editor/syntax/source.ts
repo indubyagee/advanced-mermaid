@@ -127,7 +127,7 @@ export function initializeDiagram(source: string, diagram: DiagramSyntax, orient
 }
 
 /** Insert literally at the editor selection; add line breaks only at statement boundaries. */
-export function insertComponent(source: string, from: number, to: number, text: string): SourceInsertion {
+export function insertComponent(source: string, from: number, to: number, text: string, placeholder?: string): SourceInsertion {
 	const declaration = diagramDeclaration(source);
 	if (from < declaration.to) throw new Error('Place the cursor in the diagram body before inserting a component.');
 	const eol = sourceEol(source); const normalized = text.replace(/\r?\n/g, eol);
@@ -138,6 +138,9 @@ export function insertComponent(source: string, from: number, to: number, text: 
 	// Keep the snippet's relative indentation when inserting in a nested block.
 	const indent = /^\s*$/.test(before) ? before : '';
 	const body = normalized.split(eol).join(eol + indent);
-	const cursor = from + prefix.length + body.length;
-	return inserted(source, from, to, prefix + body + suffix, cursor, cursor);
+	const start = from + prefix.length;
+	const slot = placeholder === undefined ? -1 : body.indexOf(placeholder);
+	const selectionFrom = start + (slot < 0 ? body.length : slot);
+	const selectionTo = selectionFrom + (slot < 0 ? 0 : placeholder!.length);
+	return inserted(source, from, to, prefix + body + suffix, selectionFrom, selectionTo);
 }

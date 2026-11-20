@@ -20,6 +20,7 @@ import { STYLE_RENDERER_VERSION } from '../styles/registry';
 import { DiagramSyntaxSelector } from '../ui/diagram-syntax-selector';
 import { initializeDiagram, insertComponent, type SourceInsertion } from './syntax/source';
 import { insertConfiguration } from './syntax/configuration-insertion';
+import { insertCategoryPalette, insertPresetClass } from './syntax/style-insertion';
 
 export class LiveEditor {
 	readonly element: HTMLElement;
@@ -71,6 +72,12 @@ export class LiveEditor {
 				return insertComponent(source, selection.from, selection.to, component.text);
 			}),
 			configuration: diagram => this.insertSyntax(source => insertConfiguration(source, diagram)),
+			presetLibrary: () => this.settings().presets,
+			presetClass: (diagram, alias) => this.insertSyntax(source => {
+				const selection = this.nested.state.selection.main;
+				return insertPresetClass(source, diagram.type, selection.from, selection.to, alias);
+			}),
+			palette: diagram => this.insertSyntax(source => insertCategoryPalette(source, diagram.type, this.settings().presets)),
 			pending: setOverridesDisabled,
 		});
 		const columns = this.element.createDiv({ cls: 'advanced-mermaid-editor-columns' });
@@ -314,6 +321,7 @@ export class LiveEditor {
 	}
 	refresh(): void {
 		applyEditorStyle(this.element, this.settings().liveEditor.style);
+		this.syntax.refresh(true);
 		this.applySourceFontSize();
 		this.nested.dispatch({ effects: this.presentation.reconfigure(this.presentationExtensions()) });
 		this.nested.requestMeasure();

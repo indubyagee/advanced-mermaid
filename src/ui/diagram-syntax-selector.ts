@@ -3,11 +3,16 @@ import { DIAGRAM_SYNTAX, type DiagramSyntax, type OrientationSyntax } from '../e
 import { diagramComponents } from '../editor/syntax/components';
 import { diagramDeclaration, diagramOrientation } from '../editor/syntax/source';
 import type { SyntaxSnippet } from '../editor/syntax/snippet';
+import { categoryPalette, supportsPresetAlias, supportsPresetClasses, supportsSeriesPalette } from '../editor/syntax/style-insertion';
+import type { PresetClass } from '../styles/presets';
 
 interface SyntaxActions {
 	diagram(diagram: DiagramSyntax, orientation?: string): void;
 	component(component: SyntaxSnippet): void;
 	configuration(diagram: DiagramSyntax): void;
+	presetLibrary(): readonly PresetClass[];
+	presetClass(diagram: DiagramSyntax, alias: string): void;
+	palette(diagram: DiagramSyntax): void;
 	pending(value: boolean): void;
 }
 
@@ -21,6 +26,7 @@ export class DiagramSyntaxSelector extends Component {
 	private diagrams!: HTMLSelectElement;
 	private orientations!: HTMLSelectElement;
 	private components!: HTMLSelectElement;
+	private presets!: HTMLSelectElement;
 	private configuration!: HTMLButtonElement;
 	private docs!: HTMLButtonElement;
 
@@ -37,6 +43,9 @@ export class DiagramSyntaxSelector extends Component {
 		this.orientations.createEl('option', { text: '', attr: { value: '' } });
 		const componentLabel = this.host.createEl('label', { cls: 'advanced-mermaid-component-field', text: 'Component' });
 		this.components = componentLabel.createEl('select', { attr: { 'aria-label': 'Insert diagram component', title: 'Insert syntax at the current source position, replacing any selection.' } });
+		const presetName = 'Presets / Palette';
+		const presetLabel = this.host.createEl('label', { text: presetName });
+		this.presets = presetLabel.createEl('select', { attr: { 'aria-label': presetName, title: 'Insert a saved class assignment or fill missing series colors.' } });
 		this.configuration = this.host.createEl('button', { text: 'Insert configuration', attr: { type: 'button', title: 'Add missing frontmatter configuration keys. Existing values are kept. Pele supports a subset of Mermaid configuration.' } });
 		this.docs = this.host.createEl('button', { text: 'Syntax Docs', attr: { type: 'button', title: 'Open official syntax documentation.' } });
 		this.registerDomEvent(this.diagrams, 'change', () => {
@@ -58,6 +67,17 @@ export class DiagramSyntaxSelector extends Component {
 			const component = !this.components.disabled && this.components.value ? this.choices[Number(this.components.value)] : undefined;
 			if (component) this.actions.component(component);
 			this.components.value = '';
+		});
+		this.registerDomEvent(this.presets, 'change', () => {
+			const diagram = this.diagram;
+			const value = this.presets.value;
+			this.presets.value = '';
+			if (!diagram || this.presets.disabled) return;
+			if (value === 'palette' && supportsSeriesPalette(diagram.type)) this.actions.palette(diagram);
+			if (value.startsWith('class:') && supportsPresetClasses(diagram.type)) {
+				const alias = value.slice('class:'.length);
+				if (this.actions.presetLibrary().some(preset => preset.alias === alias)) this.actions.presetClass(diagram, alias);
+			}
 		});
 		this.registerDomEvent(this.configuration, 'click', () => { if (this.diagram) this.actions.configuration(this.diagram); });
 		this.registerDomEvent(this.docs, 'click', () => {
@@ -108,6 +128,27 @@ export class DiagramSyntaxSelector extends Component {
 		});
 		this.components.disabled = !diagram;
 		this.configuration.disabled = !diagram;
+		this.refreshPresets(diagram);
+	}
+
+	private refreshPresets(diagram?: DiagramSyntax): void {
+		this.presets.empty();
+		this.presets.createEl('option', { text: 'Select a preset or palette', attr: { value: '' } });
+		if (diagram) {
+			const presets = this.actions.presetLibrary();
+			const aliases = supportsPresetClasses(diagram.type)
+				? presets.map(preset => preset.alias).filter(alias => supportsPresetAlias(diagram.type, alias))
+				: [];
+			if (aliases.length) {
+				const classes = this.presets.createEl('optgroup', { attr: { label: 'Preset classes' } });
+				for (const alias of aliases) classes.createEl('option', { text: alias, attr: { value: 'class:' + alias } });
+			}
+			if (supportsSeriesPalette(diagram.type) && categoryPalette(presets)) {
+				const palettes = this.presets.createEl('optgroup', { attr: { label: 'Series palettes' } });
+				palettes.createEl('option', { text: 'Category palette', attr: { value: 'palette' } });
+			}
+		}
+		this.presets.disabled = this.presets.options.length === 1;
 	}
 
 	setInputMode(mode: 'mermaid' | 'css'): void {

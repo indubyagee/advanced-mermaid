@@ -102,6 +102,7 @@ export async function runSyntaxChecks(page) {
 	assert.ok(await components.isDisabled());
 	assert.ok(await configuration.isDisabled());
 	assert.ok(await page.getByRole('combobox', { name: 'Insert local override', exact: true }).isDisabled());
+	assert.ok(await page.getByRole('combobox', { name: 'Presets / Palette', exact: true }).isDisabled());
 	await orientations.selectOption('TD');
 	assert.equal(await note(), beforePending.replace('sequenceDiagram', 'flowchart TD'));
 	await page.keyboard.press('Control+z');
@@ -144,6 +145,8 @@ export async function runSyntaxChecks(page) {
 	assert.ok(await page.getByRole('button', { name: 'Insert configuration', exact: true }).isDisabled());
 	assert.ok(await documentation.isDisabled());
 
+	await checkPresetAndPalette(page, note);
+
 	const cleanup = await page.evaluate(() => {
 		const button = syntaxFixture.host.querySelector('.advanced-mermaid-syntax-selector button');
 		const before = syntaxFixture.view.state.doc.toString(); syntaxFixture.inline.destroy();
@@ -153,6 +156,120 @@ export async function runSyntaxChecks(page) {
 	});
 	assert.equal(cleanup, true);
 	console.log(`Syntax toolbar passed: ${allChoices.length} declarations, classic/expanded components, source selection, configuration, undo/redo, manual detection, CSS draft protection, malformed YAML and cleanup.`);
+}
+
+async function checkPresetAndPalette(page, note) {
+	const menu = page.getByRole('combobox', { name: 'Presets / Palette', exact: true });
+	const render = page.getByRole('button', { name: 'Render now', exact: true });
+	const setSource = source => page.evaluate(source => {
+		const view = syntaxFixture.nested();
+		view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: source }, selection: { anchor: source.length } });
+	}, source);
+	const selection = () => page.evaluate(() => {
+		const { state } = syntaxFixture.nested();
+		const { from, to } = state.selection.main;
+		return state.sliceDoc(from, to);
+	});
+	const visiblePaint = colors => page.waitForFunction(colors => {
+		const svg = syntaxFixture.host.querySelector('.advanced-mermaid-mount svg');
+		const paint = [...(svg?.querySelectorAll('rect,path,text,tspan') ?? [])].map(node => getComputedStyle(node).fill);
+		return colors.every(color => paint.includes(color));
+	}, colors);
+	const green = 'rgb(38, 164, 33)';
+	const blue = 'rgb(19, 55, 170)';
+	const savedLibrary = await page.evaluate(() => syntaxFixture.settings.presets);
+	await setSource('flowchart LR\nTarget["New class"] --> Authored["Explicit style"]\nclass Authored ToolbarReview\nstyle Authored fill:#1337aa');
+	assert.equal(await menu.locator('option[value="class:ToolbarReview"]').count(), 0);
+	await page.evaluate(() => {
+		syntaxFixture.settings.presets = [...syntaxFixture.settings.presets, { alias: 'ToolbarReview', fill: '#26a421', text: '#26a421' }];
+		syntaxFixture.inline.refresh();
+	});
+	await menu.selectOption('class:ToolbarReview');
+	assert.match(await note(), /class NODE_ID ToolbarReview/);
+	assert.equal(await selection(), 'NODE_ID');
+	await page.keyboard.insertText('Target');
+	assert.match(await note(), /class Target ToolbarReview/);
+	await render.click();
+	await visiblePaint([green, blue]);
+	assert.equal(await menu.locator('option[value="palette"]').count(), 0);
+
+	await setSource('treeView-beta\nroot/\n  ');
+	await menu.selectOption('class:ToolbarReview');
+	assert.match(await note(), /\nroot\/\n  file\.txt :::ToolbarReview/);
+	assert.equal(await selection(), 'file.txt');
+	await render.click();
+	await visiblePaint([green]);
+	await setSource('treemap-beta\n"Group"\n  "Item": 10');
+	assert.equal(await menu.locator('optgroup[label="Preset classes"]').count(), 1);
+	assert.equal(await menu.locator('optgroup[label="Series palettes"]').count(), 1);
+
+	const pie = '---\nconfig:\n  themeVariables:\n    pie1: "#1337aa" # Authored color\n---\npie\n "First": 10\n "Second": 20';
+	await setSource(pie);
+	assert.equal(await menu.locator('optgroup[label="Preset classes"]').count(), 0);
+	await page.evaluate(() => {
+		syntaxFixture.settings.presets = [];
+		syntaxFixture.inline.refresh();
+	});
+	assert.ok(await menu.isDisabled());
+	assert.equal(await menu.locator('option[value="palette"]').count(), 0);
+	await page.evaluate(presets => {
+		syntaxFixture.settings.presets = presets.map(preset => preset.alias === 'CATEGORY2' ? { ...preset, fill: '#26a421' } : preset);
+		syntaxFixture.inline.refresh();
+	}, savedLibrary);
+	assert.ok(await menu.isEnabled());
+	const before = await note();
+	await menu.selectOption('palette');
+	const after = await note();
+	assert.match(after, /pie1: "#1337aa" # Authored color/);
+	assert.match(after, /pie2: ['"]#26a421['"]/);
+	assert.equal(await menu.inputValue(), '');
+	await menu.selectOption('palette');
+	assert.equal(await note(), after);
+	await page.keyboard.press('Control+z');
+	assert.equal(await note(), before);
+	await page.keyboard.press('Control+Shift+Z');
+	assert.equal(await note(), after);
+	await render.click();
+	await visiblePaint([green, blue]);
+	await page.getByRole('tab', { name: 'SVG', exact: true }).click();
+	await page.waitForFunction(color => syntaxFixture.host.querySelector('textarea[aria-label="Canonical Pele SVG"]').value.includes(color), green);
+	const hasExportPaint = await page.evaluate(async color => {
+		const output = syntaxFixture.host.querySelector('textarea[aria-label="Canonical Pele SVG"]');
+		const svg = output.value;
+		const element = new DOMParser().parseFromString(svg, 'image/svg+xml').documentElement;
+		const width = Number(element.getAttribute('width'));
+		const height = Number(element.getAttribute('height'));
+		const blob = await fixture.createPng({ svg, width, height }, document, new AbortController().signal);
+		const bitmap = await createImageBitmap(blob);
+		try {
+			const canvas = new OffscreenCanvas(bitmap.width, bitmap.height);
+			const ctx = canvas.getContext('2d');
+			ctx.drawImage(bitmap, 0, 0);
+			const pixels = ctx.getImageData(0, 0, bitmap.width, bitmap.height).data;
+			const png = pixels.some((value, i) => i % 4 === 0 && value === 38 && pixels[i + 1] === 164 && pixels[i + 2] === 33 && pixels[i + 3] === 255);
+			return { svg: svg.includes(color) && svg.includes('rgb(19, 55, 170)'), png };
+		} finally { bitmap.close(); }
+	}, green);
+	assert.deepEqual(hasExportPaint, { svg: true, png: true });
+
+	await page.getByRole('tab', { name: 'CSS', exact: true }).click();
+	await page.evaluate(() => {
+		const view = syntaxFixture.nested();
+		view.dispatch({ changes: { from: 0, to: view.state.doc.length, insert: '.pele { color: red; }' } });
+		const select = syntaxFixture.host.querySelector('[aria-label="Presets / Palette"]');
+		select.value = 'palette';
+		select.dispatchEvent(new Event('change'));
+	});
+	assert.equal(await note(), after);
+	assert.match(await page.locator('.advanced-mermaid-draft-status').textContent(), /Resolve the current draft/);
+	await page.getByRole('button', { name: 'Discard changes', exact: true }).click();
+	await page.getByRole('tab', { name: 'Mermaid', exact: true }).click();
+	await setSource('---\nconfig: []\n---\npie\n "First": 10');
+	const invalidYaml = await note();
+	await menu.selectOption('palette');
+	assert.equal(await note(), invalidYaml);
+	assert.ok(await page.locator('.advanced-mermaid-draft-status').textContent());
+	console.log('Preset and palette toolbar passed: scope, live library refresh, target selection, undo/redo, draft guards and exported colors.');
 }
 
 async function checkSyntaxDocsNavigation(page, button) {
