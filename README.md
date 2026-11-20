@@ -1,225 +1,41 @@
 # Advanced Mermaid
 
-<a href="https://buymeacoffee.com/indubyagee">
-  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy me a coffee" height="40">
-</a>
+Edit a Mermaid diagram and see it update in the same Obsidian note. Advanced Mermaid lets you match diagrams to your light or dark theme, reuse styles across notes, and export diagrams as SVG or PNG. You can also turn a flowchart or Agentflow diagram into an editable Obsidian Canvas.
 
-Render Mermaid-compatible diagrams with Pele 1.12.0 in `mermaid` or `pele` code blocks.
-Advanced Mermaid provides inline editing, theme-aware styles, reusable preset classes, and export to SVG, PNG, or Obsidian Canvas.
-
- See the [changelog](https://github.com/indubyagee/advanced-mermaid/blob/main/CHANGELOG.md) for release notes.
-
-**Compatibility:** requires Obsidian 1.14.5 or newer and is desktop-only. Mobile loading is disabled.
-
-See the [settings menu guide](https://github.com/indubyagee/advanced-mermaid/blob/main/docs/settings-menu.md) for section order, control defaults, inheritance, resets, and editor layout options.
-
-## Diagrams
-
-````markdown
-```mermaid
-flowchart TD
-    A["Write Mermaid"] --> B["Preview diagram"]
-    B --> C{"Ready to share?"}
-    C -->|Not yet| D["Edit in place"]
-    D -.-> B
-    C -->|Yes| E["Export SVG or PNG"]
-```
-````
-
-![Live editor](docs/media/preview-light-flowchart.png)
-
-Both `mermaid` and `pele` code blocks use Advanced Mermaid in Reading view, rendered Live Preview blocks, and embeds while the plugin is enabled. Existing `pele` blocks remain supported. Source mode remains plain editable Markdown.
-
-## Display settings
-
-Open **Settings → Community plugins → Advanced Mermaid** and select the plugin's settings.
-
-**Diagram max width** defaults to **Default**. Its options depend on whether Minimal Theme Settings (MTS) is enabled.
-
-| MTS state | Diagram max width options |
-| --- | --- |
-| Enabled | Default, Normal, Wide, Maximum, Full Pane |
-| Disabled or absent | Default, Full |
-
-**Default** preserves the renderer's native width within the text column and height limit. **Full** uses the text column as its width limit, and **Full Pane** uses the usable pane width. The Live editor uses its preview column as the boundary.
-
-Normal, Wide, and Maximum use the active values configured in MTS. Maximum caps Normal and Wide. Disabling MTS switches to native or text-column sizing and ignores saved MTS width values. These rules apply in Reading view and Live Preview.
-
-- **Diagram alignment** offers `left`, `center`, or `right` and defaults to `center`.
-- **Diagram max height** offers Short (30vh), Medium (50vh), Tall (75vh), None, or a custom positive decimal in `vh`, `px`, or `rem`. **By orientation** selects None for landscape/square diagrams and Medium for portrait diagrams. `vh` uses the diagram window's viewport height. Zero, negative values, percentages, expressions, and unitless values are rejected.
-- **Maintain aspect ratio:** enabled by default. Fit proportionally within both limits. When disabled, fill the bounded dimensions independently; an unlimited height remains proportional to the fitted width.
-- **Fill available space** defaults to off. Enable it to enlarge smaller diagrams up to the selected limits. Default width retains native sizing even when this is enabled.
-- Orientation is determined from intrinsic dimensions before fitting. Layout/direction do not change when height limits or pane widths change. Reading view and Live Preview's **Rendered view** use the full diagram block for zoom and pan. The controls sit at the bottom right for left-aligned diagrams and at the bottom left for centered or right-aligned diagrams. The **Live editor** preview places the controls beside the SVG. After zooming, drag to pan or focus the SVG and use the arrow keys.
-
-Saved **By orientation** width selections migrate to **Default**. Saved MTS presets use Default while MTS is absent or disabled, and saved Full Pane selections use Full. Foreground color migrates to **Text color**.
-
-Override display settings in one reserved Mermaid comment immediately before the diagram declaration, after optional YAML frontmatter:
-
-````markdown
-```mermaid
-%% advanced-mermaid: align=left max-width=full max-height=30vh aspect-ratio=true fill=true
-flowchart TD
-    A["Write Mermaid"] --> B["Preview diagram"]
-    B --> C{"Ready to share?"}
-    C -->|Not yet| D["Edit in place"]
-    D -.-> B
-    C -->|Yes| E["Export SVG or PNG"]
-```
-````
-
-![Live editor with local overrides](docs/media/preview-light-flowchart-overrides.png)
-`max-width` accepts `default`, `full`, `normal`, `wide`, `maximum`, `none`, or `auto`. Default retains native sizing. Full uses Full Pane when MTS is enabled and the text column otherwise. With MTS enabled, `none` selects Full Pane and `auto` selects Normal for landscape and square diagrams or Full Pane for portrait diagrams. With MTS absent or disabled, Normal, Wide, and Maximum use Default, and `none` uses Full. `max-height` accepts concrete lengths, `short`, `medium`, `tall`, `none`, or `auto`. For height, `none` removes the height cap and `auto` uses the orientation defaults. `aspect-ratio` and `fill` accept `true` or `false`.
-
-The marker is case-sensitive. Use at most one directive, with each key at most once; unknown keys and malformed values produce a configuration error. Directives are recognized only in the initial comment/blank-line region after optional frontmatter, before the diagram declaration. Ordinary comments elsewhere are unchanged. The `%% advanced-mermaid:` prefix is reserved; existing notes that previously used that exact prefix as an ordinary initial comment may need adjustment. Fence metadata is not used.
-
-## Theme
-
-Diagram text, lines, surfaces, accents, and fonts follow Obsidian by default. Under **Diagram Styles**, open **All diagrams** for shared defaults or **By diagram type** for one of 16 families. Open **Advanced** for category colors and each family's custom frontmatter. **Show example** previews the styles on the current page. Each color row has independent **Light** and **Dark** selectors and resets. Fields accept hex, RGB/RGBA, and HSL/HSLA and save normalized hex with alpha. **Use styles from All diagrams** retains custom type values for later use. Scoped reset actions offer undo. Disabling **Follow Obsidian theme** restores Pele color defaults and retains custom values. Fonts continue inheriting Obsidian's local font families.
-
-Each family also offers **Use custom frontmatter** and a YAML field for defaults such as `config.flowchart.rankSpacing`. These apply to all Pele instances of that family, including Live editor previews and exports. Frontmatter in an individual source block overrides matching defaults; missing keys inherit. The toggle is independent of **Use global styles** and retains its YAML when disabled. Only valid changes are saved, and notes are never rewritten. See [frontmatter settings and precedence](https://github.com/indubyagee/advanced-mermaid/blob/main/docs/settings-menu.md#styles) for an example and renderer limitations.
-
-Global controls cover background, text, muted text, lines, surfaces, borders, accent, error, source-fill contrast, and eight category colors. **Shared element defaults** preserves the earlier node, edge-label, subgraph, and stroke-width settings. Local family lists, 4-128px measured base labels, and 0-32px corner radii are supported. Text weights remain unavailable because per-role measurement has not been verified for Pele 1.12.0. Specialized paint controls are limited to the tested adapters for Flowchart, State, Sequence, TreeView, Agentflow, and Mindmap; other categories retain common profiles.
-Color changes use CSS; font changes refresh Pele's measurements. Source-defined `style`, `classDef`, fills, and fonts keep their own precedence and can remain fixed when themes change. Chart series use Pele's categorical palette unless overridden. Check contrast for your chosen theme and authored colors.
-
-Preset classes apply to Flowchart, State, Agentflow, Mindmap, TreeView, and Treemap. Assign them to Flowchart nodes with `A[Node]:::PRESET3` or to subgraphs with `class GROUP PRESET3`. Preset fills, borders, and widths override shared defaults. Explicit node or subgraph text colors and authored styles take precedence. The 42-class built-in library includes `PRESET1`–`PRESET8`, `CATEGORY1`–`CATEGORY8`, and aliases for highlights, notes, statuses, and diagram roles. It is used only when no saved library exists; upgrades retain saved libraries, including empty ones.
-
-Open **Preset classes** to create or edit a class with a form, edit the complete preset text, or delete a class with confirmation. The library uses fixed colors in both themes, optional 0–20px stroke widths, and case-sensitive aliases. Missing properties inherit. Later library entries win when an element has multiple preset classes. Empty libraries and deletions persist across reloads. Renaming/deleting never rewrites notes. See [preset syntax and applicability](https://github.com/indubyagee/advanced-mermaid/blob/main/docs/preset-classes.md).
-
-Settings use Obsidian's native declarative pages/groups and appear in settings search. Pixel sizes use numeric inputs, sliders and resets; resetting an optional size restores inheritance.
-
-## Inline editor
-
-In Live Preview, the mode buttons appear in this order: **Rendered view**, **Live editor**, **Static editor**. Select **Live editor** above a complete top-level `pele` or `mermaid` fence, or use **Advanced Mermaid: Toggle inline editor**. **Static editor** focuses the original fenced Markdown. **Rendered view** is selected when neither editor is active; select it to exit either editor. Esc and toggling an active Live editor also return to Rendered view. The note cursor moves outside the fence so Live Preview does not immediately reopen source. A fence-only note gains one trailing newline if it has no existing position outside the fence. Explicit static/rendered choices suppress focused-block reopening for that block while its note pane is open. Cached Pele previews resume with the latest saved source on return. Backtick and tilde fences are supported; lists, quotes, and callouts retain ordinary presentation. One inline editor can be active in each pane. Both fence languages use Advanced Mermaid in rendered blocks and Reading view. Source mode stays plain Markdown.
-
-The **Diagram** menu offers all 33 families supported by Pele, with 55 declaration choices including directions and C4/Railroad variants. Selecting **Flowchart TB** inserts `flowchart TB`, keeping existing frontmatter, comments and body statements. **Component** offers diagram-specific snippets, including classic `A["node"]` and expanded `A@{ shape: rect, label: process }` Flowchart nodes, and inserts at the source position or replaces selected body text. **Insert configuration** adds frontmatter examples for the selected family and fills missing keys while keeping authored values. Each action uses one parent-editor undo step. The menus follow manual declaration edits and are hidden in the CSS tab. See the [syntax controls guide](https://github.com/indubyagee/advanced-mermaid/blob/main/docs/live-editor-syntax.md) for examples, configuration compatibility, and source-preservation details.
-
-The **Local override** selector inserts display directives or registered style variables with valid current values. Style overrides offer Both themes, Light, and Dark targeting. Existing values are selected without replacement; each insertion is one parent-editor undo step. Resolve malformed comments or an invalid/conflicting CSS draft before inserting. Local Pele settings and presets apply to rendered diagrams, inline previews, and exports of both fence languages.
-
-The source pane has **Mermaid** and **CSS** tabs. The preview pane has **Pele** and read-only **SVG** tabs. The source excludes the enclosing fences. Mermaid edits enter the parent note immediately and share its undo history. CSS accepts a constrained variable language, validates immediately, and saves valid drafts after the configured delay.
-
-````markdown
-```mermaid
-%% advanced-mermaid-style:v1
-%% .pele { --pele-surface: #153030;  --pele-fg: #FF0000; }
-%% .theme-dark .pele { --pele-surface: #2D4646; }
-%% advanced-mermaid-style:end
-flowchart TD
-    A["Write Mermaid"] --> B["Preview diagram"]
-    B --> C{"Ready to share?"}
-    C -->|Not yet| D["Edit in place"]
-    D -.-> B
-    C -->|Yes| E["Export SVG or PNG"]
-```
-````
-
-![Live editor source and preview panes](docs/media/preview-light-flowchart-overrides-2.png)
-
-Allowed selectors are `.pele`, `.theme-light .pele`, and `.theme-dark .pele`. Values are literal hex colors, local family names, and bounded `px` lengths. Element controls use registered names such as `--advanced-mermaid-sequence-note-fill`; measured label size uses `--advanced-mermaid-label-size`. Arbitrary properties, URLs, `var()`, imports, private renderer variables, and `!important` are rejected. Malformed comments produce source-line diagnostics and a clearly labeled fallback preview with export disabled.
-
-The preview delay defaults to 250ms (100–1000ms). **Editor layout** offers Auto (the default), Side by side, and Stacked; narrow panes always stack. Settings also control activation, wrapping, and line numbers. **Render inline diagram** and Ctrl/Cmd+Enter render immediately. Press Esc or select **Rendered view** to exit. Tab indents the current or selected lines. Shift+Tab outdents. Source edits preserve the parent note's viewport, and Enter and Tab stay within the nested editor. Three slow renders pause automatic preview while source edits continue to save.
-
-Mermaid and CSS source use the vault's monospace font in a rounded editor with a separate line-number gutter. Preview tabs sit at the top right. Draft actions and **Render now** share the bottom-left group, and **Export** sits at the bottom right. Buttons use flat styling and wrap in narrow panes.
-
-Under **Settings → Advanced Mermaid → Editor appearance**, **Source font size** and **Button font size** each accept 8–40 px through an input, slider, and reset. Source font size defaults to 10 px. Reset or leave either size empty to inherit. **Button corner radius** accepts 0–32 px for editor buttons, dropdowns, and Export. Reset it to inherit the theme's corners. Source text/background and active, inactive, and Export button text/background/border colors each have independent light/dark pickers, literal color inputs, and resets. Dropdowns use inactive button colors. **Export** and its copy and save buttons use the Export colors, shared button font size, and corner radius in all views. Colors support hex, RGB/RGBA, and HSL/HSLA, including alpha. Changes apply to open editors and persist in plugin preferences. Resetting source text color restores syntax highlighting.
-
-Open **Settings → Advanced Mermaid → Zoom controls** for independent border, font, and background colors across Pele views. Empty values use Obsidian interface colors. Enable **Use inherited colors** to use diagram and editor colors while retaining custom Zoom choices.
-
-Invalid CSS stays visibly unsaved. **Copy draft**, **Discard changes**, and **Use note version** protect drafts and conflicting external edits. Closing an invalid draft requires resolving it. Unexpected teardown retains up to ten bounded session drafts, accessible through **Recover inline drafts**; recovery does not survive application exit. An invalid diagram retains a dimmed last-valid preview with current export disabled.
-
-Settings schema 6 adds Default and Full width selections. Existing saved width preferences remain available when MTS is enabled. The plugin uses the built-in presets when a vault has no saved preset library. An explicit empty library stays empty. The plugin preserves settings saved by newer versions and leaves note comments intact. The settings example uses the same renderer and loads when expanded.
-
-## Export
-
-Expand the compact **Export** control below the diagram, at the bottom right, using the pointer, touch, or keyboard, then select:
-
-| Action       | Result                                                                                                                                             |
-| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Copy SVG** | Copies self-contained SVG source as plain text, not an SVG image clipboard format. If clipboard access fails, a dialog provides selectable source. |
-| **Save SVG** | Creates a new `.svg` file in a selected existing vault folder.                                                                                     |
-| **Copy PNG** | Copies a PNG image when the host supports image clipboard writes and grants access. Otherwise use **Save PNG**.                                    |
-| **Save PNG** | Creates a new `.png` file in a selected existing vault folder.                                                                                     |
-| **Save canvas** | Converts a rendered Flowchart or Agentflow into a new `.canvas` file with editable cards, groups, and connections. |
-
-The save dialog suggests existing vault folders as you type and previews the destination. Select **Vault root** or leave the folder empty to save at the root. Typed paths remain validated. Names derive from the note and a diagram suffix; collisions receive another suffix. Existing files are never overwritten, and no attachment links are inserted into the note. External save dialogs and mobile share sheets are outside this implementation.
-
-SVG and PNG exports contain the full current layout at its intrinsic dimensions, independently of display limits, aspect-ratio stretching, pane size, and zoom/pan state. Font changes can change intrinsic dimensions. SVG styles and an opaque background are resolved before export; alpha backgrounds are composited over white. PNG uses 2× the SVG dimensions, rounded up, with an 8192-pixel side limit and a 16-million-pixel total limit. These are conservative product budgets, not measured mobile hardware limits; oversized PNG exports suggest saving SVG.
-
-SVG fonts are referenced by family and are not embedded. Other devices may substitute fonts. Custom theme/web fonts may also fall back in the browser's SVG-to-PNG path; only the tested local font cases are confirmed. Inspect exports when exact typography matters. Exporting a diagram that changes while preparation is running requires trying again.
-
-### Obsidian Canvas
-
-Select **Export → Save canvas** on a Flowchart (`flowchart`, `graph`, or `flowchart-elk`) or an `agentflow-beta` diagram in a `mermaid` or `pele` block. The source note’s folder is selected by default. Choose **Save**, then **Open canvas** to edit the file in a new tab. You can save while the Canvas core plugin is disabled. Enable it under **Settings → Core plugins → Canvas** to open and edit the file.
-
-Canvas export follows the diagram’s direction and nests groups around subgraphs and named flows. It preserves visible connections and their labels, including parallel edges and loops. Agentflow cards carry role labels and the `description`, `model`, `instruction`, and `connectorRef` text fields. Reference and failure connections have matching text labels.
-
-An Agentflow `refdoc` or a Flowchart `doc`, `lin-doc`, `docs`, or `tag-doc` (including their aliases) becomes a Canvas file card backed by a new Markdown note. Each document node creates one note in the selected folder, beside the canvas. The filename comes from the node label and gets a numbered suffix if the name is taken. The note contains the label and any exported Agentflow metadata. Other shapes become text cards. [Mermaid node shapes](https://mermaid.js.org/syntax/flowchart.html)
-
-If saving stops after some notes are created, those notes stay in the vault. Retry in the same save dialog to reuse them.
-
-The output uses native Canvas rectangles, edge routing, and styling. Circle and cross markers on Flowchart links become plain ends. Invisible links guide placement. Mermaid-specific styling, interactive links, and media stay in the diagram preview. Loop labels can overlap a card under native routing. Each export supports up to 300 nodes and groups combined and 1,000 connections. [JSON Canvas 1.0](https://jsoncanvas.org/spec/1.0/)
-
-## Errors
-
-Invalid directives or diagram syntax show a concise diagnostic and the original source. Available line/column locations refer to the fenced body. Expand **Technical details** or select **Copy error** for the diagnostic. Edit the source through Obsidian's normal editor to render again. Errors and source are inserted as text, never HTML.
-
-Exports are unavailable for a failed diagram. An export failure keeps the valid diagram visible and reports the failed action separately.
-
-## Diagram image privacy
-
-Advanced Mermaid disables images inside `pele` and `mermaid` code blocks to prevent automatic network requests when a note is displayed. Image labels remain visible. There is currently no setting to enable diagram images.
-
-Rendering and exporting introduce no remote services, telemetry, remote code loading, or font downloads. Clipboard writes and export files occur only after selecting an action. The source diagram remains unchanged.
+**Requires Obsidian 1.14.5 or later on desktop.**
 
 ## Installation
 
-To install a [GitHub release](https://github.com/indubyagee/advanced-mermaid/releases) manually:
+1. In Obsidian, open **Settings → Community plugins**. If prompted, select **Turn on community plugins**.
+2. Select **Browse** and search for **Advanced Mermaid**.
+3. Select **Install**, then **Enable**.
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the same release, or generate them with `npm run build`.
-2. Place all three files directly in `<Vault>/.obsidian/plugins/advanced-mermaid/`.
-3. Reload Obsidian and enable **Advanced Mermaid** under **Settings → Community plugins**.
+[View the Obsidian plugin listing](https://community.obsidian.md/plugins/advanced-mermaid) · [Install manually from GitHub](docs/user-guide.md#install-manually)
 
-After the listing is published, open **Settings → Community plugins → Browse**, search for **Advanced Mermaid**, then select **Install** and **Enable**. Both `mermaid` and `pele` blocks use the plugin's local renderer while it is enabled.
+## Try a diagram
 
-Plugin-owned note directives and custom CSS variables use the `advanced-mermaid` namespace. When upgrading existing notes or CSS snippets, update their reserved prefixes to the examples in this guide. Installation does not rewrite notes. The `pele` and `mermaid` fence languages remain supported.
+Copy this block, including the backticks, into a blank note.
 
-## Development
-
-From the repository root, install dependencies and build the plugin:
-
-```sh
-npm install
-npm run build
+````markdown
+```mermaid
+flowchart LR
+    A[Draft] --> B[Review]
+    B --> C[Publish]
 ```
+````
 
-The build checks TypeScript and bundles `src/main.ts` into `main.js`. Install that file with the repository's `manifest.json` and `styles.css` using the steps above. Keep generated `main.js` and `node_modules/` out of version control.
+In **Live Preview**, add a blank line after the block and move the cursor there to see the flowchart. Select **Live editor** above the diagram and change `Draft` to `Plan` in the source. The preview updates as you type. You can also view the diagram in **Reading view**.
 
-| Command | Purpose |
-| --- | --- |
-| `npm run dev` | Rebuild automatically while editing source. |
-| `npm test` | Run unit and script tests. |
-| `npm run typecheck` | Check TypeScript for source and test fixtures. |
-| `npm run lint` | Run ESLint, including Obsidian-specific rules. |
-| `npm run test:browser` | Run browser fixtures using Microsoft Edge by default. |
-| `npm run check:public` | Check public source files for private or generated content. |
-| `npm run check:history` | Check the public source tree and outgoing Git history. |
-| `node scripts/check-release.mjs --tag 0.3.2` | Validate built artifacts, version metadata, and the exact release tag. |
+While the plugin is enabled, it renders both `mermaid` and `pele` code blocks using Pele, a Mermaid-compatible renderer. Some diagrams may look different because Pele handles layout and styling in its own way. [Pele compatibility](https://pele.run/compatibility)
 
-Browser fixtures use an Obsidian test adapter. Verify changes in Obsidian separately before claiming host compatibility.
+## Documentation
+
+- [User Guide](docs/user-guide.md) for editing, styling, exporting, and troubleshooting.
+- [Technical reference](docs/technical-reference.md) for configuration syntax, rendering behavior, and development.
+- [Changelog](CHANGELOG.md) for release notes.
 
 ## License and credits
 
-Advanced Mermaid uses the MIT license. Its bundled renderer, [Pele 1.12.0](https://github.com/obsidianmd/pele), uses the MIT license and includes a Lucide reset icon under the ISC license. The generated JavaScript contains the complete project and Pele license notices, including the Lucide notice.
+Advanced Mermaid and its bundled renderer, Pele, use the MIT license. [Project license](LICENSE) · [Pele source](https://github.com/obsidianmd/pele)
 
-## Platform coverage and troubleshooting
-
-The recorded Windows acceptance covers the exact 0.3.0 production artifacts on Obsidian 1.14.5 and 1.15.0, including settings persistence, editor modes, undo, draft recovery, SVG/PNG clipboard and save actions, embeds, multiple panes, pop-outs, and unload/re-enable cleanup.
-
-A Windows smoke test of the 0.3.2 release files on Obsidian 1.15.0 covered saving and opening Flowchart and Agentflow canvases with linked Markdown notes. macOS and Linux host behavior, mobile devices, touch, and IME behavior remain unverified. Mobile loading is disabled.
-
-- **No diagram:** verify the fence language is `mermaid` or `pele`; inspect the displayed diagnostic.
-- **Height did not change:** check for a per-diagram override and use an accepted unit or `none`.
-- **Width settings have no effect** — check the diagram's local override and whether MTS is enabled. Default preserves native width. To enlarge a smaller diagram, select another available width and enable **Fill available space**.
-- **Colors do not follow the theme:** check custom settings and source-defined styles.
-- **Copy failed:** keep the diagram window focused and try again; use selectable SVG source or save the file.
-- **PNG is too large or looks different:** save SVG or simplify the diagram; verify local font availability.
-- **Plugin does not load:** confirm all three installation files are at the plugin folder's top level.
+[Support the project on Buy Me a Coffee](https://buymeacoffee.com/indubyagee)

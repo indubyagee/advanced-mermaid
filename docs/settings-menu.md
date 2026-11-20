@@ -21,7 +21,7 @@ Use **Back** or press **Alt + Left Arrow** from a page outside a text field. Foc
 | Control | New-configuration default | Behavior |
 | --- | --- | --- |
 | Diagram alignment | Center | Places the diagram left, center, or right. |
-| Diagram max width | Default | With Minimal Theme Settings enabled, choose Default, Normal, Wide, Maximum, or Full Pane. When absent or disabled, choose Default or Full. Default preserves native sizing. Full fills the text column, and Full Pane uses the usable pane width. The Live editor uses its preview column as the boundary. |
+| Diagram max width | Default | With Minimal Theme Settings enabled, choose Default, Normal, Wide, Maximum, or Full Pane. When absent or disabled, choose Default or Full. Default preserves native sizing. Full uses the text column as its width limit, and Full Pane uses the usable pane width. The Live editor uses its preview column as the boundary. |
 | Diagram max height | By orientation | Short (30vh), Medium (50vh), Tall (75vh), None, or Custom. By orientation uses None for landscape/square diagrams and Medium for portrait diagrams. |
 | Maintain aspect ratio | On | Fits proportionally within the size limits. Turning it off allows independent width/height fitting when both dimensions are bounded. |
 | Fill available space | Off | Enable to enlarge smaller diagrams up to the selected limits. Default width retains native sizing. |
@@ -49,7 +49,7 @@ config:
     rankSpacing: 100
 ```
 
-When enabled, these defaults apply to all diagrams in the selected family in Pele reading view, Live editor previews, and exports. Frontmatter authored in a Live editor or source block overrides matching keys recursively; omitted keys inherit, while lists, scalar values and `null` replace their defaults. Source init directives and diagram-body statements retain the renderer's normal precedence. Notes are never rewritten. Native Mermaid views and comparisons follow Obsidian's own configuration.
+When enabled, these defaults apply to all diagrams in the selected family in Reading view, Live Preview, and exports. Frontmatter authored in a Live editor or source block overrides matching keys recursively. Omitted keys inherit, while lists, scalar values and `null` replace their defaults. Source init directives and diagram-body statements retain the renderer's normal precedence. The plugin merges defaults when it prepares the diagram for rendering.
 
 Use normal Mermaid frontmatter keys such as `title` and `config`, including the correctly capitalized family key (`gitGraph`, `treeView`, `journey`, or `swimlane`, for example). Options take effect only when supported by Pele 1.12.0; accepting YAML does not imply support for every Mermaid option. Configurations are limited to 50,000 characters and bounded nesting; combined render input also follows the renderer's source limit.
 
@@ -57,11 +57,11 @@ Use normal Mermaid frontmatter keys such as `title` and `config`, including the 
 - Each diagram type has a labeled reset such as **Reset Flowchart styles**. It clears that type's overrides and custom frontmatter and restores inheritance from **All diagrams**.
 - **Undo reset** appears beside the reset confirmation and restores the previous values during that settings session.
 
-Settings inherit through theme → global → diagram type → local. Authored Mermaid styles retain precedence. See the [README theme guide](https://github.com/indubyagee/advanced-mermaid/blob/main/README.md#theme) for supported controls and palette classes.
+Settings inherit through theme → global → diagram type → local. Authored Mermaid styles retain precedence. [Settings precedence](technical-reference.md#settings-and-precedence) · [Preset classes](preset-classes.md)
 
 ### Override reference
 
-Defaults below describe a new configuration with **Follow Obsidian theme** enabled. Overrides start empty; effective colors depend on the active theme. Diagram-specific values inherit global styles unless overridden, and **Use global styles** starts enabled. Light and dark color values inherit independently. Renderer-inherited values are not fixed plugin defaults.
+Defaults below describe a new configuration with **Follow Obsidian theme** enabled. Overrides start empty, so effective colors depend on the active theme. **Use styles from All diagrams** starts enabled. Light and dark color values inherit independently.
 
 | Setting | Description | Default |
 | --- | --- | --- |
@@ -127,7 +127,7 @@ Live Editor buttons use flat styling with distinct selected states and visible k
 
 Live editor dropdowns use the inactive button font, background, and border colors. **Export** and its copy and save buttons use the Export colors, shared button font size, and corner radius in all views. All color fields accept hex, RGB/RGBA and HSL/HSLA with alpha. Empty values inherit independently by theme; invalid drafts retain the saved value. These preferences update open editors and are independent of diagram styles. The page uses Obsidian's usual settings back navigation and search. Close Editor and its settings are no longer displayed; old Close color values remain stored but inactive.
 
-Reading view, source mode, and fences nested inside lists, quotes, or callouts do not become inline editors. See the [inline editor guide](https://github.com/indubyagee/advanced-mermaid/blob/main/README.md#inline-editor) for commands, draft recovery, and comparison limitations.
+The inline editor opens for complete, top-level `mermaid` and `pele` blocks in Live Preview. [Live editor workflow and shortcuts](user-guide.md#edit-and-preview-a-diagram) · [Draft recovery](user-guide.md#recover-a-style-draft)
 
 ## Zoom controls
 
@@ -135,7 +135,7 @@ Reading view, source mode, and fences nested inside lists, quotes, or callouts d
 
 ## Preset classes
 
-Select an alias to edit or delete it, or select **Create preset** for a new entry. The form and **Edit preset text** dialog save a complete validated library. Deletion requires confirmation. **Show generated code** displays the saved library as read-only text. The [preset class guide](https://github.com/indubyagee/advanced-mermaid/blob/main/docs/preset-classes.md) explains the text format and syntax for the six supported diagram types.
+Select an alias to edit or delete it, or select **Create preset** for a new entry. The form and **Edit preset text** dialog save a complete validated library. Deletion requires confirmation. **Show generated code** displays the saved library as read-only text. [Preset class syntax and supported diagram types](preset-classes.md)
 
 The plugin uses the 42 built-in classes when a vault has no saved preset library. An explicit empty library stays empty after reload. Existing display/style/editor settings and newer-schema overwrite protection remain.
 
