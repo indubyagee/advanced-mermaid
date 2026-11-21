@@ -138,7 +138,7 @@ export async function runEditorStyleChecks(page) {
 			assert.deepEqual(Object.keys(result.dropdowns), ['Diagram type', 'Orientation', 'Insert diagram component', 'Presets / Palette', 'Insert local override', 'Local style theme']);
 			for (const [label, paint] of Object.entries(result.dropdowns)) assert.deepEqual(paint, result.inactive, label);
 			assert.deepEqual(result.mode, result.active); assert.deepEqual(result.inactiveMode, result.inactive);
-			assert.deepEqual(Object.keys(result.exportActions), ['Copy SVG', 'Copy PNG', 'Save SVG', 'Save PNG', 'Save canvas', 'Save .mmd', 'Save .mermaid']);
+			assert.deepEqual(Object.keys(result.exportActions), ['Copy SVG', 'Copy PNG', 'Save SVG', 'Save PNG', 'Save .canvas', 'Save .mmd', 'Save .mermaid']);
 			for (const [label, paint] of Object.entries(result.exportActions)) assert.deepEqual(paint, result.export, label);
 			assert.equal(result.statusSize, '12px'); assert.equal(result.detailsSize, '12px');
 		}

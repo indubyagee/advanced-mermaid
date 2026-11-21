@@ -37,7 +37,7 @@ export async function runLiveExportChecks(page) {
 		const copy = right.locator('.advanced-mermaid-export-copy');
 		const saves = right.locator('.advanced-mermaid-export-save');
 		assert.deepEqual(await copy.getByRole('button').allTextContents(), ['Copy SVG', 'Copy PNG']);
-		assert.deepEqual(await saves.getByRole('button').allTextContents(), ['Save SVG', 'Save PNG', 'Save canvas', 'Save .mmd', 'Save .mermaid']);
+		assert.deepEqual(await saves.getByRole('button').allTextContents(), ['Save SVG', 'Save PNG', 'Save .canvas', 'Save .mmd', 'Save .mermaid']);
 		assert.ok(await saves.evaluate(el => getComputedStyle(el).borderInlineStartWidth === '1px'));
 		assert.ok(await button('Copy SVG').evaluate(el => el === document.activeElement));
 		await page.keyboard.press('Tab');
@@ -93,7 +93,7 @@ export async function runLiveExportChecks(page) {
 		await edit('pie\n "Apples": 3');
 		await button('Render now', footer).click();
 		await button('Save .mmd').waitFor();
-		assert.equal(await button('Save canvas').count(), 0);
+		assert.equal(await button('Save .canvas').count(), 0);
 		await button('Save .mmd').click();
 		await page.evaluate(() => liveExport.inline.destroy());
 		await save.waitFor({ state: 'detached' });

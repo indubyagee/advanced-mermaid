@@ -42,7 +42,8 @@ export class DiagramActions {
 			if (footerStatus) owner.registerDomEvent(footerStatus, event, evt => evt.stopPropagation());
 		}
 		const addButton = (group: HTMLElement, action: Action): void => {
-			const button = group.createEl('button', { text: labels[action], attr: { type: 'button' } });
+			const label = footerStatus && action === 'save-canvas' ? 'Save .canvas' : labels[action];
+			const button = group.createEl('button', { text: label, attr: { type: 'button' } });
 			if (action === 'copy-svg') button.title = 'Copy SVG source text';
 			if (action === 'copy-png' && !this.canCopyPng()) {
 				button.disabled = true;
