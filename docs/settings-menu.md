@@ -125,6 +125,8 @@ Live Editor buttons use flat styling with distinct selected states and visible k
 | Source font size | 10 px | 8–40 px integer input and slider. Reset or leave empty to inherit the vault text size. Applies to Mermaid and CSS source. |
 | Source font color | Inherit | Paired light/dark pickers, literal text fields, and independent resets. Custom text color also colors syntax tokens; reset restores syntax highlighting. |
 | Source background color | Inherit | Paired controls for the source background and line-number gutter. |
+| Indent guide color | Inherit | Paired light/dark colors for source indentation guides. Reset either color to inherit the theme border color. |
+| Expand/collapse arrow color | Inherit | Paired light/dark colors for source fold arrows. Reset either color to inherit the theme’s muted text color. |
 | Button font size | Empty; inherit interface size | 8–40 px integer input, slider, and reset for editor buttons and export controls. |
 | Button corner radius | Empty; inherit theme radius | 0–32 px slider and input for Active, Inactive, and Export buttons and Live editor dropdowns. |
 | Button font colors → Active buttons / Inactive buttons / Export button | Inherit | One pair of light/dark color controls per row. Export inherits inactive colors unless separately overridden. |

@@ -112,8 +112,8 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 	};
 	const requestClose = (view: EditorView): void => { const active = view.state.field(state); if (active) chooseMode(view, active.range.from, 'rendered'); };
 	class ModeWidget extends WidgetType {
-		constructor(readonly mode: 'static' | 'live' | 'rendered', private readonly styleKey: string) { super(); }
-		eq(other: ModeWidget): boolean { return other.mode === this.mode && other.styleKey === this.styleKey; }
+		constructor(readonly mode: 'static' | 'live' | 'rendered') { super(); }
+		eq(other: ModeWidget): boolean { return other.mode === this.mode; }
 		toDOM(view: EditorView): HTMLElement {
 			const bar = createDetachedEl(view.dom.ownerDocument, 'div', {
 				cls: 'advanced-mermaid-editor-mode',
@@ -162,13 +162,13 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 			file: current.field(editorInfoField, false)?.file?.path ?? '' };
 	};
 	const decorateFence = (current: EditorState, context: DecorationContext, fence: FenceRange) => {
-		const { active, selected, enabled, styleKey, file } = context;
+		const { active, selected, enabled, file } = context;
 		const isActive = active?.range.from === fence.from;
 		const isSelected = selected.has(fence);
 		const ranges = [];
 		if (enabled) {
 			const mode = isActive ? 'live' : isSelected ? 'static' : 'rendered';
-			const widget = new ModeWidget(mode, styleKey);
+			const widget = new ModeWidget(mode);
 			ranges.push(Decoration.widget({ block: true, side: -1, widget }).range(fence.from));
 		}
 		if (isActive) {
@@ -211,7 +211,11 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 					publishOwnership(view, active);
 				}
 				if (update.docChanged) editor?.syncFromParent(update);
-				if (update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refresh)))) editor?.refresh();
+				if (update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refresh)))) {
+					// Refresh paint without replacing a mode bar and its adjacent live editor.
+					for (const bar of Array.from(view.dom.querySelectorAll<HTMLElement>('.advanced-mermaid-editor-mode'))) applyEditorStyle(bar, settings().liveEditor.style);
+					editor?.refresh();
+				}
 				if (update.selectionSet && settings().liveEditor.activation === 'focused-block' && !switching) {
 					const target = fenceAt(view.state, view.state.selection.main.head);
 					if (target && active && target.from !== active.range.from && !isStatic(view.state, target.from)) {

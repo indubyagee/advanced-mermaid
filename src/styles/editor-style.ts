@@ -7,6 +7,8 @@ import { normalizeZoomStyle, type ZoomStyleSettings } from './zoom-style';
 export const EDITOR_COLORS = {
 	sourceText: { variable: '--advanced-mermaid-source-text', inherited: '--text-normal' },
 	sourceBackground: { variable: '--advanced-mermaid-source-background', inherited: '--background-primary' },
+	indentGuide: { variable: '--advanced-mermaid-indent-guide', inherited: '--background-modifier-border' },
+	foldArrow: { variable: '--advanced-mermaid-fold-arrow', inherited: '--text-muted' },
 	activeButtonText: { variable: '--advanced-mermaid-active-button-text', inherited: '--text-on-accent' },
 	inactiveButtonText: { variable: '--advanced-mermaid-inactive-button-text', inherited: '--text-normal' },
 	/** Retained for saved-data round trips; Close Editor is no longer exposed. */

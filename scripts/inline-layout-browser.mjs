@@ -167,10 +167,10 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 			const editor = layoutFixture.host.querySelector('.advanced-mermaid-editor');
 			const source = fixture.sourceRoot(editor);
 			const scroller = source.querySelector('.cm-scroller');
-			return { gutters: source.querySelectorAll('.cm-gutters').length, scrolls: scroller.scrollWidth > scroller.clientWidth,
+			return { gutters: source.querySelectorAll('.cm-lineNumbers').length, folds: source.querySelectorAll('.cm-foldGutter').length, scrolls: scroller.scrollWidth > scroller.clientWidth,
 				contained: editor.scrollWidth <= editor.clientWidth, parentFont: getComputedStyle(layoutFixture.view.scrollDOM).fontFamily };
 		});
-		assert.equal(unwrapped.gutters, 0); assert.ok(unwrapped.scrolls && unwrapped.contained, JSON.stringify(unwrapped)); assert.equal(unwrapped.parentFont, 'Arial');
+		assert.equal(unwrapped.gutters, 0); assert.equal(unwrapped.folds, 1); assert.ok(unwrapped.scrolls && unwrapped.contained, JSON.stringify(unwrapped)); assert.equal(unwrapped.parentFont, 'Arial');
 		await page.getByRole('tab', { name: 'CSS', exact: true }).click();
 		assert.match(await page.locator('.advanced-mermaid-editor-source .cm-content').evaluate(element => getComputedStyle(element).fontFamily), /Courier New/);
 		if (theme === 'Minimal') {

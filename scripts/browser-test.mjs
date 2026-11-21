@@ -20,6 +20,7 @@ import { runDiagramStyleChecks } from './diagram-style-browser.mjs';
 import { runPelePaletteChecks } from './pele-palettes-browser.mjs';
 import { runSyntaxChecks } from './syntax-browser.mjs';
 import { runCanvasChecks } from './canvas-browser.mjs';
+import { runSourceToolsChecks } from './source-tools-browser.mjs';
 
 const bundle = await build({ entryPoints: ['tests/browser-entry.ts'], bundle: true, write: false, format: 'iife', globalName: 'fixture', alias: { obsidian: resolve('tests/obsidian.ts') } });
 const css = await readFile('styles.css', 'utf8');
@@ -47,6 +48,7 @@ try {
 	const page = await browser.newPage({ viewport: { width: 1000, height: 800 } });
 	page.on('pageerror', error => console.error('Browser error:', error));
 	await page.goto(`http://127.0.0.1:${server.address().port}`);
+	await runSourceToolsChecks(page);
 	await runDiagramRefreshChecks(page);
 	await runDiagramEnvironmentChecks(page);
 	await runDiagramErrorChecks(page);

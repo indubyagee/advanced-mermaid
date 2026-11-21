@@ -11,6 +11,7 @@ import { retainDraft } from './drafts';
 import { PreviewScheduler } from './preview-scheduler';
 import { sourceLanguage } from './languages';
 import { sourceTheme } from './source-theme';
+import { sourceTools } from './source-tools';
 import { overrideOptions, overrideValue, type OverrideOption } from './override-options';
 import { insertDisplayOverride, insertStyleOverride, type StyleTarget } from './override-insertion';
 import { overrideSelector } from '../ui/override-selector';
@@ -122,7 +123,7 @@ export class LiveEditor {
 			compositionstart: () => { const selection = this.nested.state.selection.main; this.compositionRange = { from: selection.from, to: selection.to }; },
 			compositionend: () => { this.compositionRange = undefined; this.scheduler.schedule(settings().liveEditor.debounceMs); },
 		})];
-		extensions.push(sourceTheme, this.presentation.of(this.presentationExtensions()));
+		extensions.push(sourceTheme, sourceTools, this.presentation.of(this.presentationExtensions()));
 		this.nested = new EditorView({ state: EditorState.create({ doc: this.sourceBaseline, extensions }), parent: sourceRoot, root: sourceRoot });
 		this.stopWindowMigration = this.sourceHost.onWindowMigrated(() => {
 			// Adopted CodeMirror styles belong to the original document.

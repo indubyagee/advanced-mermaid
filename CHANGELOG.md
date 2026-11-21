@@ -13,6 +13,8 @@
 - Accept `agentflow` as an Advanced Mermaid declaration alongside `agentflow-beta` in previews, Live Editor, and Canvas export.
 - Add per-diagram styles and custom frontmatter for Class, Entity relationship, Requirement, Use case, Packet, Block, Sankey, Pie, Quadrant, XY, and Venn diagrams.
 - Insert saved preset classes and category palettes from the Live Editor.
+- Highlight Mermaid declarations, keywords, connectors, labels, comments, YAML, and directives in the Live Editor, including incomplete edits.
+- Fold indented source with gutter arrows or keyboard shortcuts, and customize indent guide and fold arrow colors for each theme.
 
 ### Fixed
 
