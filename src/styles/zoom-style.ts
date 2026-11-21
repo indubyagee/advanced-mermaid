@@ -8,7 +8,13 @@ export const ZOOM_COLORS = {
 	background: { variable: '--advanced-mermaid-zoom-background', inherited: '--background-primary' },
 } as const;
 export type ZoomColor = keyof typeof ZOOM_COLORS;
+export const ZOOM_PLACEMENTS = {
+	'top-left': 'Top left', 'bottom-left': 'Bottom left', 'top-right': 'Top right', 'bottom-right': 'Bottom right',
+} as const;
+export const ZOOM_ORIENTATIONS = { vertical: 'Vertical', horizontal: 'Horizontal' } as const;
 export interface ZoomStyleSettings {
+	placement: keyof typeof ZOOM_PLACEMENTS;
+	orientation: keyof typeof ZOOM_ORIENTATIONS;
 	useGlobal: boolean;
 	colors: Partial<Record<ZoomColor, ColorPair>>;
 }
@@ -25,12 +31,18 @@ export function normalizeZoomStyle(value: unknown): ZoomStyleSettings {
 		}
 		if (Object.keys(pair).length) colors[key] = pair;
 	}
-	return { useGlobal: data.useGlobal === true, colors };
+	const placement = Object.keys(ZOOM_PLACEMENTS).find(key => key === data.placement) as ZoomStyleSettings['placement'] | undefined;
+	return {
+		placement: placement ?? 'bottom-left', orientation: data.orientation === 'vertical' ? 'vertical' : 'horizontal',
+		useGlobal: data.useGlobal === true, colors,
+	};
 }
 
 /** Apply at each diagram root so Zoom has the same precedence in every view. */
 export function applyZoomStyle(element: HTMLElement, style: ZoomStyleSettings): void {
 	element.dataset.zoomGlobal = String(style.useGlobal);
+	element.dataset.zoomPlacement = style.placement;
+	element.dataset.zoomOrientation = style.orientation;
 	for (const key of Object.keys(ZOOM_COLORS) as ZoomColor[]) for (const mode of ['light', 'dark'] as const) {
 		const variable = `${ZOOM_COLORS[key].variable}-${mode}`; const color = style.colors[key]?.[mode];
 		if (color) element.style.setProperty(variable, color); else element.style.removeProperty(variable);

@@ -50,14 +50,14 @@ export async function runMermaidPreviewChecks(page) {
 				assert.ok(Math.abs(inset[corner] - 8) < 1 && Math.abs(inset.bottom - 8) < 1, JSON.stringify({ corner, inset }));
 			});
 		};
-		await assertZoomCorners(['left', 'right']);
+		await assertZoomCorners(['left', 'left']);
 		for (const alignment of ['left', 'center']) {
 			await page.evaluate(alignment => {
 				const { plugin } = mermaidPreviewFixture;
 				plugin.settings.alignment = alignment;
 				plugin.inline.refresh();
 			}, alignment);
-			await assertZoomCorners([alignment === 'left' ? 'right' : 'left', 'right']);
+			await assertZoomCorners(['left', 'left']);
 		}
 		const width = await page.evaluate(async () => {
 			fixture.app.plugins.manifests['obsidian-minimal-settings'] = { id: 'obsidian-minimal-settings' };
@@ -116,7 +116,7 @@ export async function runMermaidPreviewChecks(page) {
 			return [...host.querySelectorAll('.advanced-mermaid-rendered-preview')].map(host => getComputedStyle(host.querySelector('.pele-label')).fill);
 		});
 		assert.deepEqual(updated, ['rgb(36, 104, 172)', 'rgb(16, 32, 48)']);
-		await assertZoomCorners(['right', 'left']);
+		await assertZoomCorners(['left', 'left']);
 		await checkMinimalWidths(page);
 		const exportMenus = page.locator('.advanced-mermaid-rendered-preview .advanced-mermaid-export, .reading-export-fixture .advanced-mermaid-export');
 		const assertExportStyles = async (text, background, border) => {

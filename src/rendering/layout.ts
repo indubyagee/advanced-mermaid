@@ -10,6 +10,7 @@ export class DiagramLayout {
 	private settings?: ResolvedDisplaySettings;
 	private frame?: number;
 	private pane?: HTMLElement;
+	private zoomGeometry?: string;
 	private readonly observer: ResizeObserver;
 
 	constructor(private readonly root: HTMLElement, private readonly layout: HTMLElement, private readonly viewport: HTMLElement, private readonly host: HTMLElement,
@@ -38,6 +39,7 @@ export class DiagramLayout {
 	clear(): void {
 		this.intrinsic = undefined;
 		this.settings = undefined;
+		this.zoomGeometry = undefined;
 		this.root.removeAttribute('data-rendered-live-preview');
 		this.layout.style.removeProperty('width');
 		this.layout.style.removeProperty('left');
@@ -84,6 +86,11 @@ export class DiagramLayout {
 		host.style.setProperty('--advanced-mermaid-fitted-height', `${box.height}px`);
 		const svg = host.querySelector<SVGSVGElement>('svg.pele');
 		svg?.setAttribute('preserveAspectRatio', settings.maintainAspectRatio ? 'xMidYMid meet' : 'none');
-		this.resized();
+		// Pele resets its viewBox on refresh. Moving only the rail leaves the drawing area the same size.
+		const geometry = `${box.width}:${box.height}:${host.clientWidth}:${host.clientHeight}`;
+		if (geometry !== this.zoomGeometry) {
+			this.zoomGeometry = geometry;
+			this.resized();
+		}
 	}
 }

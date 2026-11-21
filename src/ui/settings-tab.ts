@@ -35,7 +35,7 @@ export class AdvancedMermaidSettingTab extends PluginSettingTab {
 						if (this.manifest?.version) row.controlEl.createSpan({ text: 'Version ' + this.manifest.version });
 					}),
 				] },
-				{ type: 'page', name: 'Zoom controls', desc: 'Set Zoom button colors in all diagram views.', items: zoomStyleDefinitions(this.settings.liveEditor.style.zoom, this.changed, () => this.refreshDomState()) },
+				{ type: 'page', name: 'Zoom controls', desc: 'Set Zoom button placement, orientation, and colors in all diagram views.', items: zoomStyleDefinitions(this.settings.liveEditor.style.zoom, this.changed, () => this.refreshDomState()) },
 				{ type: 'page', name: 'Preset classes', desc: 'Create and manage reusable styles.', items: this.presets.definitions() },
 				{ type: 'page', name: 'Help', desc: 'Local override syntax and an example diagram.', items: [
 					rowDefinition('Local overrides', 'Apply settings to one diagram using visible source comments.', row => { localOverridesGuide(row.controlEl); }),

@@ -92,7 +92,7 @@ export class DiagramController extends Component {
 		this.host = frameEl.createDiv({ cls: 'advanced-mermaid-mount' });
 		const host = this.host;
 		this.zoomOptions = { always: true, controls: false, get maxScale() { return zoomLimit(host); } };
-		this.syncZoom = createZoomControls(frameEl, this.host, this,
+		this.syncZoom = createZoomControls(viewport, this.host, this,
 			() => this.renderedSource === undefined ? undefined : this.diagram?.zoom);
 		const footer = this.options.exportFooter;
 		this.controls = (footer?.actions ?? layout).createDiv({ cls: 'advanced-mermaid-actions' });
@@ -126,6 +126,9 @@ export class DiagramController extends Component {
 			lineOffset = configured.lineOffset;
 			applyStyle(this.containerEl, settings, resolved.profile);
 			const editorStyle = settings.liveEditor.style;
+			const zoom = this.diagram?.zoom;
+			const orientationChanged = this.containerEl.dataset.zoomOrientation !== editorStyle.zoom.orientation;
+			const magnification = zoom && orientationChanged ? zoom.scale / zoom.fit : 1;
 			applyZoomStyle(this.containerEl, editorStyle.zoom);
 			applyExportButtonStyle(this.controls, editorStyle);
 			this.containerEl.dataset.category = resolved.category ?? 'other';
@@ -137,7 +140,14 @@ export class DiagramController extends Component {
 				request.lineOffset = lineOffset;
 				// Pele refreshes geometry when the computed font changes, including inherited fonts.
 				this.diagram.refresh();
-				if (this.request === request && this.result === result) this.present(result);
+				if (this.request === request && this.result === result) {
+					this.present(result);
+					if (zoom && magnification > 1) {
+						// Let Pele measure the new gutter before restoring the level above fit.
+						this.diagram.refresh();
+						if (zoom.scale <= zoom.fit) zoom.zoomTo(zoom.fit * magnification);
+					}
+				}
 			} else {
 				this.render({ ...configured, fontSize });
 			}
