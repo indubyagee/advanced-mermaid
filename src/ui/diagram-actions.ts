@@ -1,4 +1,4 @@
-import type { App, Component, Modal, WorkspaceLeaf } from 'obsidian';
+import { setIcon, type App, type Component, type Modal, type WorkspaceLeaf } from 'obsidian';
 import { createPng } from '../export/png';
 import { exportBasename, saveExport, type ExportExtension } from '../export/files';
 import type { SvgSnapshot } from '../export/svg';
@@ -9,11 +9,14 @@ export interface ExportRequest {
 	snapshot: () => Promise<SvgSnapshot>;
 	current: () => boolean;
 	canvas?: { source: string; current: () => boolean };
+	authored?: { source: string; current: () => boolean };
 }
 const labels = {
 	'copy-svg': 'Copy SVG', 'save-svg': 'Save SVG', 'copy-png': 'Copy PNG', 'save-png': 'Save PNG', 'save-canvas': 'Save canvas',
+	'save-mmd': 'Save .mmd', 'save-mermaid': 'Save .mermaid',
 };
 type Action = keyof typeof labels;
+const noteActions: readonly Action[] = ['copy-svg', 'save-svg', 'copy-png', 'save-png', 'save-canvas'];
 let nextDiagram = 0;
 
 /** Export operations are initiated only by an explicit diagram action. */
@@ -30,39 +33,73 @@ export class DiagramActions {
 	private disposed = false;
 
 	constructor(private readonly app: App, owner: Component, private readonly host: HTMLElement,
-		private readonly sourcePath: string, private readonly capture: () => ExportRequest) {
-		this.basename = exportBasename(sourcePath, String(++nextDiagram));
-		const menu = host.createEl('details', { cls: 'advanced-mermaid-export' });
-		menu.createEl('summary', { text: 'Export' });
+		private readonly sourcePath: string, private readonly capture: () => ExportRequest, private readonly footerStatus?: HTMLElement) {
+		const diagram = ++nextDiagram;
+		this.basename = exportBasename(sourcePath, String(diagram));
 		// Keep host editor click handlers from turning an export action into an edit.
 		for (const event of ['click', 'dblclick', 'pointerdown'] as const) {
 			owner.registerDomEvent(host, event, evt => evt.stopPropagation());
+			if (footerStatus) owner.registerDomEvent(footerStatus, event, evt => evt.stopPropagation());
 		}
-		const options = menu.createDiv({ cls: 'advanced-mermaid-export-options' });
-		for (const action of Object.keys(labels) as Action[]) {
-			const button = options.createEl('button', { text: labels[action], attr: { type: 'button' } });
+		const addButton = (group: HTMLElement, action: Action): void => {
+			const button = group.createEl('button', { text: labels[action], attr: { type: 'button' } });
 			if (action === 'copy-svg') button.title = 'Copy SVG source text';
 			if (action === 'copy-png' && !this.canCopyPng()) {
 				button.disabled = true;
 				button.dataset.unavailable = 'true';
-				options.createEl('small', { text: 'PNG copy is unavailable here. Save the PNG instead.' });
+				button.title = 'PNG copy is unavailable here. Save the PNG instead.';
+				if (!footerStatus) group.createEl('small', { text: 'PNG copy is unavailable here. Save the PNG instead.' });
 			}
 			owner.registerDomEvent(button, 'click', () => { void this.run(action); });
 			this.buttons.set(action, button);
+		};
+		const menu = host.createEl(footerStatus ? 'div' : 'details', { cls: 'advanced-mermaid-export' });
+		let feedback = host;
+		let canvasAction: HTMLElement;
+		if (footerStatus) {
+			const id = `advanced-mermaid-export-${diagram}`;
+			const disclosure = menu.createEl('button', { text: 'Export', attr: { type: 'button', 'aria-expanded': 'false', 'aria-controls': id } });
+			const options = menu.createDiv({ cls: 'advanced-mermaid-export-options', attr: { id } });
+			options.hidden = true;
+			const copy = options.createDiv({ cls: 'advanced-mermaid-export-copy' });
+			for (const action of ['copy-svg', 'copy-png'] as const) addButton(copy, action);
+			const save = options.createDiv({ cls: 'advanced-mermaid-export-save' });
+			for (const action of ['save-svg', 'save-png', 'save-canvas', 'save-mmd', 'save-mermaid'] as const) addButton(save, action);
+			const collapse = options.createEl('button', { attr: { type: 'button', 'aria-label': 'Collapse export', title: 'Collapse export' } });
+			setIcon(collapse, 'chevron-up');
+			owner.registerDomEvent(disclosure, 'click', () => {
+				disclosure.setAttribute('aria-expanded', 'true');
+				disclosure.hidden = true;
+				options.hidden = false;
+				(this.buttons.get('copy-svg')?.disabled ? collapse : this.buttons.get('copy-svg'))?.focus();
+			});
+			owner.registerDomEvent(collapse, 'click', () => {
+				options.hidden = true;
+				disclosure.hidden = false;
+				disclosure.setAttribute('aria-expanded', 'false');
+				disclosure.focus();
+			});
+			feedback = canvasAction = footerStatus;
+		} else {
+			menu.createEl('summary', { text: 'Export' });
+			const options = menu.createDiv({ cls: 'advanced-mermaid-export-options' });
+			for (const action of noteActions) addButton(options, action);
+			canvasAction = options;
 		}
-		this.openCanvasButton = options.createEl('button', { text: 'Open canvas', attr: { type: 'button' } });
+		this.status = feedback.createEl('p', { cls: 'advanced-mermaid-export-status', attr: { role: 'status' } });
+		this.openCanvasButton = canvasAction.createEl('button', { text: 'Open canvas', attr: { type: 'button' } });
 		this.openCanvasButton.hidden = true;
 		owner.registerDomEvent(this.openCanvasButton, 'click', () => { void this.openSavedCanvas(); });
-		this.status = host.createEl('p', { cls: 'advanced-mermaid-export-status', attr: { role: 'status' } });
 		owner.register(() => { this.disposed = true; this.abort.abort(); this.modal?.close(); });
 	}
 
 	setValid(value: boolean, supportsCanvas = false): void {
+		const changed = this.valid !== value;
 		this.valid = value;
 		this.host.hidden = !value;
 		this.buttons.get('save-canvas')!.hidden = !supportsCanvas;
 		this.updateButtons();
-		if (!this.savedCanvasPath) this.status.textContent = '';
+		if (!this.savedCanvasPath && (!this.footerStatus || changed || !value)) this.status.textContent = '';
 	}
 
 	private updateButtons(): void {
@@ -131,6 +168,14 @@ export class DiagramActions {
 		try {
 			request = this.capture();
 			const captured = request;
+			if (action === 'save-mmd' || action === 'save-mermaid') {
+				const authored = captured.authored;
+				if (!authored) throw new Error('Open the Live Editor to save Mermaid source.');
+				const extension = action === 'save-mmd' ? 'mmd' : 'mermaid';
+				await this.save(extension, authored.current, (folder, current) =>
+					saveExport(this.app.vault, folder, this.basename, extension, authored.source, current));
+				return;
+			}
 			if (action === 'save-canvas') {
 				const canvasRequest = captured.canvas;
 				if (!canvasRequest) throw new Error('Choose a Flowchart or Agentflow to save as a canvas.');
@@ -190,7 +235,9 @@ export class DiagramActions {
 				}
 			}
 		} catch (error) {
-			const isCurrent = action === 'save-canvas' ? request?.canvas?.current : request?.current;
+			let isCurrent = request?.current;
+			if (action === 'save-canvas') isCurrent = request?.canvas?.current;
+			if (action === 'save-mmd' || action === 'save-mermaid') isCurrent = request?.authored?.current;
 			if (!this.disposed && (!isCurrent || isCurrent())) this.status.textContent = `Export failed: ${errorText(error)}`;
 			else if (!this.disposed && action === 'save-canvas') this.status.textContent = 'The diagram changed. Export it again.';
 		} finally {

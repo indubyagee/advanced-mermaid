@@ -21,6 +21,7 @@ import { runPelePaletteChecks } from './pele-palettes-browser.mjs';
 import { runSyntaxChecks } from './syntax-browser.mjs';
 import { runCanvasChecks } from './canvas-browser.mjs';
 import { runSourceToolsChecks } from './source-tools-browser.mjs';
+import { runLiveExportChecks } from './live-export-browser.mjs';
 
 const bundle = await build({ entryPoints: ['tests/browser-entry.ts'], bundle: true, write: false, format: 'iife', globalName: 'fixture', alias: { obsidian: resolve('tests/obsidian.ts') } });
 const css = await readFile('styles.css', 'utf8');
@@ -60,6 +61,7 @@ try {
 	await runDiagramStyleChecks(page);
 	await runPelePaletteChecks(page);
 	await runCanvasChecks(page);
+	await runLiveExportChecks(page);
 	await runOwnershipScopeChecks(page);
 	const sourceBudget = await page.evaluate(() => {
 		const item = fixture.diagram('---\n' + ' '.repeat(60_000) + '\n---\nflowchart LR\n A-->B');

@@ -36,7 +36,7 @@ export async function runEditorStyleChecks(page) {
 				[...host.querySelectorAll('button, select, .advanced-mermaid-export summary')].every(control => getComputedStyle(control).borderTopWidth === '0px') &&
 				radius(host.querySelector('.advanced-mermaid-editor-mode button')) === '6px' &&
 				radius(host.querySelector('.advanced-mermaid-editor select')) === '7px' &&
-				radius(host.querySelector('.advanced-mermaid-export summary')) === '4px';
+				radius(host.querySelector('.advanced-mermaid-export button[aria-expanded]')) === '4px';
 			const defaults = themeDefaults();
 			const caretColor = () => getComputedStyle(fixture.sourceRoot(host).querySelector('.cm-content')).caretColor;
 			const lightCaret = caretColor();
@@ -90,8 +90,8 @@ export async function runEditorStyleChecks(page) {
 					font: getComputedStyle(content).fontSize, flat, dropdownsFlat, rounded, sizes: buttons.map(button => getComputedStyle(button).fontSize),
 					dropdowns: Object.fromEntries(dropdowns.map(select => [select.getAttribute('aria-label'), paint(select)])),
 					active: paint(editor.querySelector('button[aria-selected="true"]')), inactive: paint(editor.querySelector('.advanced-mermaid-draft-actions button')),
-					export: paint(editor.querySelector('.advanced-mermaid-export summary')),
-					exportActions: Object.fromEntries([...editor.querySelectorAll('.advanced-mermaid-export button:not([hidden])')].map(button => [button.textContent, paint(button)])),
+					export: paint(editor.querySelector('.advanced-mermaid-export button[aria-expanded]')),
+					exportActions: Object.fromEntries([...editor.querySelectorAll('.advanced-mermaid-export :is(.advanced-mermaid-export-copy, .advanced-mermaid-export-save) button:not([hidden])')].map(button => [button.textContent, paint(button)])),
 					mode: paint(host.querySelector('.advanced-mermaid-editor-mode button[aria-pressed="true"]')),
 					inactiveMode: paint(host.querySelector('.advanced-mermaid-editor-mode button[aria-pressed="false"]')),
 					statusSize: getComputedStyle(editor.querySelector('.advanced-mermaid-editor-status')).fontSize,
@@ -104,7 +104,7 @@ export async function runEditorStyleChecks(page) {
 			const colorRow = invalid.closest('.setting-item'); colorRow.querySelector('input[type="color"]').value = '#aabbcc'; colorRow.querySelector('input[type="color"]').dispatchEvent(new Event('input'));
 			const alpha = settings.liveEditor.style.colors.sourceText.light === '#aabbcc80';
 			const roundTrip = JSON.stringify(fixture.normalizeSettings(JSON.parse(JSON.stringify(settings))).liveEditor) === JSON.stringify(settings.liveEditor);
-			const exportSummary = () => host.querySelector('.advanced-mermaid-export summary');
+			const exportSummary = () => host.querySelector('.advanced-mermaid-export button[aria-expanded]');
 			tab.containerEl.querySelector('[aria-label="Reset Export button border color Dark"]').click();
 			const inheritedExport = [getComputedStyle(exportSummary()).borderTopColor, settings.liveEditor.style.colors.exportButtonBorder.light];
 			for (const button of tab.containerEl.querySelectorAll('button[aria-label^="Reset "]')) button.click();
@@ -138,7 +138,7 @@ export async function runEditorStyleChecks(page) {
 			assert.deepEqual(Object.keys(result.dropdowns), ['Diagram type', 'Orientation', 'Insert diagram component', 'Presets / Palette', 'Insert local override', 'Local style theme']);
 			for (const [label, paint] of Object.entries(result.dropdowns)) assert.deepEqual(paint, result.inactive, label);
 			assert.deepEqual(result.mode, result.active); assert.deepEqual(result.inactiveMode, result.inactive);
-			assert.deepEqual(Object.keys(result.exportActions), ['Copy SVG', 'Save SVG', 'Copy PNG', 'Save PNG', 'Save canvas']);
+			assert.deepEqual(Object.keys(result.exportActions), ['Copy SVG', 'Copy PNG', 'Save SVG', 'Save PNG', 'Save canvas', 'Save .mmd', 'Save .mermaid']);
 			for (const [label, paint] of Object.entries(result.exportActions)) assert.deepEqual(paint, result.export, label);
 			assert.equal(result.statusSize, '12px'); assert.equal(result.detailsSize, '12px');
 		}
