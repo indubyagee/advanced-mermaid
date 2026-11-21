@@ -36,7 +36,7 @@ export async function runEditorStyleChecks(page) {
 				[...host.querySelectorAll('button, select, .advanced-mermaid-export summary')].every(control => getComputedStyle(control).borderTopWidth === '0px') &&
 				radius(host.querySelector('.advanced-mermaid-editor-mode button')) === '6px' &&
 				radius(host.querySelector('.advanced-mermaid-editor select')) === '7px' &&
-				radius(host.querySelector('.advanced-mermaid-export button[aria-expanded]')) === '4px';
+				radius(host.querySelector('.advanced-mermaid-export button[aria-expanded]')) === '6px';
 			const defaults = themeDefaults();
 			const caretColor = () => getComputedStyle(fixture.sourceRoot(host).querySelector('.cm-content')).caretColor;
 			const lightCaret = caretColor();
