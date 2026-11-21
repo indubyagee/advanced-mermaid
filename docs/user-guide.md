@@ -34,7 +34,7 @@ In the Live editor, use the **Mermaid** tab to write diagram text. Edits go dire
 
 - Use **Diagram** to set the diagram type or direction, and **Component** to insert a snippet for that type. **Insert configuration** adds editable YAML settings at the top of the block. Review the body after changing diagram types, since it may use syntax from the previous type. [Live editor syntax controls](live-editor-syntax.md)
 - Select **Render now** or press **Ctrl+Enter** or **Cmd+Enter** if you want to refresh immediately. Press **Esc** to return to the rendered diagram. **Tab** indents source lines and **Shift+Tab** outdents them.
-- Use the gutter arrows to fold or expand indented source. **Ctrl+Shift+[** folds and **Ctrl+Shift+]** expands; on macOS, use **Cmd+Alt+[** and **Cmd+Alt+]**. Folding changes only the source view. Indent guides and fold arrows have separate light/dark colors under **Live Editor → Editor appearance**.
+- Use the arrows next to block headers to fold or expand indented source. **Ctrl+Shift+[** folds and **Ctrl+Shift+]** expands. On macOS, use **Cmd+Alt+[** and **Cmd+Alt+]**. Guides follow Obsidian’s **Indent visual width** and appear beneath expanded arrows. Indent guides and fold arrows have separate light and dark colors under **Live Editor → Editor appearance**.
 - Use **+**, **−**, and **Reset zoom** to inspect a diagram. After zooming, drag to pan or focus the diagram and use the arrow keys.
 - In Advanced Mermaid settings, use **Editor layout** to choose **Auto**, **Side by side**, or **Stacked**. Narrow panes stack the source and preview. Set **Open editor** to **Focused block** if you want the Live editor to open when you enter a diagram block. [Live editor settings](settings-menu.md#live-editor)
 

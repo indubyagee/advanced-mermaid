@@ -211,6 +211,7 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 					publishOwnership(view, active);
 				}
 				if (update.docChanged) editor?.syncFromParent(update);
+				if (update.state.tabSize !== update.startState.tabSize) editor?.syncIndentWidth();
 				if (update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refresh)))) {
 					// Refresh paint without replacing a mode bar and its adjacent live editor.
 					for (const bar of Array.from(view.dom.querySelectorAll<HTMLElement>('.advanced-mermaid-editor-mode'))) applyEditorStyle(bar, settings().liveEditor.style);

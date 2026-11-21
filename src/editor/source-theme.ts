@@ -19,7 +19,7 @@ export const sourceTheme = EditorView.theme({
 		color: 'var(--advanced-mermaid-source-text)',
 		caretColor: 'currentColor',
 	},
-	'.cm-line': { padding: '0 8px' },
+	'.cm-line': { '--am-fold-center': '6px', padding: '0 8px 0 12px' },
 	'.am-source-declaration, .cm-declaration': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-declaration))', fontWeight: 'bold' },
 	'.am-source-keyword, .cm-keyword': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-keyword))' },
 	'.am-source-operator, .cm-operator': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-operator))' },
@@ -30,12 +30,22 @@ export const sourceTheme = EditorView.theme({
 	'.am-source-number, .am-source-property, .cm-number, .cm-atom, .cm-property': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-number))' },
 	'.cm-content ::selection, .cm-content::selection': { backgroundColor: 'var(--text-selection, #b3d4fc)' },
 	'.am-indent-guides': {
-		backgroundImage: 'repeating-linear-gradient(to right, var(--advanced-mermaid-indent-guide) 0 1px, transparent 1px var(--am-indent-step))',
-		backgroundSize: 'var(--am-indent-width) var(--am-indent-height)',
-		backgroundPosition: '8px 0',
+		'--am-indent-guide-image': 'linear-gradient(var(--advanced-mermaid-indent-guide), var(--advanced-mermaid-indent-guide))',
+		backgroundSize: '1px 100%',
 		backgroundRepeat: 'no-repeat',
 	},
-	'.cm-foldGutter .cm-gutterElement': { color: 'var(--advanced-mermaid-fold-arrow)', cursor: 'pointer' },
+	'.am-fold-anchor': { display: 'inline-block', position: 'relative', width: '0', height: '0', verticalAlign: 'top' },
+	'.am-fold-arrow': {
+		display: 'grid', placeItems: 'center', position: 'absolute', left: '-12px', top: '0',
+		width: '12px', height: '1lh', border: '0', padding: '0', background: 'transparent',
+		color: 'var(--advanced-mermaid-fold-arrow)', font: 'inherit', cursor: 'pointer',
+	},
+	'.am-fold-arrow::before': {
+		content: '""', width: '5px', height: '5px', borderRight: '1.5px solid', borderBottom: '1.5px solid',
+		transform: 'rotate(-45deg)',
+	},
+	'.am-fold-arrow[aria-expanded="true"]::before': { transform: 'translateY(-1px) rotate(45deg)' },
+	'.am-fold-arrow:focus-visible': { outline: '1px solid currentColor', outlineOffset: '-1px' },
 	'.cm-foldPlaceholder': {
 		color: 'var(--advanced-mermaid-fold-arrow)', backgroundColor: 'var(--advanced-mermaid-source-background)',
 		borderColor: 'var(--advanced-mermaid-indent-guide)',
@@ -44,4 +54,5 @@ export const sourceTheme = EditorView.theme({
 		zIndex: 200,
 		backgroundColor: 'var(--advanced-mermaid-source-background)',
 	},
+	'.cm-lineNumbers .cm-gutterElement': { padding: '0 4px 0 3px', minWidth: '0' },
 });

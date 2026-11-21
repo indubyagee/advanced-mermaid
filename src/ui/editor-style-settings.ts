@@ -14,7 +14,7 @@ export function editorStyleDefinitions(settings: AdvancedMermaidSettings, change
 		color('sourceText', 'Source font color', 'Text color for Mermaid and CSS source.'),
 		color('sourceBackground', 'Source background color', 'Background for the source pane and its line-number gutter.'),
 		color('indentGuide', 'Indent guide color', 'Indentation guides in Mermaid and CSS source.'),
-		color('foldArrow', 'Expand/collapse arrow color', 'Arrows in the source folding gutter.'),
+		color('foldArrow', 'Expand/collapse arrow color', 'Fold arrows next to indented source blocks.'),
 		numberDefinition('Button font size', '8–40 px for editor buttons and export controls. Reset to inherit the interface size.', () => editor.style.buttonFontSizePx, value => { editor.style.buttonFontSizePx = value ?? null; changed(); }, { min: 8, max: 40, step: 1, optional: true, fallback: 13, unit: 'px' }),
 		numberDefinition('Button corner radius', 'Round the corners of editor buttons, dropdowns and Export. Reset to use the theme’s corners.', () => editor.style.buttonRadiusPx, value => { editor.style.buttonRadiusPx = value ?? null; changed(); }, { ...BUTTON_RADIUS_RANGE, step: 1, optional: true, fallback: 4, unit: 'px' }),
 		{ type: 'group', heading: 'Button font colors', items: [

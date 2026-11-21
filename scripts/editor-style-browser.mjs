@@ -81,7 +81,7 @@ export async function runEditorStyleChecks(page) {
 				const content = source.querySelector('.cm-content');
 				themes.push({ theme, source: paint(content)[0], caret: caretColor(), token: paint(content.querySelector('span'))[0], background: getComputedStyle(source.querySelector('.cm-editor')).backgroundColor,
 					guide: getComputedStyle(source.querySelector('.am-indent-guides')).backgroundImage,
-					arrow: getComputedStyle(source.querySelector('.cm-foldGutter .cm-gutterElement')).color,
+					arrow: getComputedStyle(source.querySelector('.am-fold-arrow')).color,
 					gutter: getComputedStyle(source.querySelector('.cm-gutters')).backgroundColor,
 					font: getComputedStyle(content).fontSize, flat, dropdownsFlat, rounded, sizes: buttons.map(button => getComputedStyle(button).fontSize),
 					dropdowns: Object.fromEntries(dropdowns.map(select => [select.getAttribute('aria-label'), paint(select)])),

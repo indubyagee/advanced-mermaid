@@ -11,12 +11,13 @@ export async function runSourceToolsChecks(page) {
 		const settings = fixture.normalizeSettings(null);
 		settings.liveEditor.wrapSource = true;
 		const inline = fixture.createInlineExtension(fixture.app, () => settings);
-		const source = '---\nconfig:\n  flowchart:\n    curve: basis\n---\n%%{init: {"theme": "base"}}%%\nflowchart TD\nsubgraph Group\n  subgraph Nested\n    A["Quoted label"] --> B\n    %% comment\n  end\nend';
+		const source = '---\nconfig:\n  flowchart:\n    curve: basis\n---\n%%{init: {"theme": "base"}}%%\nflowchart TD\nsubgraph Group\n\tsubgraph Nested\n\t\tA["Quoted label"] --> B\n\n\t\t%% comment\n\tend\nend';
 		const text = 'Before\n\n```pele\n' + source + '\n```\n\nAfter';
 		const language = new fixture.Language(fixture.defineLanguageFacet(), fixture.markdownParser);
-		const view = new fixture.EditorView({ parent: host, state: fixture.EditorState.create({ doc: text, extensions: [language, fixture.history(), fixture.editorInfoField, fixture.editorLivePreviewField, inline.extension] }) });
+		const indentWidth = new fixture.Compartment();
+		const view = new fixture.EditorView({ parent: host, state: fixture.EditorState.create({ doc: text, extensions: [language, indentWidth.of(fixture.EditorState.tabSize.of(4)), fixture.history(), fixture.editorInfoField, fixture.editorLivePreviewField, inline.extension] }) });
 		view.dispatch({ selection: { anchor: text.indexOf('flowchart TD') } }); view.focus(); inline.toggle();
-		window.sourceToolsFixture = { host, settings, inline, view, source,
+		window.sourceToolsFixture = { host, settings, inline, view, source, indentWidth,
 			nested: () => fixture.EditorView.findFromDOM(fixture.sourceRoot(host).querySelector('.cm-editor')) };
 	});
 	const foldCount = () => page.evaluate(() => fixture.foldedRanges(sourceToolsFixture.nested().state).size);
@@ -53,8 +54,53 @@ export async function runSourceToolsChecks(page) {
 		assert.equal(await foldCount(), 1, 'Keyboard folds an indented block');
 		await page.keyboard.press('Control+Shift+}');
 		assert.equal(await foldCount(), 0, 'Keyboard unfolds the same block');
-		await page.locator('.source-tools-fixture .cm-foldGutter [title="Fold line"]:visible').nth(2).click();
+		assert.equal(await page.evaluate(() => sourceToolsFixture.parentChanges), 0);
+		const group = page.locator('.source-tools-fixture .cm-content .cm-line').filter({ hasText: 'subgraph Group' });
+		const arrow = group.getByRole('button');
+		assert.equal(await arrow.getAttribute('aria-expanded'), 'true');
+		const measure = () => page.evaluate(() => {
+			const f = sourceToolsFixture; const root = fixture.sourceRoot(f.host);
+			const lines = [...root.querySelectorAll('.cm-content .cm-line')];
+			const header = lines.find(line => line.textContent.includes('subgraph Nested'));
+			const child = lines.find(line => line.textContent.includes('Quoted label'));
+			const blank = lines[lines.indexOf(child) + 1];
+			const next = lines[lines.indexOf(child) + 2];
+			const guides = getComputedStyle(child).backgroundPosition.split(',').map(value => parseFloat(value));
+			const center = header.querySelector('.am-fold-arrow').getBoundingClientRect();
+			return {
+				tabSize: f.nested().state.tabSize, guide: Math.max(...guides), outerGuide: Math.min(...guides),
+				arrow: center.left + center.width / 2 - header.getBoundingClientRect().left,
+				blankGuides: getComputedStyle(blank).backgroundPosition,
+				childGuides: getComputedStyle(child).backgroundPosition,
+				continuous: child.getBoundingClientRect().bottom === blank.getBoundingClientRect().top &&
+					blank.getBoundingClientRect().bottom === next.getBoundingClientRect().top,
+				gutters: [...root.querySelector('.cm-gutters').children].map(gutter => gutter.className),
+			};
+		});
+		const original = await measure();
+		assert.equal(original.tabSize, 4);
+		assert.ok(original.continuous && original.blankGuides === original.childGuides);
+		assert.ok(Math.abs(original.arrow - original.guide) < 1, JSON.stringify(original));
+		assert.deepEqual(original.gutters, ['cm-gutter cm-lineNumbers']);
+		await page.evaluate(() => {
+			const f = sourceToolsFixture;
+			f.view.dispatch({ effects: f.indentWidth.reconfigure(fixture.EditorState.tabSize.of(8)) });
+			f.parentChanges = 0;
+		});
+		const wider = await measure();
+		assert.equal(wider.tabSize, 8);
+		assert.ok(Math.abs(wider.arrow - wider.guide) < 1 && Math.abs((wider.guide - wider.outerGuide) / (original.guide - original.outerGuide) - 2) < 0.05);
+		const direction = () => arrow.evaluate(button => getComputedStyle(button, '::before').transform);
+		const down = await direction();
+		await arrow.click();
 		assert.equal(await foldCount(), 1, 'Pointer folds the block');
+		assert.equal(await arrow.getAttribute('aria-expanded'), 'false');
+		assert.notEqual(await direction(), down);
+		assert.ok(await page.evaluate(() => {
+			const lines = fixture.sourceRoot(sourceToolsFixture.host).querySelectorAll('.cm-content .cm-line');
+			const closing = Array.from(lines).find(line => line.textContent === 'end');
+			return closing && !closing.classList.contains('am-indent-guides');
+		}), 'Collapsed block removes its own guide');
 		const folded = await page.evaluate(() => {
 			const root = fixture.sourceRoot(sourceToolsFixture.host);
 			return { header: root.textContent.includes('subgraph Group'), closing: root.querySelector('.cm-content').textContent.includes('end'),
@@ -80,7 +126,7 @@ export async function runSourceToolsChecks(page) {
 			const f = sourceToolsFixture; const root = fixture.sourceRoot(f.host); const results = [];
 			for (const dark of [false, true]) {
 				document.body.classList.toggle('theme-dark', dark);
-				results.push({ arrow: getComputedStyle(root.querySelector('.cm-foldGutter .cm-gutterElement')).color,
+				results.push({ arrow: getComputedStyle(root.querySelector('.am-fold-arrow')).color,
 					guide: getComputedStyle(root.querySelector('.am-indent-guides')).backgroundImage });
 			}
 			document.body.classList.remove('theme-dark');
@@ -91,8 +137,8 @@ export async function runSourceToolsChecks(page) {
 		assert.match(appearance.results[0].guide, /rgb\(18, 52, 86\)/); assert.match(appearance.results[1].guide, /rgb\(171, 205, 239\)/);
 		await page.evaluate(() => {
 			const f = sourceToolsFixture; const nested = f.nested(); fixture.unfoldCode(nested);
-			const from = nested.state.doc.toString().indexOf('    A[');
-			nested.dispatch({ changes: { from, insert: '    C["' + 'long label '.repeat(30) + '"]\n' } });
+			const from = nested.state.doc.toString().indexOf('\t\tA[');
+			nested.dispatch({ changes: { from, insert: '\t\tC["' + 'long label '.repeat(30) + '"]\n' } });
 			const header = nested.state.doc.line(9); nested.dispatch({ selection: { anchor: header.from } }); fixture.foldCode(nested);
 			f.host.style.width = '340px';
 		});
@@ -103,13 +149,13 @@ export async function runSourceToolsChecks(page) {
 			const f = sourceToolsFixture; const view = f.nested();
 			const line = view.state.doc.line(10); const block = view.lineBlockAt(line.from);
 			const dom = view.domAtPos(line.from).node.parentElement.closest('.cm-line');
-			return { wraps: block.height > view.defaultLineHeight * 2, guideHeight: parseFloat(dom.style.getPropertyValue('--am-indent-height')), lineHeight: view.defaultLineHeight,
+			return { wraps: block.height > view.defaultLineHeight * 2, guideSize: getComputedStyle(dom).backgroundSize,
 				singlePreview: f.host.querySelectorAll('.advanced-mermaid-editor-render svg.pele').length === 1 };
 		});
-		assert.ok(wrapped.wraps && wrapped.singlePreview); assert.equal(wrapped.guideHeight, wrapped.lineHeight, 'Guides paint just the first visual row');
+		assert.ok(wrapped.wraps && wrapped.singlePreview); assert.match(wrapped.guideSize, /^1px 100%/, 'Guides span wrapped visual rows');
 		await page.evaluate(() => {
 			const f = sourceToolsFixture; const view = f.nested();
-			view.dispatch({ changes: { from: view.state.doc.length, insert: '\n' + Array.from({ length: 300 }, (_, i) => '  N' + i + '-->N' + (i + 1)).join('\n') } });
+			view.dispatch({ changes: { from: view.state.doc.length, insert: '\nsubgraph Long\n' + Array.from({ length: 300 }, (_, i) => '  N' + i + '-->N' + (i + 1)).join('\n') + '\nend' } });
 			view.dispatch({ selection: { anchor: view.state.doc.length }, scrollIntoView: true });
 		});
 		await page.waitForTimeout(120);

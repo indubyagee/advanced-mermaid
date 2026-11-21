@@ -313,7 +313,11 @@ export class LiveEditor {
 	}
 	private presentationExtensions(): Extension[] {
 		const options = this.settings().liveEditor;
-		return [sourceLanguage(this.inputMode), options.lineNumbers ? lineNumbers() : [], options.wrapSource ? EditorView.lineWrapping : []];
+		return [sourceLanguage(this.inputMode), EditorState.tabSize.of(this.bridge.parent.state.tabSize),
+			options.lineNumbers ? lineNumbers() : [], options.wrapSource ? EditorView.lineWrapping : []];
+	}
+	syncIndentWidth(): void {
+		this.nested.dispatch({ effects: this.presentation.reconfigure(this.presentationExtensions()) });
 	}
 	private applySourceFontSize(): void {
 		const size = this.settings().liveEditor.fontSizePx;
