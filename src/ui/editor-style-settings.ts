@@ -1,7 +1,8 @@
 import type { SettingDefinition, SettingDefinitionItem } from 'obsidian';
 import type { AdvancedMermaidSettings } from '../settings';
-import { BUTTON_RADIUS_RANGE, EDITOR_COLORS, type EditorColor } from '../styles/editor-style';
-import { colorPairDefinition, numberDefinition } from './setting-controls';
+import { BUTTON_RADIUS_RANGE, EDITOR_COLORS, type EditorColor, type EditorStyleSettings } from '../styles/editor-style';
+import { SOURCE_HIGHLIGHTS, SOURCE_HIGHLIGHT_TOKENS, SOURCE_WEIGHTS, isSourceWeight } from '../styles/source-highlight';
+import { colorPairDefinition, numberDefinition, rowDefinition } from './setting-controls';
 
 export function editorStyleDefinitions(settings: AdvancedMermaidSettings, changed: () => void): SettingDefinitionItem[] {
 	const editor = settings.liveEditor;
@@ -12,6 +13,7 @@ export function editorStyleDefinitions(settings: AdvancedMermaidSettings, change
 	return [
 		numberDefinition('Source font size', '8–40 px for Mermaid and CSS source. Defaults to 10 px. Reset to inherit the vault text size; diagram labels are separate.', () => editor.fontSizePx, value => { editor.fontSizePx = value ?? null; changed(); }, { min: 8, max: 40, step: 1, optional: true, fallback: 10, unit: 'px' }),
 		color('sourceText', 'Source font color', 'Text color for Mermaid and CSS source.'),
+		{ type: 'page', name: 'Syntax highlighting', desc: 'Set colors and font weights for Mermaid and CSS tokens.', items: syntaxHighlightDefinitions(editor.style, changed) },
 		color('sourceBackground', 'Source background color', 'Background for the source pane and its line-number gutter.'),
 		numberDefinition('Line number font size', '8–40 px. Reset to use the source font size.', () => editor.style.lineNumberFontSizePx, value => { editor.style.lineNumberFontSizePx = value ?? null; changed(); }, { min: 8, max: 40, step: 1, optional: true, fallback: editor.fontSizePx ?? 10, unit: 'px' }),
 		color('lineNumberText', 'Line number font color', 'Text color for source line numbers.'),
@@ -35,4 +37,28 @@ export function editorStyleDefinitions(settings: AdvancedMermaidSettings, change
 			color('exportButtonBorder', 'Export button', 'Border for Export and its actions. Inherits the inactive border if set.', 'border'),
 		] },
 	];
+}
+
+function syntaxHighlightDefinitions(style: EditorStyleSettings, changed: () => void): SettingDefinitionItem[] {
+	return SOURCE_HIGHLIGHT_TOKENS.flatMap(token => {
+		const { label, light, dark } = SOURCE_HIGHLIGHTS[token];
+		const weightName = label + ' font weight';
+		const update = (next: NonNullable<EditorStyleSettings['syntax'][typeof token]>): void => {
+			if (next.colors || next.weight !== undefined) style.syntax[token] = next;
+			else delete style.syntax[token];
+			changed();
+		};
+		return [
+			colorPairDefinition(label + ' color', 'Overrides the source font color for this token.', () => style.syntax[token]?.colors,
+				colors => update({ ...style.syntax[token], colors }), { light: style.colors.sourceText?.light ?? light, dark: style.colors.sourceText?.dark ?? dark }),
+			rowDefinition(weightName, 'Use the default weight or choose a value from 100 to 900.', row => row.addDropdown(input => {
+				input.selectEl.setAttribute('aria-label', weightName);
+				input.addOptions({ default: 'Default' }).addOptions(Object.fromEntries(SOURCE_WEIGHTS.map(weight => [String(weight), String(weight)])));
+				input.setValue(String(style.syntax[token]?.weight ?? 'default')).onChange(value => {
+					const weight = Number(value);
+					update({ ...style.syntax[token], weight: isSourceWeight(weight) ? weight : undefined });
+				});
+			})),
+		];
+	});
 }

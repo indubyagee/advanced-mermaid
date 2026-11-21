@@ -342,14 +342,15 @@
 /* Editor presentation is independent of diagram style overrides. Theme pairs
    resolve through CSS so a light/dark switch also updates existing editors. */
 .advanced-mermaid-editor, .advanced-mermaid-editor-mode {
-	--am-highlight-declaration: #0550ae;
-	--am-highlight-keyword: #8250df;
-	--am-highlight-operator: #9a3412;
-	--am-highlight-string: #116329;
-	--am-highlight-comment: #57606a;
-	--am-highlight-frontmatter: #0e6975;
-	--am-highlight-directive: #95386f;
-	--am-highlight-number: #754b00;
+	--am-highlight-declaration: var(--am-highlight-declaration-light);
+	--am-highlight-keyword: var(--am-highlight-keyword-light);
+	--am-highlight-operator: var(--am-highlight-operator-light);
+	--am-highlight-string: var(--am-highlight-string-light);
+	--am-highlight-comment: var(--am-highlight-comment-light);
+	--am-highlight-frontmatter: var(--am-highlight-frontmatter-light);
+	--am-highlight-directive: var(--am-highlight-directive-light);
+	--am-highlight-number: var(--am-highlight-number-light);
+	--am-highlight-property: var(--am-highlight-property-light);
 	--advanced-mermaid-indent-guide: var(--advanced-mermaid-indent-guide-light, var(--background-modifier-border, #bdbdbd));
 	--advanced-mermaid-fold-arrow: var(--advanced-mermaid-fold-arrow-light, var(--text-muted, #52525b));
 	--advanced-mermaid-line-number-text: var(--advanced-mermaid-line-number-text-light, var(--text-muted, #52525b));
@@ -363,14 +364,15 @@
 	--advanced-mermaid-inactive-button-border: 1px solid var(--advanced-mermaid-inactive-button-border-light);
 }
 .theme-dark .advanced-mermaid-editor, .theme-dark .advanced-mermaid-editor-mode {
-	--am-highlight-declaration: #79c0ff;
-	--am-highlight-keyword: #d2a8ff;
-	--am-highlight-operator: #ffa657;
-	--am-highlight-string: #7ee787;
-	--am-highlight-comment: #9da7b3;
-	--am-highlight-frontmatter: #76d9e6;
-	--am-highlight-directive: #ff9bce;
-	--am-highlight-number: #e3c46d;
+	--am-highlight-declaration: var(--am-highlight-declaration-dark);
+	--am-highlight-keyword: var(--am-highlight-keyword-dark);
+	--am-highlight-operator: var(--am-highlight-operator-dark);
+	--am-highlight-string: var(--am-highlight-string-dark);
+	--am-highlight-comment: var(--am-highlight-comment-dark);
+	--am-highlight-frontmatter: var(--am-highlight-frontmatter-dark);
+	--am-highlight-directive: var(--am-highlight-directive-dark);
+	--am-highlight-number: var(--am-highlight-number-dark);
+	--am-highlight-property: var(--am-highlight-property-dark);
 	--advanced-mermaid-indent-guide: var(--advanced-mermaid-indent-guide-dark, var(--background-modifier-border, #555));
 	--advanced-mermaid-fold-arrow: var(--advanced-mermaid-fold-arrow-dark, var(--text-muted, #aaa));
 	--advanced-mermaid-line-number-text: var(--advanced-mermaid-line-number-text-dark, var(--text-muted, #aaa));

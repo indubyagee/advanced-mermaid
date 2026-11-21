@@ -167,9 +167,64 @@ export async function runEditorStyleChecks(page) {
 		await page.evaluate(() => { editorStyles.host.style.width = '900px'; });
 		await page.waitForTimeout(100);
 		await page.locator('.editor-style-fixture').screenshot({ path: 'test-results/v022-editor-wide.png' });
+		await checkSyntaxAppearance(page);
 		console.log('Editor style checks passed: settings page, paired colors, size controls, centered Export, hidden Close controls, live updates, validation, alpha, resets, persistence round trip and diagram isolation.');
 	} finally {
 		await page.evaluate(() => { document.body.classList.remove('theme-dark'); editorStyles.tab.hide(); editorStyles.tab.containerEl.remove(); editorStyles.view.destroy(); editorStyles.inline.destroy(); editorStyles.host.remove(); delete window.editorStyles; });
 		await hostStyle.evaluate(element => element.remove());
 	}
+}
+
+async function checkSyntaxAppearance(page) {
+	const report = await page.evaluate(() => {
+		const { tab, settings, host, inline, view } = editorStyles;
+		const source = fixture.sourceRoot(host);
+		const originalNote = view.state.doc.toString();
+		const style = token => {
+			const css = getComputedStyle(source.querySelector('.am-source-' + token));
+			return [css.color, css.fontWeight];
+		};
+		const edit = (label, value, event = 'input') => {
+			const control = tab.containerEl.querySelector(`[aria-label="${label}"]`);
+			control.value = value;
+			control.dispatchEvent(new Event(event));
+			return control;
+		};
+		edit('Source font color Light', '#334455');
+		const pageRow = [...tab.containerEl.querySelectorAll('.setting-item')].find(row => row.textContent.includes('Syntax highlighting'));
+		pageRow.querySelector('button').click();
+		const swatches = ['Light', 'Dark'].map(mode => tab.containerEl.querySelector(`[aria-label="Diagram declaration color ${mode} picker"]`).value);
+		edit('Diagram declaration color Light', '#ab1234');
+		edit('Diagram declaration color Dark', '#abcdef');
+		edit('Diagram declaration font weight', '400', 'change');
+		edit('Keyword font weight', '800', 'change');
+		const light = [style('declaration'), style('keyword')];
+		document.body.classList.add('theme-dark');
+		const dark = [style('declaration'), style('keyword')];
+		const invalid = edit('Diagram declaration color Dark', 'var(--invalid)').getAttribute('aria-invalid');
+		const saved = fixture.normalizeSettings(JSON.parse(JSON.stringify(settings))).liveEditor.style.syntax;
+		tab.containerEl.querySelector('[aria-label="Reset Diagram declaration color Dark"]').click();
+		edit('Diagram declaration font weight', 'default', 'change');
+		const resetDark = style('declaration');
+		document.body.classList.remove('theme-dark');
+		const resetLight = style('declaration');
+		const noteUnchanged = view.state.doc.toString() === originalNote;
+		edit('CSS property color Light', '#183759');
+		edit('CSS property font weight', '600', 'change');
+		host.querySelector('[aria-label="Source format"] button:nth-child(2)').click();
+		const nested = fixture.EditorView.findFromDOM(source.querySelector('.cm-editor'));
+		nested.dispatch({ changes: { from: 0, insert: '.pele { --pele-fg: #abc; }' } });
+		const css = style('property');
+		inline.refresh();
+		return { swatches, light, dark, invalid, saved, resetDark, resetLight, noteUnchanged, css };
+	});
+	assert.deepEqual(report.swatches, ['#334455', '#79c0ff']);
+	assert.deepEqual(report.light, [['rgb(171, 18, 52)', '400'], ['rgb(51, 68, 85)', '800']]);
+	assert.deepEqual(report.dark, [['rgb(171, 205, 239)', '400'], ['rgb(210, 168, 255)', '800']]);
+	assert.equal(report.invalid, 'true');
+	assert.deepEqual(report.saved, { declaration: { colors: { light: '#ab1234', dark: '#abcdef' }, weight: 400 }, keyword: { weight: 800 } });
+	assert.deepEqual(report.resetDark, ['rgb(121, 192, 255)', '700']);
+	assert.deepEqual(report.resetLight, ['rgb(171, 18, 52)', '700']);
+	assert.deepEqual(report.css, ['rgb(24, 55, 89)', '600']);
+	assert.ok(report.noteUnchanged);
 }

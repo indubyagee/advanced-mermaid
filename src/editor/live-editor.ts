@@ -18,6 +18,7 @@ import { insertDisplayOverride, insertStyleOverride, type StyleTarget } from './
 import { overrideSelector } from '../ui/override-selector';
 import { resolveDisplay } from '../rendering/overrides';
 import { applyEditorStyle } from '../styles/editor-style';
+import { applySourceHighlights } from '../styles/source-highlight';
 import { STYLE_RENDERER_VERSION } from '../styles/registry';
 import { DiagramSyntaxSelector } from '../ui/diagram-syntax-selector';
 import { initializeDiagram, insertComponent, type SourceInsertion } from './syntax/source';
@@ -60,6 +61,7 @@ export class LiveEditor {
 		const doc = bridge.parent.dom.ownerDocument; const win = doc.defaultView!;
 		this.element = createDetachedEl(doc, 'div', { cls: 'advanced-mermaid-editor' });
 		applyEditorStyle(this.element, settings().liveEditor.style);
+		applySourceHighlights(this.element, settings().liveEditor.style.syntax);
 		const header = this.element.createDiv({ cls: 'advanced-mermaid-editor-header' });
 		const sources = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Source format' } });
 		for (const mode of ['mermaid', 'css'] as const) this.tab(sources, mode === 'css' ? 'CSS' : 'Mermaid', () => this.selectInput(mode), mode === 'mermaid');
@@ -329,6 +331,7 @@ export class LiveEditor {
 	}
 	refresh(): void {
 		applyEditorStyle(this.element, this.settings().liveEditor.style);
+		applySourceHighlights(this.element, this.settings().liveEditor.style.syntax);
 		this.syntax.refresh(true);
 		this.applySourceFontSize();
 		this.nested.dispatch({ effects: this.presentation.reconfigure(this.presentationExtensions()) });

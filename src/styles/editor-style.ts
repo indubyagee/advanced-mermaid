@@ -2,6 +2,7 @@ import { normalizeColor } from './colors';
 import type { ColorPair } from './registry';
 import { boundedNumber, isStyleRecord } from './validate';
 import { normalizeZoomStyle, type ZoomStyleSettings } from './zoom-style';
+import { normalizeSourceHighlights, type SourceHighlightSettings } from './source-highlight';
 
 /** Shared keys keep saved preferences, settings controls and scoped CSS aligned. */
 export const EDITOR_COLORS = {
@@ -31,6 +32,7 @@ export interface EditorStyleSettings {
 	buttonFontSizePx: number | null;
 	buttonRadiusPx: number | null;
 	colors: Partial<Record<EditorColor, ColorPair>>;
+	syntax: SourceHighlightSettings;
 	zoom: ZoomStyleSettings;
 }
 
@@ -56,6 +58,7 @@ export function normalizeEditorStyle(value: unknown): EditorStyleSettings {
 		buttonFontSizePx: isEditorFontSize(data.buttonFontSizePx) ? data.buttonFontSizePx : null,
 		buttonRadiusPx: boundedNumber(radius, BUTTON_RADIUS_RANGE.min, BUTTON_RADIUS_RANGE.max) && Number.isInteger(radius) ? radius : null,
 		colors,
+		syntax: normalizeSourceHighlights(data.syntax),
 		zoom: normalizeZoomStyle(data.zoom),
 	};
 }

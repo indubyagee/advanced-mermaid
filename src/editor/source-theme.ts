@@ -1,4 +1,5 @@
 import { EditorView } from '@codemirror/view';
+import { SOURCE_HIGHLIGHTS, SOURCE_HIGHLIGHT_TOKENS } from '../styles/source-highlight';
 
 export const sourceTheme = EditorView.theme({
 	'&': {
@@ -24,14 +25,14 @@ export const sourceTheme = EditorView.theme({
 		caretColor: 'currentColor',
 	},
 	'.cm-line': { '--am-fold-center': '8px', padding: '0 8px 0 16px' },
-	'.am-source-declaration, .cm-declaration': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-declaration))', fontWeight: 'bold' },
-	'.am-source-keyword, .cm-keyword': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-keyword))' },
-	'.am-source-operator, .cm-operator': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-operator))' },
-	'.am-source-string, .cm-string': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-string))' },
-	'.am-source-comment, .cm-comment': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-comment))', fontStyle: 'italic' },
-	'.am-source-frontmatter, .cm-frontmatter': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-frontmatter))' },
-	'.am-source-directive, .cm-directive': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-directive))' },
-	'.am-source-number, .am-source-property, .cm-number, .cm-atom, .cm-property': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-number))' },
+	...Object.fromEntries(SOURCE_HIGHLIGHT_TOKENS.map(token => {
+		const style = SOURCE_HIGHLIGHTS[token];
+		return [style.selector, {
+			color: `var(--am-highlight-${token})`,
+			fontWeight: `var(--am-highlight-${token}-weight, ${'weight' in style ? style.weight : 'inherit'})`,
+			...('italic' in style ? { fontStyle: 'italic' } : {}),
+		}];
+	})),
 	'.cm-content ::selection, .cm-content::selection': { backgroundColor: 'var(--text-selection, #b3d4fc)' },
 	'.am-indent-guides': {
 		'--am-indent-guide-image': 'linear-gradient(var(--advanced-mermaid-indent-guide), var(--advanced-mermaid-indent-guide))',
