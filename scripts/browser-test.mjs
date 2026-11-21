@@ -8,7 +8,7 @@ import { runDiagramEnvironmentChecks, runDiagramErrorChecks, runDiagramRefreshCh
 import { runInlineEditorChecks, runSvgOutputChecks } from './inline-editor-browser.mjs';
 import { runSubgraphTitleChecks } from './subgraph-title-browser.mjs';
 import { runInlineSettingsChecks } from './inline-settings-browser.mjs';
-import { runInlineLayoutChecks } from './inline-layout-browser.mjs';
+import { runFullScreenLayoutChecks, runInlineLayoutChecks } from './inline-layout-browser.mjs';
 import { runPresetChecks, runEditorModeChecks } from './v02-browser.mjs';
 import { runEditorInteractionChecks, runNavigationChecks } from './v021-browser.mjs';
 import { runEditorStyleChecks } from './editor-style-browser.mjs';
@@ -310,6 +310,7 @@ try {
 	await runEditorModeChecks(page);
 	await runInlineLayoutChecks(page);
 	await runInlineLayoutChecks(page, 'Minimal');
+	await runFullScreenLayoutChecks(page);
 	if (!process.argv.includes('--inline')) {
 		await runInlineSettingsChecks(page);
 		await runPostTestChecks(page);

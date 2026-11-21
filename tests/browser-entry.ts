@@ -67,6 +67,8 @@ export { Language, defineLanguageFacet, ensureSyntaxTree, syntaxTree, foldedRang
 export { parser as markdownParser } from '@lezer/markdown';
 export { editorLivePreviewField, editorInfoField, installDomHelpers } from './obsidian';
 export { createInlineExtension } from '../src/editor/extension';
+export { LiveEditor } from '../src/editor/live-editor';
+export { sourceBridge } from '../src/editor/source-bridge';
 export { normalizeSettings } from '../src/settings';
 export { DiagramController } from '../src/rendering/controller';
 export { recoveryDrafts } from '../src/editor/drafts';

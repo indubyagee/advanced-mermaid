@@ -27,7 +27,6 @@ import { insertCategoryPalette, insertPresetClass } from './syntax/style-inserti
 
 export class LiveEditor {
 	readonly element: HTMLElement;
-	private readonly columns: HTMLElement;
 	private readonly sourceHost: HTMLElement;
 	private readonly preview: HTMLElement;
 	private readonly canonical: HTMLElement;
@@ -40,7 +39,6 @@ export class LiveEditor {
 	private readonly stopWindowMigration: () => void;
 	private readonly syncWindow: () => void;
 	private readonly fullScreenButton?: HTMLButtonElement;
-	private fullScreenControls?: HTMLElement;
 	private readonly syntax: DiagramSyntaxSelector;
 	private css = '';
 	private cssBaseline = '';
@@ -67,13 +65,14 @@ export class LiveEditor {
 		applyEditorStyle(this.element, settings().liveEditor.style);
 		applySourceHighlights(this.element, settings().liveEditor.style.syntax);
 		const header = this.element.createDiv({ cls: 'advanced-mermaid-editor-header' });
+		const sources = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Source format' } });
+		for (const mode of ['mermaid', 'css'] as const) this.tab(sources, mode === 'css' ? 'CSS' : 'Mermaid', () => this.selectInput(mode), mode === 'mermaid');
 		if (toggleFullScreen) {
-			this.fullScreenButton = this.button(header, 'Open full-screen', toggleFullScreen);
+			const action = header.createDiv({ cls: 'advanced-mermaid-full-screen-action' });
+			this.fullScreenButton = this.button(action, 'Open full-screen', toggleFullScreen);
 			this.fullScreenButton.addClass('advanced-mermaid-full-screen-toggle');
 			this.fullScreenButton.hidden = !settings().liveEditor.fullScreen;
 		}
-		const sources = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Source format' } });
-		for (const mode of ['mermaid', 'css'] as const) this.tab(sources, mode === 'css' ? 'CSS' : 'Mermaid', () => this.selectInput(mode), mode === 'mermaid');
 		const outputs = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Preview format' } });
 		for (const mode of ['pele', 'svg'] as const) this.tab(outputs, mode === 'svg' ? 'SVG' : 'Pele', () => this.selectOutput(mode), mode === 'pele');
 		const syntaxHost = this.element.createDiv();
@@ -93,12 +92,12 @@ export class LiveEditor {
 			palette: diagram => this.insertSyntax(source => insertCategoryPalette(source, diagram.type, this.settings().presets)),
 			pending: setOverridesDisabled,
 		});
-		this.columns = this.element.createDiv({ cls: 'advanced-mermaid-editor-columns' });
-		this.sourceHost = this.columns.createDiv({ cls: 'advanced-mermaid-editor-source', attr: { role: 'tabpanel', 'aria-label': 'Diagram source' } });
+		const columns = this.element.createDiv({ cls: 'advanced-mermaid-editor-columns' });
+		this.sourceHost = columns.createDiv({ cls: 'advanced-mermaid-editor-source', attr: { role: 'tabpanel', 'aria-label': 'Diagram source' } });
 		// Keep the note's Markdown gutter and width rules out of the nested editor.
 		let sourceRoot = this.sourceHost.createDiv().attachShadow({ mode: 'open' });
 		this.applySourceFontSize();
-		this.preview = this.columns.createDiv({ cls: 'advanced-mermaid-editor-preview', attr: { role: 'tabpanel', 'aria-label': 'Diagram preview' } });
+		this.preview = columns.createDiv({ cls: 'advanced-mermaid-editor-preview', attr: { role: 'tabpanel', 'aria-label': 'Diagram preview' } });
 		this.canonical = this.preview.createDiv({ cls: 'advanced-mermaid-editor-render' });
 		// Pele is the renderer name.
 		this.output = this.preview.createEl('textarea', { cls: 'advanced-mermaid-svg-source', attr: { readonly: '', 'aria-label': 'Canonical Pele SVG' } }); this.output.hidden = true;
@@ -122,7 +121,7 @@ export class LiveEditor {
 			{ key: 'Enter', run: insertNewlineAndIndent, stopPropagation: true },
 			{ key: 'Mod-z', run: () => !!bridge.range() && undo(bridge.parent) }, { key: 'Mod-Shift-z', run: () => !!bridge.range() && redo(bridge.parent) }, { key: 'Mod-y', run: () => !!bridge.range() && redo(bridge.parent) },
 			{ key: 'Mod-Enter', run: () => { if (this.flush()) this.scheduler.now(); return true; } },
-			{ key: 'Escape', run: () => { if (this.fullScreenControls || this.canClose()) close(); return true; }, stopPropagation: true }, ...defaultKeymap,
+			{ key: 'Escape', run: () => { if (this.element.hasAttribute('data-full-screen') || this.canClose()) close(); return true; }, stopPropagation: true }, ...defaultKeymap,
 		]), EditorView.updateListener.of(update => {
 			if (!update.docChanged || update.transactions.every(transaction => !transaction.docChanged || transaction.annotation(nestedOrigin))) return;
 			if (this.compositionRange) this.compositionRange.to = Math.max(this.compositionRange.to, update.state.selection.main.to);
@@ -185,22 +184,12 @@ export class LiveEditor {
 	}
 	private applyLayout(width: number): void {
 		const layout = this.settings().liveEditor.layout;
-		const stacked = this.fullScreenControls ? width < 900 : layout === 'stacked' || width < (layout === 'auto' ? 768 : 496);
+		const stacked = layout === 'stacked' || width < (layout === 'auto' ? 768 : 496);
 		this.element.dataset.layout = stacked ? 'stacked' : 'side-by-side';
 	}
 	setFullScreen(open: boolean): void {
 		if (this.disposed) return;
 		this.controller.closeExportModal();
-		if (open && !this.fullScreenControls) {
-			const controls = createDetachedEl(this.element.ownerDocument, 'div', { cls: 'advanced-mermaid-full-screen-controls' });
-			controls.append(...Array.from(this.element.children));
-			this.element.append(controls, this.preview);
-			this.fullScreenControls = controls;
-		} else if (!open && this.fullScreenControls) {
-			this.fullScreenControls.replaceWith(...Array.from(this.fullScreenControls.children));
-			this.columns.append(this.preview);
-			this.fullScreenControls = undefined;
-		}
 		this.element.toggleAttribute('data-full-screen', open);
 		if (this.fullScreenButton) this.fullScreenButton.textContent = open ? 'Return to note' : 'Open full-screen';
 		this.syncWindow();
@@ -382,7 +371,7 @@ export class LiveEditor {
 		this.nested.dispatch({ effects: this.presentation.reconfigure(this.presentationExtensions()) });
 		this.nested.requestMeasure();
 		this.applyLayout(this.element.clientWidth);
-		if (this.fullScreenButton) this.fullScreenButton.hidden = !this.fullScreenControls && !this.settings().liveEditor.fullScreen;
+		if (this.fullScreenButton) this.fullScreenButton.hidden = !this.element.hasAttribute('data-full-screen') && !this.settings().liveEditor.fullScreen;
 		this.controller.settingsChanged(); this.bridge.parent.requestMeasure();
 	}
 	remeasure(): void { this.nested.requestMeasure(); this.bridge.parent.requestMeasure(); }
