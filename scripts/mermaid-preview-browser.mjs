@@ -122,12 +122,14 @@ export async function runMermaidPreviewChecks(page) {
 		const assertExportStyles = async (text, background, border) => {
 			const menus = await exportMenus.evaluateAll(menus => menus.map(menu => [...menu.querySelectorAll('summary, button:not([hidden])')].map(control => {
 				const css = getComputedStyle(control);
-				return { label: control.textContent, text: css.color, background: css.backgroundColor, border: css.borderTopColor,
+				return { label: control.getAttribute('aria-label') ?? control.textContent, text: css.color, background: css.backgroundColor, border: css.borderTopColor,
 					radius: css.borderTopLeftRadius, size: css.fontSize, flat: css.boxShadow === 'none' && css.backgroundImage === 'none' };
 			})));
 			assert.equal(menus.length, 3);
-			for (const menu of menus) {
-				assert.deepEqual(menu.map(control => control.label), ['Export', 'Copy SVG', 'Save SVG', 'Copy PNG', 'Save PNG', 'Save canvas']);
+			for (const [index, menu] of menus.entries()) {
+				assert.deepEqual(menu.map(control => control.label), index < 2
+					? ['Export', 'Copy SVG', 'Copy PNG', 'Save SVG', 'Save PNG', 'Save .canvas', 'Save .mmd', 'Save .mermaid', 'Collapse export']
+					: ['Export', 'Copy SVG', 'Save SVG', 'Copy PNG', 'Save PNG', 'Save canvas']);
 				for (const { label, ...style } of menu) {
 					assert.deepEqual(style, { text, background, border, radius: '14px', size: '17px', flat: true }, label);
 				}
@@ -218,7 +220,7 @@ async function checkFenceIndex(page) {
 			deletionMapped: fixture.diagramFences(deleted).length === 99 && sameValues(deleted, fixture.diagramFences(deleted)[0]),
 			partial: beforeParse.length < later && decorations(partial).size === 2,
 			lookupExtended: duringLookup?.language === 'pele' && fixture.syntaxTree(partial) === beforeParse,
-			newTreeDecorated: partial.doc === advanced.doc && decorations(advanced).size === 3,
+			newTreeDecorated: partial.doc === advanced.doc && decorations(advanced).size === 4,
 		};
 	});
 	console.log('Fence index measurements:', JSON.stringify(result));

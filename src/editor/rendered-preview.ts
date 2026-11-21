@@ -4,7 +4,7 @@ import { createDetachedEl } from '../dom';
 import type { AdvancedMermaidSettings } from '../settings';
 import { DiagramController } from '../rendering/controller';
 
-/** Render Mermaid fences that Live Preview otherwise sends directly to Obsidian. */
+/** Render complete Live Preview fences with their authored source. */
 export function createRenderedPreviews(app: App, settings: () => AdvancedMermaidSettings): {
 	widget(source: string, file: string): WidgetType; refresh(): void; destroy(): void;
 } {
@@ -14,7 +14,9 @@ export function createRenderedPreviews(app: App, settings: () => AdvancedMermaid
 		eq(other: RenderedPreview): boolean { return other.source === this.source && other.file === this.file; }
 		toDOM(view: EditorView): HTMLElement {
 			const host = createDetachedEl(view.dom.ownerDocument, 'div', { cls: 'advanced-mermaid-rendered-preview' });
-			const controller = new DiagramController(host, this.source, settings, app, this.file, { boundary: view.scrollDOM });
+			const controller = new DiagramController(host, this.source, settings, app, this.file, {
+				boundary: view.scrollDOM, exportFooter: 'rendered',
+			});
 			controllers.set(host, controller);
 			controller.load();
 			return host;

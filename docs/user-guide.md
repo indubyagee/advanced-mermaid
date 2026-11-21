@@ -73,20 +73,22 @@ Open **Preset classes** in Advanced Mermaid settings to create, edit, or view al
 ## Export a diagram
 
 Open **Export** below a rendered diagram or in the Live editor.
+In **Rendered view** and **Live editor**, the toolbar groups copy actions before save actions. Choose **Collapse export** to return to the **Export** button.
 
 | Choose | Use it to |
 | --- | --- |
 | **Save SVG** | Create a vector image that stays sharp when resized. |
 | **Copy SVG** | Copy SVG source text for use in a document or editor that accepts SVG markup. If clipboard access fails, copy the text from the dialog. |
 | **Save PNG** or **Copy PNG** | Save an image to the vault or paste it into an app that accepts images from the clipboard. Use **Save PNG** if image clipboard access is unavailable. |
-| **Save canvas** | Turn a Flowchart or Agentflow into editable cards and connections in Obsidian. |
+| **Save .canvas** (**Save canvas** in Reading view) | Turn a Flowchart or Agentflow into editable cards and connections in Obsidian. |
+| **Save .mmd** or **Save .mermaid** | Save the authored fence body as UTF-8 from Rendered view or Live editor, including comments, frontmatter, and local directives. |
 
 When saving, choose an existing vault folder or select **Vault root**. The dialog shows the destination and suggests folders as you type. Saved exports get unique names. SVG and PNG include the entire diagram at its original layout, even if you zoomed in or set a width or height limit in the note.
 
 ### Save an editable Canvas
 
 1. Render a Flowchart (`flowchart`, `graph`, or `flowchart-elk`) or Agentflow (`agentflow-beta`).
-2. Select **Export → Save canvas**. The dialog starts in the source note’s folder. Choose where to save and select **Save**.
+2. Open **Export** and select **Save .canvas** (**Save canvas** in Reading view). The dialog starts in the source note’s folder. Choose where to save and select **Save**.
 3. Select **Open canvas** to open it in a new tab. Enable **Settings → Core plugins → Canvas** if Obsidian cannot open the file.
 
 Canvas uses its own cards, groups, and connections, so the result looks like a native Obsidian canvas. Flowchart document shapes and Agentflow reference documents become file cards, with a new Markdown note for each card in the selected folder. If a save fails after some notes have been created, retry in the same dialog to reuse those notes. [Canvas conversion details and limits](technical-reference.md#export-formats-and-limits)

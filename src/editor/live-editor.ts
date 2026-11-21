@@ -104,7 +104,7 @@ export class LiveEditor {
 		this.button(draftActions, 'Use note version', () => { this.cssDirty = false; this.conflict = false; this.sync({ force: true }); });
 		this.button(draftActions, 'Render now', () => { if (this.flush()) this.scheduler.now(); });
 		const endActions = footer.createDiv({ cls: 'advanced-mermaid-editor-end-actions' });
-		const exportStatus = footer.createDiv({ cls: 'advanced-mermaid-editor-export-status' });
+		const exportStatus = footer.createDiv({ cls: 'advanced-mermaid-export-feedback' });
 		this.sourceBaseline = bridge.source();
 		try { this.css = styleRegion(this.sourceBaseline)?.css ?? ''; } catch { this.draftStatus.textContent = 'Repair the malformed style region in the Mermaid source. The saved note is retained.'; }
 		this.cssBaseline = this.css;
