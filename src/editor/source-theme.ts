@@ -14,12 +14,16 @@ export const sourceTheme = EditorView.theme({
 		fontFamily: 'var(--font-monospace, monospace)',
 		fontSize: 'var(--advanced-mermaid-editor-font-size, inherit)',
 	},
+	'.cm-scroller:has(.cm-lineNumbers)': {
+		// Reserve enough line height for larger numbers without increasing source text size.
+		lineHeight: 'max(1.4em, var(--advanced-mermaid-line-number-font-size, 0px))',
+	},
 	'.cm-content': {
 		minHeight: '180px',
 		color: 'var(--advanced-mermaid-source-text)',
 		caretColor: 'currentColor',
 	},
-	'.cm-line': { '--am-fold-center': '6px', padding: '0 8px 0 12px' },
+	'.cm-line': { '--am-fold-center': '8px', padding: '0 8px 0 16px' },
 	'.am-source-declaration, .cm-declaration': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-declaration))', fontWeight: 'bold' },
 	'.am-source-keyword, .cm-keyword': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-keyword))' },
 	'.am-source-operator, .cm-operator': { color: 'var(--advanced-mermaid-source-token-color, var(--am-highlight-operator))' },
@@ -36,12 +40,12 @@ export const sourceTheme = EditorView.theme({
 	},
 	'.am-fold-anchor': { display: 'inline-block', position: 'relative', width: '0', height: '0', verticalAlign: 'top' },
 	'.am-fold-arrow': {
-		display: 'grid', placeItems: 'center', position: 'absolute', left: '-12px', top: '0',
+		display: 'grid', placeItems: 'center', position: 'absolute', left: '-14px', top: '0',
 		width: '12px', height: '1lh', border: '0', padding: '0', background: 'transparent',
 		color: 'var(--advanced-mermaid-fold-arrow)', font: 'inherit', cursor: 'pointer',
 	},
 	'.am-fold-arrow::before': {
-		content: '""', width: '5px', height: '5px', borderRight: '1.5px solid', borderBottom: '1.5px solid',
+		content: '""', width: '4px', height: '4px', borderRight: '1.5px solid', borderBottom: '1.5px solid',
 		transform: 'rotate(-45deg)',
 	},
 	'.am-fold-arrow[aria-expanded="true"]::before': { transform: 'translateY(-1px) rotate(45deg)' },
@@ -54,5 +58,9 @@ export const sourceTheme = EditorView.theme({
 		zIndex: 200,
 		backgroundColor: 'var(--advanced-mermaid-source-background)',
 	},
-	'.cm-lineNumbers .cm-gutterElement': { padding: '0 4px 0 3px', minWidth: '0' },
+	'.cm-lineNumbers .cm-gutterElement': {
+		padding: '0 4px 0 3px', minWidth: '0',
+		fontSize: 'var(--advanced-mermaid-line-number-font-size, inherit)',
+		color: 'var(--advanced-mermaid-line-number-text)',
+	},
 });

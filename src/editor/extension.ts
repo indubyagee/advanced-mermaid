@@ -1,5 +1,6 @@
 import { Prec, StateEffect, StateField, type Extension, type EditorState, type Transaction } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet } from '@codemirror/view';
+import { indentUnit } from '@codemirror/language';
 import { editorInfoField, editorLivePreviewField, type App, type Editor } from 'obsidian';
 import { createDetachedEl } from '../dom';
 import type { AdvancedMermaidSettings } from '../settings';
@@ -211,7 +212,8 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 					publishOwnership(view, active);
 				}
 				if (update.docChanged) editor?.syncFromParent(update);
-				if (update.state.tabSize !== update.startState.tabSize) editor?.syncIndentWidth();
+				if (update.state.tabSize !== update.startState.tabSize ||
+					update.state.facet(indentUnit) !== update.startState.facet(indentUnit)) editor?.syncIndentation();
 				if (update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refresh)))) {
 					// Refresh paint without replacing a mode bar and its adjacent live editor.
 					for (const bar of Array.from(view.dom.querySelectorAll<HTMLElement>('.advanced-mermaid-editor-mode'))) applyEditorStyle(bar, settings().liveEditor.style);

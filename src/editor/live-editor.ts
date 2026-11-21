@@ -1,6 +1,7 @@
 import { Compartment, EditorState, Transaction, type Extension } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, type ViewUpdate } from '@codemirror/view';
 import { defaultKeymap, indentWithTab, insertNewlineAndIndent, undo, redo } from '@codemirror/commands';
+import { indentUnit } from '@codemirror/language';
 import type { App } from 'obsidian';
 import { createDetachedEl } from '../dom';
 import type { AdvancedMermaidSettings } from '../settings';
@@ -313,10 +314,12 @@ export class LiveEditor {
 	}
 	private presentationExtensions(): Extension[] {
 		const options = this.settings().liveEditor;
-		return [sourceLanguage(this.inputMode), EditorState.tabSize.of(this.bridge.parent.state.tabSize),
+		const parent = this.bridge.parent.state;
+		return [sourceLanguage(this.inputMode), EditorState.tabSize.of(parent.tabSize),
+			indentUnit.of(parent.facet(indentUnit) === '\t' ? '\t' : '    '),
 			options.lineNumbers ? lineNumbers() : [], options.wrapSource ? EditorView.lineWrapping : []];
 	}
-	syncIndentWidth(): void {
+	syncIndentation(): void {
 		this.nested.dispatch({ effects: this.presentation.reconfigure(this.presentationExtensions()) });
 	}
 	private applySourceFontSize(): void {

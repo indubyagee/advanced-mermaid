@@ -13,6 +13,8 @@ export function editorStyleDefinitions(settings: AdvancedMermaidSettings, change
 		numberDefinition('Source font size', '8–40 px for Mermaid and CSS source. Defaults to 10 px. Reset to inherit the vault text size; diagram labels are separate.', () => editor.fontSizePx, value => { editor.fontSizePx = value ?? null; changed(); }, { min: 8, max: 40, step: 1, optional: true, fallback: 10, unit: 'px' }),
 		color('sourceText', 'Source font color', 'Text color for Mermaid and CSS source.'),
 		color('sourceBackground', 'Source background color', 'Background for the source pane and its line-number gutter.'),
+		numberDefinition('Line number font size', '8–40 px. Reset to use the source font size.', () => editor.style.lineNumberFontSizePx, value => { editor.style.lineNumberFontSizePx = value ?? null; changed(); }, { min: 8, max: 40, step: 1, optional: true, fallback: editor.fontSizePx ?? 10, unit: 'px' }),
+		color('lineNumberText', 'Line number font color', 'Text color for source line numbers.'),
 		color('indentGuide', 'Indent guide color', 'Indentation guides in Mermaid and CSS source.'),
 		color('foldArrow', 'Expand/collapse arrow color', 'Fold arrows next to indented source blocks.'),
 		numberDefinition('Button font size', '8–40 px for editor buttons and export controls. Reset to inherit the interface size.', () => editor.style.buttonFontSizePx, value => { editor.style.buttonFontSizePx = value ?? null; changed(); }, { min: 8, max: 40, step: 1, optional: true, fallback: 13, unit: 'px' }),

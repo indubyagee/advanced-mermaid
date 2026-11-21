@@ -10,12 +10,12 @@ void test('editor style additions preserve old source sizing and independently i
 	const previous = normalizeSettings({ schemaVersion: 4, liveEditor: { fontSizePx: 23, lineNumbers: false } });
 	assert.equal(previous.liveEditor.fontSizePx, 23);
 	assert.equal(previous.liveEditor.lineNumbers, false);
-	assert.deepEqual(previous.liveEditor.style, { buttonFontSizePx: null, buttonRadiusPx: null, colors: {}, zoom: inheritedZoom });
+	assert.deepEqual(previous.liveEditor.style, { lineNumberFontSizePx: null, buttonFontSizePx: null, buttonRadiusPx: null, colors: {}, zoom: inheritedZoom });
 	const style = normalizeEditorStyle({ buttonFontSizePx: 18, colors: {
 		sourceText: { light: 'rgba(12, 34, 56, .5)' }, sourceBackground: { dark: '#123' },
 		activeButtonText: { light: '#fff', dark: 'url(x)' }, unknown: { light: '#fff' },
 	} });
-	assert.deepEqual(style, { buttonFontSizePx: 18, buttonRadiusPx: null, colors: {
+	assert.deepEqual(style, { lineNumberFontSizePx: null, buttonFontSizePx: 18, buttonRadiusPx: null, colors: {
 		sourceText: { light: '#0c223880' }, sourceBackground: { dark: '#112233' }, activeButtonText: { light: '#ffffff' },
 	}, zoom: inheritedZoom });
 	assert.deepEqual(normalizeEditorStyle(JSON.parse(JSON.stringify(style))), style);
@@ -24,19 +24,23 @@ void test('editor style additions preserve old source sizing and independently i
 void test('every editor color pair and size survives settings persistence without shared defaults', () => {
 	const colors = Object.fromEntries(Object.keys(EDITOR_COLORS).map(key => [key, { light: '#12345680', dark: '#abcdef' }]));
 	for (const [size, radius] of [[8, 0], [16, 12], [40, 32]] as const) {
-		const settings = normalizeSettings({ liveEditor: { style: { buttonFontSizePx: size, buttonRadiusPx: radius, colors } } });
-		assert.deepEqual(settings.liveEditor.style, { buttonFontSizePx: size, buttonRadiusPx: radius, colors, zoom: inheritedZoom });
+		const settings = normalizeSettings({ liveEditor: { style: { lineNumberFontSizePx: size, buttonFontSizePx: size, buttonRadiusPx: radius, colors } } });
+		assert.deepEqual(settings.liveEditor.style, { lineNumberFontSizePx: size, buttonFontSizePx: size, buttonRadiusPx: radius, colors, zoom: inheritedZoom });
 		assert.deepEqual(normalizeSettings(JSON.parse(JSON.stringify(settings))), settings);
 	}
 	const first = normalizeSettings(null); first.liveEditor.style.colors.sourceText = { dark: '#ffffff' };
 	assert.deepEqual(normalizeSettings(null).liveEditor.style.colors, {});
-	for (const size of [null, '16', '16px', 7, 41, 8.5, NaN, Infinity]) assert.equal(normalizeEditorStyle({ buttonFontSizePx: size }).buttonFontSizePx, null);
+	for (const size of [null, '16', '16px', 7, 41, 8.5, NaN, Infinity]) {
+		const style = normalizeEditorStyle({ buttonFontSizePx: size, lineNumberFontSizePx: size });
+		assert.equal(style.buttonFontSizePx, null);
+		assert.equal(style.lineNumberFontSizePx, null);
+	}
 	for (const radius of [null, '0', '4px', -1, 33, 4.5, NaN, Infinity]) assert.equal(normalizeEditorStyle({ buttonRadiusPx: radius }).buttonRadiusPx, null);
 });
 
 void test('untrusted editor style records cannot inject CSS or getters', () => {
 	const accessor = Object.defineProperty({}, 'colors', { enumerable: true, get: () => { throw new Error('Must not evaluate'); } });
-	for (const style of [accessor, [], null, Object.create({ buttonFontSizePx: 20 })]) assert.deepEqual(normalizeEditorStyle(style), { buttonFontSizePx: null, buttonRadiusPx: null, colors: {}, zoom: inheritedZoom });
+	for (const style of [accessor, [], null, Object.create({ buttonFontSizePx: 20 })]) assert.deepEqual(normalizeEditorStyle(style), { lineNumberFontSizePx: null, buttonFontSizePx: null, buttonRadiusPx: null, colors: {}, zoom: inheritedZoom });
 	assert.deepEqual(normalizeEditorStyle({ colors: { sourceText: { light: '#fff; color:red', dark: 'var(--secret)' }, closeButtonBackground: { light: 'transparent' }, exportButtonText: ['#fff'] } }).colors, {});
 });
 

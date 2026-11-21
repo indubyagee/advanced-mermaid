@@ -28,9 +28,9 @@ export async function runEditorStyleChecks(page) {
 			const edit = (label, value) => { const input = tab.containerEl.querySelector(`input[aria-label="${label}"]`); input.value = value; input.dispatchEvent(new Event('input')); return input; };
 			const originalDiagram = getComputedStyle(host.querySelector('svg.pele text')).fill;
 			const originalDiagramSize = getComputedStyle(host.querySelector('svg.pele text')).fontSize;
-			const paired = tab.containerEl.querySelectorAll('input[type="color"]').length === 26;
+			const paired = tab.containerEl.querySelectorAll('input[type="color"]').length === 28;
 			const noClose = !tab.containerEl.textContent.includes('Close button') && ![...host.querySelectorAll('button')].some(button => button.textContent === 'Close Editor');
-			const sliders = tab.containerEl.querySelectorAll('input[type="range"]').length === 3;
+			const sliders = tab.containerEl.querySelectorAll('input[type="range"]').length === 4;
 			const radius = element => getComputedStyle(element).borderTopLeftRadius;
 			const themeDefaults = () =>
 				[...host.querySelectorAll('button, select, .advanced-mermaid-export summary')].every(control => getComputedStyle(control).borderTopWidth === '0px') &&
@@ -45,9 +45,11 @@ export async function runEditorStyleChecks(page) {
 			document.body.classList.remove('theme-dark');
 			const defaultCaret = [lightCaret, darkCaret];
 			edit('Source font size', '21'); edit('Button font size', '17');
+			edit('Line number font size', '34');
 			edit('Button corner radius slider', '14');
 			const values = {
 				'Source font color': ['#123456', '#abcdef'], 'Source background color': ['#f0e0d0', '#102030'],
+				'Line number font color': ['#123789', '#ba7654'],
 				'Indent guide color': ['#135724', '#ace024'], 'Expand/collapse arrow color': ['#246813', '#bdf135'],
 				'Active buttons font color': ['#223344', '#334455'], 'Inactive buttons font color': ['#445566', '#556677'],
 				'Export button font color': ['#8899aa', '#99aabb'],
@@ -79,10 +81,12 @@ export async function runEditorStyleChecks(page) {
 				});
 				const rounded = [...buttons.filter(button => !button.closest('.pele-zoom')), ...dropdowns].every(control => radius(control) === '14px');
 				const content = source.querySelector('.cm-content');
+				const lineNumber = getComputedStyle(source.querySelector('.cm-lineNumbers .cm-gutterElement'));
 				themes.push({ theme, source: paint(content)[0], caret: caretColor(), token: paint(content.querySelector('span'))[0], background: getComputedStyle(source.querySelector('.cm-editor')).backgroundColor,
 					guide: getComputedStyle(source.querySelector('.am-indent-guides')).backgroundImage,
 					arrow: getComputedStyle(source.querySelector('.am-fold-arrow')).color,
 					gutter: getComputedStyle(source.querySelector('.cm-gutters')).backgroundColor,
+					number: { font: lineNumber.fontSize, color: lineNumber.color, rowHeight: getComputedStyle(content.querySelector('.cm-line')).lineHeight },
 					font: getComputedStyle(content).fontSize, flat, dropdownsFlat, rounded, sizes: buttons.map(button => getComputedStyle(button).fontSize),
 					dropdowns: Object.fromEntries(dropdowns.map(select => [select.getAttribute('aria-label'), paint(select)])),
 					active: paint(editor.querySelector('button[aria-selected="true"]')), inactive: paint(editor.querySelector('.advanced-mermaid-draft-actions button')),
@@ -104,7 +108,7 @@ export async function runEditorStyleChecks(page) {
 			tab.containerEl.querySelector('[aria-label="Reset Export button border color Dark"]').click();
 			const inheritedExport = [getComputedStyle(exportSummary()).borderTopColor, settings.liveEditor.style.colors.exportButtonBorder.light];
 			for (const button of tab.containerEl.querySelectorAll('button[aria-label^="Reset "]')) button.click();
-			const reset = settings.liveEditor.fontSizePx === null && settings.liveEditor.style.buttonFontSizePx === null &&
+			const reset = settings.liveEditor.fontSizePx === null && settings.liveEditor.style.lineNumberFontSizePx === null && settings.liveEditor.style.buttonFontSizePx === null &&
 				settings.liveEditor.style.buttonRadiusPx === null && Object.keys(settings.liveEditor.style.colors).length === 0 && themeDefaults();
 			document.body.classList.remove('theme-dark');
 			const diagramUnchanged = getComputedStyle(host.querySelector('svg.pele text')).fill === originalDiagram && getComputedStyle(host.querySelector('svg.pele text')).fontSize === originalDiagramSize;
@@ -122,6 +126,7 @@ export async function runEditorStyleChecks(page) {
 			assert.equal(result.caret, result.source, 'The source caret follows the selected source color');
 			assert.equal(result.token, result.source, 'The selected source color applies to syntax tokens');
 			assert.equal(result.font, '21px'); assert.ok(result.sizes.every(size => size === '17px'), JSON.stringify(result.sizes));
+			assert.deepEqual(result.number, { font: '34px', color: rgb(i ? 'ba7654' : '123789'), rowHeight: '34px' });
 			assert.ok(result.guide.includes(rgb(i ? 'ace024' : '135724'))); assert.equal(result.arrow, rgb(i ? 'bdf135' : '246813'));
 			assert.ok(result.flat && result.dropdownsFlat && result.rounded, `Flat controls with the configured radius in ${result.theme}`);
 			const colors = {

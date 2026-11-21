@@ -15,9 +15,10 @@ export async function runSourceToolsChecks(page) {
 		const text = 'Before\n\n```pele\n' + source + '\n```\n\nAfter';
 		const language = new fixture.Language(fixture.defineLanguageFacet(), fixture.markdownParser);
 		const indentWidth = new fixture.Compartment();
-		const view = new fixture.EditorView({ parent: host, state: fixture.EditorState.create({ doc: text, extensions: [language, indentWidth.of(fixture.EditorState.tabSize.of(4)), fixture.history(), fixture.editorInfoField, fixture.editorLivePreviewField, inline.extension] }) });
+		const indentation = new fixture.Compartment();
+		const view = new fixture.EditorView({ parent: host, state: fixture.EditorState.create({ doc: text, extensions: [language, indentWidth.of(fixture.EditorState.tabSize.of(4)), indentation.of(fixture.indentUnit.of('    ')), fixture.history(), fixture.editorInfoField, fixture.editorLivePreviewField, inline.extension] }) });
 		view.dispatch({ selection: { anchor: text.indexOf('flowchart TD') } }); view.focus(); inline.toggle();
-		window.sourceToolsFixture = { host, settings, inline, view, source, indentWidth,
+		window.sourceToolsFixture = { host, settings, inline, view, source, indentWidth, indentation,
 			nested: () => fixture.EditorView.findFromDOM(fixture.sourceRoot(host).querySelector('.cm-editor')) };
 	});
 	const foldCount = () => page.evaluate(() => fixture.foldedRanges(sourceToolsFixture.nested().state).size);
@@ -38,6 +39,19 @@ export async function runSourceToolsChecks(page) {
 		});
 		for (const themeColors of colors) assert.equal(new Set(themeColors).size, 7, 'Distinct visible token colors in each theme');
 		assert.ok(colors[0].every((value, index) => value !== colors[1][index]), 'Token colors switch with the theme');
+		for (const char of ['    ', '\t']) {
+			await page.evaluate(char => {
+				const f = sourceToolsFixture;
+				f.view.dispatch({ effects: f.indentation.reconfigure(fixture.indentUnit.of(char)) });
+				const nested = f.nested();
+				nested.dispatch({ selection: { anchor: nested.state.doc.line(7).to } });
+				nested.focus();
+			}, char);
+			await page.keyboard.press('Tab');
+			assert.ok(await page.evaluate(char => sourceToolsFixture.view.state.doc.toString().includes('\n' + char + 'flowchart TD\n'), char), 'Tab forwards the configured indentation to the note');
+			await page.keyboard.press('Shift+Tab');
+			assert.ok(await page.evaluate(() => sourceToolsFixture.nested().state.doc.toString() === sourceToolsFixture.source), 'Shift+Tab removes the same indentation');
+		}
 		await page.waitForTimeout(500); // Let initial preview work settle before counting fold-only activity.
 		await page.evaluate(() => {
 			const f = sourceToolsFixture;
