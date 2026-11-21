@@ -24,13 +24,27 @@ void test('source highlights every catalog declaration and compatibility aliases
 void test('source distinguishes YAML, directives, keywords, connectors, labels and comments', () => {
 	const source = '---\ntitle: "Example"\nconfig:\n  theme: base # comment\n---\n%%{init: {"theme": "base"}}%%\nflowchart TD\nsubgraph Group\n A-->B["Quoted label"] %% note\nend';
 	const highlighted = tokens(source);
-	for (const [text, style] of [['---', 'frontmatter'], ['title:', 'frontmatter'], ['"Example"', 'string'], ['# comment', 'comment'],
+	for (const [text, style] of [['title:', 'frontmatter-key'], ['"Example"', 'frontmatter-value'], ['base', 'frontmatter-value'], ['# comment', 'comment'],
 		['%%{init: {"theme": "base"}}%%', 'directive'], ['flowchart', 'declaration'], ['subgraph', 'keyword'], ['-->', 'operator'], ['"Quoted label"', 'string'], ['%% note', 'comment']]) {
 		assert.ok(highlighted.some(item => item.text === text && item.style === 'am-source-' + style), JSON.stringify({ text, highlighted }));
 	}
 	assert.deepEqual(tokens('weekend graphNode subgraphical A-->>B').filter(item => item.style !== 'am-source-operator'), []);
 	for (const keyword of ['x-axis', 'y-axis', 'axis', 'curve', 'participant', 'direction', 'classDef']) assert.deepEqual(tokens(keyword), [{ text: keyword, style: 'am-source-keyword' }]);
 	for (const connector of ['o--o', '<-->', '-.->', '-->>', '}o--||']) assert.deepEqual(tokens(connector), [{ text: connector, style: 'am-source-operator' }]);
+});
+
+void test('frontmatter distinguishes keys from flow, list and multiline values', () => {
+	const source = `\n---\nconfig: {"quoted key":12, theme: dark}\nitems:\n  - name: 'It''s a value'
+    count: 2
+description: |-
+  looks like a key: still a value
+title: "Unfinished
+  still quoted`;
+	const highlighted = tokens(source);
+	const texts = (type: string) => highlighted.filter(item => item.style === 'am-source-frontmatter-' + type).map(item => item.text);
+	assert.deepEqual(texts('key'), ['config:', '"quoted key":', 'theme:', 'items:', 'name:', 'count:', 'description:', 'title:']);
+	assert.deepEqual(texts('value'), ['12', 'dark', "'It''s a value'", '2', '|-', '  looks like a key: still a value', '"Unfinished', '  still quoted']);
+	assert.ok(tokens('---\nconfig: {theme: base\n---\nflowchart TD').some(item => item.style === 'am-source-declaration'));
 });
 
 void test('incomplete quoted labels and directives retain styling through continued edits', () => {

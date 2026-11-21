@@ -50,10 +50,14 @@ void test('syntax settings preserve valid per-token overrides and discard invali
 		declaration: { colors: { light: 'rgba(1, 2, 3, 0.5)', dark: 'var(--invalid)' }, weight: 400 },
 		comment: { weight: 650, colors: { dark: '#abc' } },
 		keyword: { weight: '700' }, operator: accessor, unknown: { weight: 900 },
+		frontmatter: { colors: { light: '#135' }, weight: 500 },
+		'frontmatter-value': { colors: { dark: '#246' }, weight: 700 },
 	} } } });
 	assert.deepEqual(settings.liveEditor.style.syntax, {
 		declaration: { colors: { light: '#01020380' }, weight: 400 },
 		comment: { colors: { dark: '#aabbcc' } },
+		'frontmatter-key': { colors: { light: '#113355' }, weight: 500 },
+		'frontmatter-value': { colors: { dark: '#224466' }, weight: 700 },
 	});
 	assert.deepEqual(normalizeSettings(JSON.parse(JSON.stringify(settings))), settings);
 });

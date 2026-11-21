@@ -13,7 +13,7 @@ export async function runEditorStyleChecks(page) {
 	await page.evaluate(() => {
 		const host = document.body.createDiv({ cls: 'editor-style-fixture' }); host.style.width = '900px';
 		const settings = fixture.normalizeSettings(null); const inline = fixture.createInlineExtension(fixture.app, () => settings);
-		const text = 'Before\n\n```pele\nflowchart LR\n A[Start] --> B[End]\n```\n\nAfter';
+		const text = 'Before\n\n```pele\n---\ntitle: "Example"\n---\nflowchart LR\n A[Start] --> B[End]\n```\n\nAfter';
 		const language = new fixture.Language(fixture.defineLanguageFacet(), fixture.markdownParser);
 		const view = new fixture.EditorView({ parent: host, state: fixture.EditorState.create({ doc: text, extensions: [language, fixture.history(), fixture.editorInfoField, fixture.editorLivePreviewField, inline.extension] }) });
 		view.dispatch({ selection: { anchor: text.indexOf('flowchart') } }); view.focus(); inline.toggle();
@@ -208,6 +208,13 @@ async function checkSyntaxAppearance(page) {
 		const resetDark = style('declaration');
 		document.body.classList.remove('theme-dark');
 		const resetLight = style('declaration');
+		edit('Frontmatter keys color Light', '#294563');
+		edit('Frontmatter keys font weight', '700', 'change');
+		edit('Frontmatter values color Light', '#792415');
+		edit('Frontmatter values font weight', '500', 'change');
+		const frontmatter = [style('frontmatter-key'), style('frontmatter-value')];
+		tab.containerEl.querySelector('[aria-label="Reset Frontmatter keys color Light"]').click();
+		const resetKey = [style('frontmatter-key'), style('frontmatter-value')];
 		const noteUnchanged = view.state.doc.toString() === originalNote;
 		edit('CSS property color Light', '#183759');
 		edit('CSS property font weight', '600', 'change');
@@ -216,7 +223,7 @@ async function checkSyntaxAppearance(page) {
 		nested.dispatch({ changes: { from: 0, insert: '.pele { --pele-fg: #abc; }' } });
 		const css = style('property');
 		inline.refresh();
-		return { swatches, light, dark, invalid, saved, resetDark, resetLight, noteUnchanged, css };
+		return { swatches, light, dark, invalid, saved, resetDark, resetLight, frontmatter, resetKey, noteUnchanged, css };
 	});
 	assert.deepEqual(report.swatches, ['#334455', '#79c0ff']);
 	assert.deepEqual(report.light, [['rgb(171, 18, 52)', '400'], ['rgb(51, 68, 85)', '800']]);
@@ -225,6 +232,8 @@ async function checkSyntaxAppearance(page) {
 	assert.deepEqual(report.saved, { declaration: { colors: { light: '#ab1234', dark: '#abcdef' }, weight: 400 }, keyword: { weight: 800 } });
 	assert.deepEqual(report.resetDark, ['rgb(121, 192, 255)', '700']);
 	assert.deepEqual(report.resetLight, ['rgb(171, 18, 52)', '700']);
+	assert.deepEqual(report.frontmatter, [['rgb(41, 69, 99)', '700'], ['rgb(121, 36, 21)', '500']]);
+	assert.deepEqual(report.resetKey, [['rgb(51, 68, 85)', '700'], ['rgb(121, 36, 21)', '500']]);
 	assert.deepEqual(report.css, ['rgb(24, 55, 89)', '600']);
 	assert.ok(report.noteUnchanged);
 }

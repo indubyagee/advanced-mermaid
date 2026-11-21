@@ -8,7 +8,8 @@ export const SOURCE_HIGHLIGHTS = {
 	operator: { label: 'Operator', light: '#9a3412', dark: '#ffa657', selector: '.am-source-operator, .cm-operator' },
 	string: { label: 'String', light: '#116329', dark: '#7ee787', selector: '.am-source-string, .cm-string' },
 	comment: { label: 'Comment', light: '#57606a', dark: '#9da7b3', selector: '.am-source-comment, .cm-comment', italic: true },
-	frontmatter: { label: 'Frontmatter', light: '#0e6975', dark: '#76d9e6', selector: '.am-source-frontmatter, .cm-frontmatter' },
+	'frontmatter-key': { label: 'Frontmatter keys', light: '#0e6975', dark: '#76d9e6', selector: '.am-source-frontmatter-key, .cm-frontmatter-key' },
+	'frontmatter-value': { label: 'Frontmatter values', light: '#0e6975', dark: '#76d9e6', selector: '.am-source-frontmatter-value, .cm-frontmatter-value' },
 	directive: { label: 'Directive', light: '#95386f', dark: '#ff9bce', selector: '.am-source-directive, .cm-directive' },
 	number: { label: 'Number and color literal', light: '#754b00', dark: '#e3c46d', selector: '.am-source-number, .cm-number, .cm-atom' },
 	property: { label: 'CSS property', light: '#754b00', dark: '#e3c46d', selector: '.am-source-property, .cm-property' },
@@ -29,7 +30,7 @@ export function normalizeSourceHighlights(value: unknown): SourceHighlightSettin
 	const result: SourceHighlightSettings = {};
 	if (!isStyleRecord(value)) return result;
 	for (const token of SOURCE_HIGHLIGHT_TOKENS) {
-		const saved = value[token];
+		const saved = value[token] ?? (token === 'frontmatter-key' || token === 'frontmatter-value' ? value.frontmatter : undefined);
 		if (!isStyleRecord(saved)) continue;
 		const colors: ColorPair = {};
 		const raw = saved.colors;

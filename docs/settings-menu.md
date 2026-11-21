@@ -124,7 +124,7 @@ Live Editor buttons use flat styling with distinct selected states and visible k
 | --- | --- | --- |
 | Source font size | 10 px | 8–40 px integer input and slider. Reset or leave empty to inherit the vault text size. Applies to Mermaid and CSS source. |
 | Source font color | Inherit | Paired light and dark colors. A custom source color also applies to tokens that have no color override for that theme. |
-| Syntax highlighting | Opens a page | Choose light and dark colors and a font weight from 100 to 900 for each Mermaid and CSS token category. Reset either color or choose **Default** weight to restore the inherited style. |
+| Syntax highlighting | Opens a page | Choose light and dark colors and a font weight from 100 to 900 for each Mermaid and CSS token category. Frontmatter keys and values have separate controls. Reset either color or choose **Default** weight to restore the inherited style. |
 | Source background color | Inherit | Paired controls for the source background and line-number gutter. |
 | Line number font size | Use source font size | 8–40 px integer input and slider. Reset to use the source font size. |
 | Line number font color | Inherit | Paired light and dark colors. Reset either color to use the theme’s muted text color. |

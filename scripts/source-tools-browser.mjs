@@ -29,7 +29,7 @@ export async function runSourceToolsChecks(page) {
 			const result = [];
 			for (const dark of [false, true]) {
 				document.body.classList.toggle('theme-dark', dark);
-				result.push(['declaration', 'keyword', 'operator', 'string', 'comment', 'frontmatter', 'directive'].map(type => {
+				result.push(['declaration', 'keyword', 'operator', 'string', 'comment', 'frontmatter-key', 'directive'].map(type => {
 					const token = root.querySelector('.am-source-' + type);
 					return getComputedStyle(token).color;
 				}));

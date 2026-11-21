@@ -1,7 +1,7 @@
 import { StreamLanguage, syntaxHighlighting, HighlightStyle, type StringStream } from '@codemirror/language';
 import * as hostLanguage from '@codemirror/language';
 import type { Extension } from '@codemirror/state';
-import { tags } from '@lezer/highlight';
+import { Tag, tags } from '@lezer/highlight';
 import { DIAGRAM_SYNTAX } from './syntax/catalog';
 
 const declarations = new Set([...DIAGRAM_SYNTAX.map(item => item.declaration.toLowerCase()),
@@ -19,26 +19,95 @@ const keywords = new Set(('participant actor activate deactivate create destroy 
 	'Person Person_Ext System System_Ext Container Component Rel Boundary System_Boundary Container_Boundary Deployment_Node ' +
 	'LR TD TB BT RL horizontal vertical').split(/\s+/));
 
-function quoted(stream: StringStream, state: { quote: string | null }): string {
+function quoted(stream: StringStream, state: { quote: string | null }, yaml = false): void {
 	while (!stream.eol()) {
 		const char = stream.next();
-		if (char === '\\') stream.next();
-		else if (char === state.quote) { state.quote = null; break; }
+		if (char === '\\' && (!yaml || state.quote === '"')) stream.next();
+		else if (char === state.quote) {
+			if (yaml && char === "'" && stream.eat("'")) continue;
+			state.quote = null;
+			break;
+		}
 	}
-	return 'string';
 }
 
-const mermaid = StreamLanguage.define({
-	startState: () => ({ firstLine: true, frontmatter: false, directive: false, quote: null as string | null }),
-	blankLine(state) { state.firstLine = false; },
-	tokenTable: { declaration: tags.typeName, frontmatter: tags.meta, directive: tags.processingInstruction },
-	token(stream, state) {
-		if (state.firstLine) {
-			state.firstLine = false;
-			if (stream.match(/^\uFEFF?---\s*$/)) { state.frontmatter = true; return 'frontmatter'; }
+interface FrontmatterState {
+	quote: string | null;
+	flowDepth: number;
+	keyAllowed: boolean;
+	indent: number;
+	blockIndent: number | null;
+}
+
+// Highlight editable YAML without requiring the frontmatter to parse successfully.
+function frontmatterToken(stream: StringStream, state: FrontmatterState): string | null {
+	if (state.quote) { quoted(stream, state, true); return 'frontmatter-value'; }
+	if (stream.sol()) {
+		state.indent = stream.indentation();
+		if (state.blockIndent !== null && state.indent > state.blockIndent) {
+			stream.skipToEnd();
+			return 'frontmatter-value';
 		}
-		if (state.quote) return quoted(stream, state);
-		if (state.frontmatter && stream.sol() && stream.match(/^(?:---|\.\.\.)\s*$/)) { state.frontmatter = false; return 'frontmatter'; }
+		state.blockIndent = null;
+		if (!state.flowDepth) state.keyAllowed = true;
+	}
+	if (stream.eatSpace()) return null;
+	if (stream.match('#')) { stream.skipToEnd(); return 'comment'; }
+	if (state.keyAllowed && stream.match(/^-(?=[ \t]|$)/)) return null;
+	if (state.keyAllowed && stream.match(/^(?:(?:"(?:\\.|[^"\\])*"|'(?:''|[^'])*')[ \t]*:|[^\s"'#[\]{},:][^#[\]{},:]*:(?=[ \t[\]{},]|$))/)) {
+		if (!state.flowDepth) state.indent = stream.column();
+		state.keyAllowed = false;
+		return 'frontmatter-key';
+	}
+	const next = stream.peek();
+	if (next === '{' || next === '[') {
+		stream.next();
+		state.flowDepth++;
+		state.keyAllowed = next === '{';
+		return null;
+	}
+	if (state.flowDepth && (next === '}' || next === ']' || next === ',')) {
+		stream.next();
+		if (next !== ',') state.flowDepth--;
+		state.keyAllowed = next === ',';
+		return null;
+	}
+	state.keyAllowed = false;
+	if (!state.flowDepth && stream.match(/^[|>](?:[1-9][+-]?|[+-][1-9]?)?(?=[ \t]|$)/)) {
+		state.blockIndent = state.indent;
+	} else if (next === '"' || next === "'") {
+		state.quote = stream.next()!;
+		quoted(stream, state, true);
+	} else if (!stream.match(state.flowDepth ? /^[^\s,[\]{}]+/ : /^\S+/)) {
+		stream.next();
+	}
+	return 'frontmatter-value';
+}
+
+const frontmatterKeyTag = Tag.define();
+const frontmatterValueTag = Tag.define();
+
+const mermaid = StreamLanguage.define({
+	startState: () => ({ preamble: true, frontmatter: null as FrontmatterState | null, directive: false, quote: null as string | null }),
+	copyState: state => ({ ...state, frontmatter: state.frontmatter && { ...state.frontmatter } }),
+	tokenTable: { declaration: tags.typeName, 'frontmatter-key': frontmatterKeyTag, 'frontmatter-value': frontmatterValueTag, directive: tags.processingInstruction },
+	token(stream, state) {
+		if (state.preamble) {
+			if (stream.match(/^[ \t]+$/)) return null;
+			state.preamble = false;
+			if (stream.match(/^\uFEFF?---\s*$/)) {
+				state.frontmatter = { quote: null, flowDepth: 0, keyAllowed: true, indent: 0, blockIndent: null };
+				return null;
+			}
+		}
+		if (state.frontmatter) {
+			if (stream.sol() && !state.frontmatter.quote && stream.match(/^(?:---|\.\.\.)\s*$/)) {
+				state.frontmatter = null;
+				return null;
+			}
+			return frontmatterToken(stream, state.frontmatter);
+		}
+		if (state.quote) { quoted(stream, state); return 'string'; }
 		if (stream.eatSpace()) return null;
 		if (state.directive || stream.match('%%{')) {
 			state.directive = !stream.match(/^.*?}%%/);
@@ -46,9 +115,7 @@ const mermaid = StreamLanguage.define({
 			return 'directive';
 		}
 		if (stream.match('%%')) { stream.skipToEnd(); return 'comment'; }
-		if (state.frontmatter && stream.match('#')) { stream.skipToEnd(); return 'comment'; }
-		if (stream.peek() === '"' || stream.peek() === "'") { state.quote = stream.next()!; return quoted(stream, state); }
-		if (state.frontmatter) { stream.match(/[^\s"'#]+/); return 'frontmatter'; }
+		if (stream.peek() === '"' || stream.peek() === "'") { state.quote = stream.next()!; quoted(stream, state); return 'string'; }
 		if (stream.match(/(?:[<|}]+|[ox*](?=[-=.]{2}))?[-=.]+(?:[>|ox*{]+|\))?/)) return 'operator';
 		// Consume identifiers whole so a node such as `weekend` is not a keyword suffix.
 		const word = stream.match(/^[\p{L}_][\p{L}\p{N}_]*(?:-[\p{L}\p{N}_]+)*/u);
@@ -81,7 +148,8 @@ const sourceHighlightStyle = HighlightStyle.define([
 	{ tag: tags.operator, class: 'am-source-operator' },
 	{ tag: tags.string, class: 'am-source-string' },
 	{ tag: tags.comment, class: 'am-source-comment' },
-	{ tag: tags.meta, class: 'am-source-frontmatter' },
+	{ tag: frontmatterKeyTag, class: 'am-source-frontmatter-key' },
+	{ tag: frontmatterValueTag, class: 'am-source-frontmatter-value' },
 	{ tag: tags.processingInstruction, class: 'am-source-directive' },
 	{ tag: [tags.number, tags.atom], class: 'am-source-number' },
 	{ tag: tags.propertyName, class: 'am-source-property' },

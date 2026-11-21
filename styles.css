@@ -347,7 +347,8 @@
 	--am-highlight-operator: var(--am-highlight-operator-light);
 	--am-highlight-string: var(--am-highlight-string-light);
 	--am-highlight-comment: var(--am-highlight-comment-light);
-	--am-highlight-frontmatter: var(--am-highlight-frontmatter-light);
+	--am-highlight-frontmatter-key: var(--am-highlight-frontmatter-key-light);
+	--am-highlight-frontmatter-value: var(--am-highlight-frontmatter-value-light);
 	--am-highlight-directive: var(--am-highlight-directive-light);
 	--am-highlight-number: var(--am-highlight-number-light);
 	--am-highlight-property: var(--am-highlight-property-light);
@@ -369,7 +370,8 @@
 	--am-highlight-operator: var(--am-highlight-operator-dark);
 	--am-highlight-string: var(--am-highlight-string-dark);
 	--am-highlight-comment: var(--am-highlight-comment-dark);
-	--am-highlight-frontmatter: var(--am-highlight-frontmatter-dark);
+	--am-highlight-frontmatter-key: var(--am-highlight-frontmatter-key-dark);
+	--am-highlight-frontmatter-value: var(--am-highlight-frontmatter-value-dark);
 	--am-highlight-directive: var(--am-highlight-directive-dark);
 	--am-highlight-number: var(--am-highlight-number-dark);
 	--am-highlight-property: var(--am-highlight-property-dark);
