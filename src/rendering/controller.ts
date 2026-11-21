@@ -58,7 +58,7 @@ export class DiagramController extends Component {
 
 	constructor(readonly containerEl: HTMLElement, private source: string,
 		private readonly settings: () => AdvancedMermaidSettings, private readonly app: App,
-		private readonly sourcePath: string, private readonly options: ControllerOptions = {}) {
+		private readonly sourcePath: string | (() => string), private readonly options: ControllerOptions = {}) {
 		super();
 	}
 	setSource(source: string): void {
@@ -80,6 +80,7 @@ export class DiagramController extends Component {
 		this.actions?.setValid(false);
 	}
 	async snapshot(): Promise<SvgSnapshot> { return this.captureExport().snapshot(); }
+	closeExportModal(): void { this.actions.closeModal(); }
 	destroy(): void { this.unload(); }
 	onload(): void {
 		this.disposed = false;

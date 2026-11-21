@@ -5,6 +5,7 @@ import { scheduleDiagramEnvironmentRefresh } from './rendering/environment';
 import { AdvancedMermaidSettingTab } from './ui/settings-tab';
 import { createInlineExtension, type InlineExtension } from './editor/extension';
 import { RecoveryModal } from './ui/recovery-modal';
+import { FullScreenEditor, FullScreenView, fullScreenViewType } from './editor/full-screen';
 import { coversBlock, inlineOwner, observeOwnership, type InlineOwner, type OwnershipChange } from './editor/ownership';
 
 interface RenderedBlock { element: HTMLElement; file: string; line: () => number | undefined; editor?: HTMLElement }
@@ -25,7 +26,9 @@ export default class AdvancedMermaidPlugin extends Plugin {
 		this.futureSchema = isFutureSettingsSchema(saved);
 		this.settings = normalizeSettings(saved);
 		if (this.futureSchema) new Notice('These diagram settings were saved by a newer plugin. Preferences will not be overwritten.');
-		this.inline = createInlineExtension(this.app, () => this.settings);
+		const fullScreen = new FullScreenEditor(this.app.workspace, () => this.settings.liveEditor.fullScreen);
+		this.registerView(fullScreenViewType, leaf => new FullScreenView(leaf));
+		this.inline = createInlineExtension(this.app, () => this.settings, fullScreen);
 		this.registerEditorExtension(this.inline.extension);
 		this.addCommand({ id: 'toggle-inline-editor', name: 'Toggle inline editor', editorCheckCallback: (checking, editor) => this.inline?.toggle(checking, editor) ?? false });
 		this.addCommand({ id: 'render-inline-diagram', name: 'Render inline diagram', editorCheckCallback: (checking, editor) => this.inline?.render(checking, editor) ?? false });
@@ -57,6 +60,7 @@ export default class AdvancedMermaidPlugin extends Plugin {
 			this.persistSettings();
 			for (const child of this.diagrams) child.unload();
 			this.diagrams.clear();
+			fullScreen.destroy();
 			this.inline?.destroy();
 		});
 	}

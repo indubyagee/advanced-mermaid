@@ -5,10 +5,11 @@ import { editorStyleDefinitions } from './editor-style-settings';
 
 export function liveEditorDefinitions(settings: AdvancedMermaidSettings, changed: () => void): (SettingDefinition | SettingDefinitionPage)[] {
 	const editor = settings.liveEditor;
-	const toggle = (key: 'enabled' | 'lineNumbers' | 'wrapSource', name: string, desc: string): SettingDefinition =>
+	const toggle = (key: 'enabled' | 'fullScreen' | 'lineNumbers' | 'wrapSource', name: string, desc: string): SettingDefinition =>
 		rowDefinition(name, desc, row => row.addToggle(input => input.setValue(editor[key]).onChange(value => { editor[key] = value; changed(); })));
 	return [
 		toggle('enabled', 'Enable inline editor', 'Edit complete, top-level pele and mermaid blocks in Live Preview.'),
+		toggle('fullScreen', 'Full-screen Live Editor (experimental)', 'Open the active diagram in a dedicated tab. Keep its note open in Live Preview.'),
 		rowDefinition(
 			'Open editor',
 			'Open the editor manually or when a diagram block gets focus.',

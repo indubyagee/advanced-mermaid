@@ -41,6 +41,7 @@ export const app = { plugins: { manifests: {}, plugins: {} }, vault: {
 	},
 	createBinary: (path: string, data: ArrayBuffer) => { saved.set(path, data); return Promise.resolve(); },
 }, workspace: {
+	detachLeavesOfType: () => {},
 	on: () => ({}),
 	getLeaf: () => ({
 		openFile: (file: { path: string }) => { opened.push(file.path); return Promise.resolve(); },

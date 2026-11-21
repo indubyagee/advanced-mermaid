@@ -27,6 +27,8 @@ export class MarkdownRenderChild {
 
 export class TFolder { constructor(readonly path = '/') {} }
 export class Component extends MarkdownRenderChild { constructor() { super(undefined as unknown as HTMLElement); } }
+export class ItemView extends Component {}
+export class MarkdownView extends ItemView {}
 
 /** Lifecycle/processor registration adapter for testing the actual plugin entry. */
 export class Plugin extends Component {
@@ -37,6 +39,7 @@ export class Plugin extends Component {
 	loadData(): Promise<unknown> { return Promise.resolve(this.data); }
 	saveData(data: unknown): Promise<void> { this.data = data; return Promise.resolve(); }
 	registerEditorExtension(extension: unknown): void { this.extensions.push(extension); }
+	registerView(_type: string, _create: unknown): void {}
 	addCommand(_command: unknown): void {}
 	addSettingTab(_tab: unknown): void {}
 	registerEvent(_event: unknown): void {}
