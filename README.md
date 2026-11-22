@@ -1,28 +1,31 @@
 # Advanced Mermaid
 
-[![Latest release](https://img.shields.io/github/v/release/indubyagee/advanced-mermaid?logo=github&logoColor=white)](https://github.com/indubyagee/advanced-mermaid/releases/latest)
+[![MIT License](https://img.shields.io/github/license/indubyagee/advanced-mermaid)](LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/indubyagee/advanced-mermaid?style=flat&logo=github&logoColor=white)](https://github.com/indubyagee/advanced-mermaid/releases/latest)
 [![GitHub stars](https://img.shields.io/github/stars/indubyagee/advanced-mermaid?style=flat&logo=github&logoColor=white)](https://github.com/indubyagee/advanced-mermaid)
-[![MIT license](https://img.shields.io/github/license/indubyagee/advanced-mermaid)](LICENSE)
 [![Obsidian downloads](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json&query=%24%5B%27advanced-mermaid%27%5D.downloads&label=Obsidian%20downloads&logo=obsidian&logoColor=white&color=483699&cacheSeconds=3600)](https://community.obsidian.md/plugins/advanced-mermaid)
 [![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-24292F?logo=kofi&logoColor=FF6433)][ko-fi]
 [![Support on Buy Me a Coffee](https://img.shields.io/badge/Buy_Me_a_Coffee-24292F?logo=buymeacoffee&logoColor=FFDD00)][buy-me-a-coffee]
 
-Edit a Mermaid diagram and see it update in the same Obsidian note. Advanced Mermaid lets you match diagrams to the vault theme, reuse styles and presets across notes, export diagrams as SVG or PNG, and turn Flowchart and Agentflow diagrams into editable Obsidian Canvases.
+Edit Mermaid diagrams inside inline and full-screen Live Editors. Advanced Mermaid lets you match diagrams to the vault theme, reuse styles and presets across notes, export diagrams as SVG or PNG, and turn Flowchart and Agentflow diagrams into editable Obsidian Canvases.
+
+**Requires Obsidian 1.14.5 or later on desktop.**
+
+![Advanced Mermaid 0.4.0 preview](docs/media/advanced-mermaid-0.4.0-preview.webp)
 
 ````markdown
 ```mermaid
 flowchart TD
-    A["Write Mermaid"] --> B["Preview diagram"]
-    B --> C{"Ready to share?"}
-    C -->|Not yet| D["Edit in place"]
+    A["Write Mermaid"]:::INPUT
+	A ==> B["Preview diagram"]
+    B ==> C{"Ready to share?"}:::DECISION
+    C -->|No| D["Edit diagram"]:::PENDING
     D -.-> B
-    C -->|Yes| E["Export SVG or PNG"]
+    C -->|Yes| E["Export diagram"]:::OUTPUT
 ```
 ````
 
 ![Live editor](docs/media/preview-light-flowchart-latest.png)
-
-**Requires Obsidian 1.14.5 or later on desktop.**
 
 ## Installation
 
@@ -44,7 +47,7 @@ flowchart LR
 ```
 ````
 
-In **Live Preview**, add a blank line after the block and move the cursor there to see the flowchart. Select **Live editor** above the diagram and change `Draft` to `Plan` in the source. The preview updates as you type. You can also view the diagram in **Reading view**.
+In **Live Preview**, add a blank line after the block and move the cursor there to see the flowchart. Select **Live editor** above the diagram and change `Draft` to `Plan` in the source. The preview updates as you type. Select **Open full-screen** to move the editor into a dedicated tab. You can also view the diagram in **Reading view**.
 
 While the plugin is enabled, it renders both `mermaid` and `pele` code blocks using Pele, a Mermaid-compatible renderer. Some diagrams may look different because Pele handles layout and styling in its own way. [Pele compatibility](https://pele.run/compatibility)
 

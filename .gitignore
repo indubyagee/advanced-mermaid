@@ -39,6 +39,8 @@ data.json
 
 # Private planning, development notes, agent state, and local snapshots
 /.private/
+/.vault/
+/.vaults/
 /.local/
 /.agents/
 /.codex/

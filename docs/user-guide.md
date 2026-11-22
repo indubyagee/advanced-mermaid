@@ -32,10 +32,11 @@ You can open one Live editor per note pane. Reading view and note embeds show th
 
 In the Live editor, use the **Mermaid** tab to write diagram text. Edits go directly into the note and share its undo history. The **Pele** tab shows the rendered diagram, and **SVG** shows its read-only vector markup. Use **CSS** for styles that apply to this block only.
 
-- Use **Diagram** to set the diagram type or direction, and **Component** to insert a snippet for that type. **Insert configuration** adds editable YAML settings at the top of the block. Review the body after changing diagram types, since it may use syntax from the previous type. [Live editor syntax controls](live-editor-syntax.md)
+- Select **Open full-screen** to move the editor and its preview to a dedicated tab. Keep the source note open in Live Preview, then use **Return to note** to continue editing there. If the source note closes, switches to Reading view, or loses the block, copy any recovery text before closing the dedicated tab.
+- Use **Diagram** to select a family and **Orientation** to apply its direction when available. **Component** inserts a snippet, **Presets / Palette** offers saved classes and series colors, and **Syntax Docs** opens the diagram reference. **Insert configuration** adds editable YAML at the top of the block. Review the body after switching families. [Live editor syntax controls](live-editor-syntax.md)
 - Select **Render now** or press **Ctrl+Enter** or **Cmd+Enter** if you want to refresh immediately. Press **Esc** to return to the rendered diagram. **Tab** indents source lines with a tab or four spaces, following Obsidian’s **Indent using tabs** setting. **Shift+Tab** outdents them.
 - Use the arrows next to block headers to fold or expand indented source. **Ctrl+Shift+[** folds and **Ctrl+Shift+]** expands. On macOS, use **Cmd+Alt+[** and **Cmd+Alt+]**. Guides follow Obsidian’s **Indent visual width** and appear beneath expanded arrows. Indent guides and fold arrows have separate light and dark colors under **Live Editor → Editor appearance**.
-- Use **+**, **−**, and **Reset zoom** to inspect a diagram. After zooming, drag to pan or focus the diagram and use the arrow keys.
+- Use **+**, **−**, and **Reset zoom** to inspect a diagram. After zooming, drag to pan or focus the diagram and use the arrow keys. Change the buttons’ corner and orientation under **General → Zoom controls**. [Zoom controls](settings-menu.md#zoom-controls)
 - In Advanced Mermaid settings, use **Editor layout** to choose **Auto**, **Side by side**, or **Stacked**. Narrow panes stack the source and preview. Set **Open editor** to **Focused block** if you want the Live editor to open when you enter a diagram block. [Live editor settings](settings-menu.md#live-editor)
 
 From the command palette, **Advanced Mermaid: Toggle inline editor** opens or closes the Live editor for the current block. **Advanced Mermaid: Render inline diagram** refreshes the open preview.
@@ -48,13 +49,13 @@ If a pane closes unexpectedly, run **Advanced Mermaid: Recover inline drafts** f
 
 ## Change how a diagram looks
 
-Open **Settings → Advanced Mermaid**. The settings names below follow the current source. In release 0.3.2, use **Display settings** for sizing, **Global style settings** for shared styles, **Diagram-specific style settings** for a single type, and **Preset class settings** for reusable styles. Obsidian’s settings search can also find individual controls.
+Open **Settings → Advanced Mermaid**. Obsidian’s settings search can also find individual controls.
 
 ### Set defaults for your vault
 
 - Use **Diagram Display** to change alignment and set width and height limits. To make small diagrams use more space, choose an available width such as **Full** or **Full Pane** and turn on **Fill available space**. Which widths appear depends on whether you use the Minimal Theme Settings plugin. [Display options and defaults](settings-menu.md#display)
 - Use **Diagram Styles → All diagrams** to set common colors, fonts, and label sizes. Colors follow Obsidian’s theme by default. You can set separate colors for light and dark mode.
-- To style one type of diagram, open **By diagram type**, choose a type such as **Flowchart**, and turn off **Use styles from All diagrams**. In 0.3.2 this toggle is called **Use global styles**. The diagram type can inherit any value you leave empty. [Style settings](settings-menu.md#styles)
+- To style one type of diagram, open **By diagram type**, choose one of the 27 families, and turn off **Use styles from All diagrams**. The diagram type can inherit any value you leave empty. [Style settings](settings-menu.md#styles)
 
 Select **Show example** where available to see how the current settings look on a sample diagram.
 
@@ -87,7 +88,7 @@ When saving, choose an existing vault folder or select **Vault root**. The dialo
 
 ### Save an editable Canvas
 
-1. Render a Flowchart (`flowchart`, `graph`, or `flowchart-elk`) or Agentflow (`agentflow-beta`).
+1. Render a Flowchart (`flowchart`, `graph`, or `flowchart-elk`) or Agentflow (`agentflow` or `agentflow-beta`).
 2. Open **Export** and select **Save .canvas** (**Save canvas** in Reading view). The dialog starts in the source note’s folder. Choose where to save and select **Save**.
 3. Select **Open canvas** to open it in a new tab. Enable **Settings → Core plugins → Canvas** if Obsidian cannot open the file.
 

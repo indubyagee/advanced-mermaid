@@ -46,6 +46,8 @@ The renderer runs locally with images disabled. The controller displays errors a
 
 The Mermaid tab commits changes to the note as you edit. The CSS tab validates its draft and commits valid changes as a comment region after the configured delay. The delay defaults to 250 ms and accepts 100–1000 ms. After three consecutive slow renders, automatic preview pauses and **Render now** remains available.
 
+The full-screen tab moves the active Live Editor and its preview, keeping the source note as the owner of edits and undo history. **Return to note** restores the editor to its original pane. When the original session ends, the tab stops accepting writes and offers a session-only recovery copy. [Full-screen editor](../src/editor/full-screen.ts)
+
 Source highlighting accepts incomplete Mermaid strings and directives. The desktop host’s legacy stream highlighter and the browser fixture’s Lezer highlighter share scoped token colors. Indent guides cover visible logical lines; folding uses CodeMirror state and preserves headers and dedented closing statements. Appearance refreshes retain the nested editor, selection, and folds. Folding does not edit the note or request a preview render. [Source language](../src/editor/languages.ts) · [Source tools](../src/editor/source-tools.ts)
 
 Unexpected teardown can keep up to ten bounded recovery drafts in memory for the current Obsidian session. Unloading the plugin destroys its editor and rendering components and disposes of their listeners and pending work. [Live editor](../src/editor/live-editor.ts) · [Preview scheduler](../src/editor/preview-scheduler.ts) · [Recovery drafts](../src/editor/drafts.ts)
@@ -114,6 +116,7 @@ The parser accepts registered variables with literal hex colors, local font fami
 | SVG | Captures the full intrinsic layout and resolves styles into the SVG. The background is opaque, with translucent colors composited over white. Fonts are referenced by family, so another device may substitute a font. |
 | PNG | Rasterizes the SVG at 2× the intrinsic dimensions, rounding up. The limits are 8,192 pixels per side and 16 million pixels total. Web fonts may be substituted during rasterization. |
 | Obsidian Canvas | Parses the configured source for a Flowchart or Agentflow and lays out native cards, groups, and connections. Each file can contain up to 300 nodes and groups combined and 1,000 source connections. |
+| `.mmd` and `.mermaid` | Write the current authored fence body as UTF-8 from Rendered view or the Live Editor. The file includes authored YAML, comments, and directives. The enclosing fence and renderer-generated configuration are excluded. |
 
 SVG and PNG export use intrinsic dimensions before display fitting or zoom. The snapshot checks that it still represents the current render. If an edit or a theme change makes the export stale, wait for the preview to update and try again. [SVG snapshot](../src/export/svg.ts) · [PNG rasterization](../src/export/png.ts)
 
@@ -129,6 +132,6 @@ A release contains `main.js`, `manifest.json`, and `styles.css`. Keep the versio
 
 The tag workflow runs source and browser checks, builds the release files, attaches provenance attestations to the build, and creates a draft release. Keep generated bundles and dependencies out of Git. The bundle includes the project and Pele MIT notices and the ISC notice for Pele’s Lucide reset icon. [Release workflow](../.github/workflows/release.yml) · [Project license](../LICENSE)
 
-Recorded Windows acceptance for the 0.3.0 release covered Obsidian 1.14.5 and 1.15.0, including editor modes, undo, draft recovery, settings persistence, SVG and PNG export, embeds, multiple panes, pop-outs, and reload cleanup. A Windows smoke test of the 0.3.2 release on Obsidian 1.15.0 covered saving and opening Flowchart and Agentflow canvases with linked notes. [Test coverage recorded in the 0.3.2 README](https://github.com/indubyagee/advanced-mermaid/blob/0.3.2/README.md#platform-coverage-and-troubleshooting)
+Windows desktop acceptance for 0.4.0 covered Obsidian 1.14.5 and 1.15.1 with Default and Minimal. Minimal was tested with Minimal Theme Settings and Style Settings. For both fence languages, the checks exercised Reading view, Rendered view in Live Preview, Live Editor, full-screen handoff, and exact source saves. The same runs covered light and dark styling, constrained editor widths, embeds, native pop-outs, SVG/PNG clipboard and file exports, Canvas saving, and plugin reload with persisted zoom settings.
 
-These checks cover the release files and Obsidian versions named above. Host coverage for macOS, Linux, touch, and input method editors remains unverified. The manifest specifies desktop-only loading. [Manifest](../manifest.json)
+Host coverage for macOS, Linux, touch, and input method editors remains unverified. The manifest specifies desktop-only loading. [Manifest](../manifest.json)

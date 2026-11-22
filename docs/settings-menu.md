@@ -38,7 +38,7 @@ Normal, Wide, and Maximum use the active values selected in Minimal Theme Settin
 
 Open **All diagrams** to edit common colors, local fonts, label size, corner radius, and shared element defaults. Each color occupies one row with Light/Dark selectors and independent resets. Text fields accept hex, RGB/RGBA, or HSL/HSLA and save as hex with alpha. Empty overrides inherit. Base label sizes accept 4–128 px and corner radii accept 0–32 px. Pixel-size controls combine numeric inputs, sliders, and resets. Fractional style sizes are supported.
 
-Under **By diagram type**, open a family such as **Flowchart** and turn off **Use styles from All diagrams** to edit its overrides. Empty values inherit from **All diagrams**. Turning inheritance back on retains your custom values. Specialized controls depend on the family. **Nodes**, **Edges**, and **Subgraphs** have their own pages under **All diagrams** and **Flowchart**.
+Under **By diagram type**, choose from 27 diagram families. Open a family such as **Flowchart** and turn off **Use styles from All diagrams** to edit its overrides. Empty values inherit from **All diagrams**. Turning inheritance back on retains your custom values. Specialized controls depend on the family. **Nodes**, **Edges**, and **Subgraphs** have their own pages under **All diagrams** and **Flowchart**.
 
 Open **Advanced** for the eight category colors. On each diagram type page, **Advanced** also contains **Use custom frontmatter** (off by default) and the **Custom frontmatter** YAML field. Frontmatter can apply while styles inherit from **All diagrams**. Valid YAML saves automatically. Invalid drafts show an error and retain the last saved configuration. Disabling the toggle retains the saved YAML. Optional `---` delimiters are accepted. For example, open **Flowchart → Advanced** and enter the following YAML.
 
@@ -109,6 +109,7 @@ Defaults below describe a new configuration with **Follow Obsidian theme** enabl
 | Control | Default | Behavior |
 | --- | --- | --- |
 | Enable inline editor | On | Enables inline editing for eligible top-level `pele` and `mermaid` fences in Live Preview. |
+| Enable full-screen editor | On | Shows **Open full-screen** in the Live Editor. You can move the active editor to a dedicated tab while its note stays open in Live Preview. |
 | Show line numbers | On | Shows source line numbers. |
 | Wrap source | Off | Wraps long source lines. |
 | Open editor | Manual | Choose Manual or Focused block activation. |
@@ -141,6 +142,8 @@ Live editor dropdowns use the inactive button font, background, and border color
 The inline editor opens for complete, top-level `mermaid` and `pele` blocks in Live Preview. [Live editor workflow and shortcuts](user-guide.md#edit-and-preview-a-diagram) · [Draft recovery](user-guide.md#recover-a-style-draft)
 
 ## Zoom controls
+
+**Zoom button placement** sets the viewport corner and defaults to **Bottom left**. **Zoom button orientation** arranges the buttons in a row (**Horizontal**, the default) or column (**Vertical**). These settings apply across Pele views and are independent of diagram alignment.
 
 **Zoom border color**, **Zoom font color**, and **Zoom background color** apply to Zoom controls in every Pele view. Empty values use the Obsidian interface colors. Turn on **Use inherited colors** to take colors from diagram and editor styles. Saved Zoom overrides are retained and reappear when the toggle is off.
 

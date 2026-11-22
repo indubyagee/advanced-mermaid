@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.4.0
+
 ### Changed
 
 - Upgrade to Pele 1.13.0. Authored Mermaid palettes now color GitGraph, Mindmap, Timeline, Radar, Treemap, Pie, XY, and Venn diagrams and their exports.
@@ -16,6 +18,9 @@
 - Highlight Mermaid declarations, keywords, connectors, labels, comments, YAML, and directives in the Live Editor, including incomplete edits.
 - Fold indented source with arrows beside block headers or keyboard shortcuts. Guides follow Obsidian’s indent width and stay visible through blank lines in expanded blocks.
 - Customize syntax colors and font weights under **Live Editor → Editor appearance → Syntax highlighting**.
+- Open the Live Editor in a dedicated tab with **Open full-screen** and use **Return to note** to resume editing in place. The option is enabled by default and can be turned off in Live Editor settings.
+- Save the authored diagram body as `.mmd` or `.mermaid` from the Live Editor and Rendered view. Both views group copy actions before save actions and offer Canvas export for Flowcharts and Agentflows.
+- Choose the corner and horizontal or vertical arrangement of zoom controls under **General → Zoom controls**.
 
 ### Fixed
 
