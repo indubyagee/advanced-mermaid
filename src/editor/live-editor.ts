@@ -20,6 +20,7 @@ import { STYLE_RENDERER_VERSION } from '../styles/registry';
 import { DiagramSyntaxSelector } from '../ui/diagram-syntax-selector';
 import { initializeDiagram, insertComponent, type SourceInsertion } from './syntax/source';
 import { insertConfiguration } from './syntax/configuration-insertion';
+import { insertCategoryPalette, insertPresetClass } from './syntax/style-insertion';
 
 export class LiveEditor {
 	readonly element: HTMLElement;
@@ -62,15 +63,23 @@ export class LiveEditor {
 		for (const mode of ['mermaid', 'css'] as const) this.tab(sources, mode === 'css' ? 'CSS' : 'Mermaid', () => this.selectInput(mode), mode === 'mermaid');
 		const outputs = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Preview format' } });
 		for (const mode of ['pele', 'svg'] as const) this.tab(outputs, mode === 'svg' ? 'SVG' : 'Pele', () => this.selectOutput(mode), mode === 'pele');
-		this.syntax = new DiagramSyntaxSelector(this.element.createDiv(), () => this.bridge.source(), {
-			diagram: diagram => this.insertSyntax(source => initializeDiagram(source, diagram)),
+		const syntaxHost = this.element.createDiv();
+		const setOverridesDisabled = overrideSelector(this.element, () => overrideOptions(this.bridge.source()), (option, target) => this.insertOverride(option, target));
+		this.syntax = new DiagramSyntaxSelector(syntaxHost, () => this.bridge.source(), {
+			diagram: (diagram, orientation) => this.insertSyntax(source => initializeDiagram(source, diagram, orientation)),
 			component: component => this.insertSyntax(source => {
 				const selection = this.nested.state.selection.main;
 				return insertComponent(source, selection.from, selection.to, component.text);
 			}),
 			configuration: diagram => this.insertSyntax(source => insertConfiguration(source, diagram)),
+			presetLibrary: () => this.settings().presets,
+			presetClass: (diagram, alias) => this.insertSyntax(source => {
+				const selection = this.nested.state.selection.main;
+				return insertPresetClass(source, diagram.type, selection.from, selection.to, alias);
+			}),
+			palette: diagram => this.insertSyntax(source => insertCategoryPalette(source, diagram.type, this.settings().presets)),
+			pending: setOverridesDisabled,
 		});
-		overrideSelector(this.element, () => overrideOptions(this.bridge.source()), (option, target) => this.insertOverride(option, target));
 		const columns = this.element.createDiv({ cls: 'advanced-mermaid-editor-columns' });
 		this.sourceHost = columns.createDiv({ cls: 'advanced-mermaid-editor-source', attr: { role: 'tabpanel', 'aria-label': 'Diagram source' } });
 		// Keep the note's Markdown gutter and width rules out of the nested editor.
@@ -273,6 +282,7 @@ export class LiveEditor {
 		if (force) this.draftStatus.textContent = '';
 		const source = this.bridge.source();
 		if (!force && source === this.sourceBaseline) return;
+		this.syntax.refresh();
 		const previous = this.nested.state.doc.toString();
 		let css = ''; try { css = styleRegion(source)?.css ?? ''; } catch (error) { this.draftStatus.textContent = String(error); }
 		if (!force && this.cssDirty && css !== this.cssBaseline) {
@@ -295,7 +305,6 @@ export class LiveEditor {
 		}
 		if (force || !this.cssDirty) { this.css = css; this.cssBaseline = css; this.invalid = false; }
 		this.sourceBaseline = source;
-		this.syntax.refresh();
 		this.replaceNested(change);
 		this.invalidatePreview();
 		if ((!forwarded || !composing) && (this.visible || this.nested.hasFocus)) this.scheduler.schedule(this.settings().liveEditor.debounceMs);
@@ -312,6 +321,7 @@ export class LiveEditor {
 	}
 	refresh(): void {
 		applyEditorStyle(this.element, this.settings().liveEditor.style);
+		this.syntax.refresh(true);
 		this.applySourceFontSize();
 		this.nested.dispatch({ effects: this.presentation.reconfigure(this.presentationExtensions()) });
 		this.nested.requestMeasure();

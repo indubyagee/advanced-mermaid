@@ -5,11 +5,14 @@
 ### Changed
 
 - Upgrade to Pele 1.13.0. Authored Mermaid palettes now color GitGraph, Mindmap, Timeline, Radar, Treemap, Pie, XY, and Venn diagrams and their exports.
+- Choose the diagram and its orientation separately in the Live Editor.
+- See descriptive names alongside component syntax and open the selected diagram's reference from **Syntax Docs**.
 
 ### Added
 
 - Accept `agentflow` as an Advanced Mermaid declaration alongside `agentflow-beta` in previews, Live Editor, and Canvas export.
 - Add per-diagram styles and custom frontmatter for Class, Entity relationship, Requirement, Use case, Packet, Block, Sankey, Pie, Quadrant, XY, and Venn diagrams.
+- Insert saved preset classes and category palettes from the Live Editor.
 
 ### Fixed
 

@@ -1,7 +1,7 @@
 import type { OverrideOption } from '../editor/override-options';
 import type { StyleTarget } from '../editor/override-insertion';
 
-export function overrideSelector(host: HTMLElement, options: () => OverrideOption[], insert: (option: OverrideOption, target: StyleTarget) => void): void {
+export function overrideSelector(host: HTMLElement, options: () => OverrideOption[], insert: (option: OverrideOption, target: StyleTarget) => void): (disabled: boolean) => void {
 
 	const bar = host.createDiv({ cls: 'advanced-mermaid-override-selector' });
 
@@ -39,7 +39,8 @@ export function overrideSelector(host: HTMLElement, options: () => OverrideOptio
 	};
 	select.addEventListener('focus', refresh);
 
-	select.addEventListener('change', () => { const choice = choices.find(choice => choice.id === select.value); if (choice) insert(choice, target.value as StyleTarget); select.value = ''; });
+	select.addEventListener('change', () => { const choice = choices.find(choice => choice.id === select.value); if (!select.disabled && choice) insert(choice, target.value as StyleTarget); select.value = ''; });
 
 	refresh();
+	return disabled => { select.disabled = disabled; target.disabled = disabled; };
 }

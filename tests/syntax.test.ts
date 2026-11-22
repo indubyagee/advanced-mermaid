@@ -6,7 +6,7 @@ import { flowchartComponents, agentflowComponents, swimlaneComponents } from '..
 import { sequenceComponents, stateComponents, hierarchyComponents, workflowComponents } from '../src/editor/syntax/structured-components';
 import { chartComponents } from '../src/editor/syntax/chart-components';
 import { otherComponents, railroadComponents } from '../src/editor/syntax/other-components';
-import { diagramDeclaration, initializeDiagram, insertComponent } from '../src/editor/syntax/source';
+import { diagramDeclaration, diagramOrientation, initializeDiagram, insertComponent } from '../src/editor/syntax/source';
 import { selectedDiagram } from '../src/editor/syntax/catalog';
 import { insertConfiguration } from '../src/editor/syntax/configuration-insertion';
 import { parseFrontmatter } from '../src/styles/frontmatter';
@@ -39,7 +39,7 @@ void test('every selected diagram variant renders with its generated configurati
 });
 
 void test('configuration generation preserves authored values, body, comments and CRLF without duplication', () => {
-	const diagram = DIAGRAM_SYNTAX.find(choice => choice.declaration === 'flowchart TB')!;
+	const diagram = DIAGRAM_SYNTAX.find(choice => choice.declaration === 'flowchart')!;
 	const body = '%% Keep this comment\r\nflowchart TB\r\n A-->B';
 	const source = '---\r\n# Header comment\r\ntitle: Authored\r\nconfig:\r\n  # Family comment\r\n  flowchart:\r\n    rankSpacing: 77 # Keep this value\r\n    useMaxWidth: false\r\n  sequence:\r\n    actorMargin: 0\r\n---\r\n' + body;
 	const inserted = insertConfiguration(source, diagram);
@@ -75,16 +75,87 @@ void test('configuration safely extends flow-style YAML, preserves explicit null
 });
 
 void test('diagram selection initializes empty sources and preserves YAML, directives and inline body text', () => {
-	const diagram = DIAGRAM_SYNTAX.find(choice => choice.declaration === 'flowchart TB')!;
-	assert.equal(initializeDiagram('', diagram).source, 'flowchart TB\n');
+	const diagram = selectedDiagram('flowchart')!;
+	assert.equal(initializeDiagram('', diagram, 'TD').source, 'flowchart TD\n');
+	assert.equal(initializeDiagram('', selectedDiagram('sequenceDiagram')!).source, 'sequenceDiagram\n');
+	assert.throws(() => initializeDiagram('', diagram), /orientation/);
 	const prefix = '---\r\ntitle: "first\r\n---\r\nlast"\r\n---\r\n%% Comment\r\n%%{init: {\r\n "theme":"base"\r\n}}%%\r\n';
-	const source = prefix + 'graph LR; A-->B\r\n B-->C';
-	const updated = initializeDiagram(source, diagram);
-	assert.equal(updated.source, prefix + 'flowchart TB; A-->B\r\n B-->C');
-	assert.equal(selectedDiagram(diagramDeclaration(source).text)?.declaration, 'flowchart LR');
+	const source = prefix + 'graph  LR; A-->B\r\n B-->C';
+	const updated = initializeDiagram(source, diagram, 'TB');
+	assert.equal(updated.source, prefix + 'graph  TB; A-->B\r\n B-->C');
+	assert.equal(diagramDeclaration(source).diagram, diagram);
+	assert.equal(diagramOrientation(source, diagramDeclaration(source)), 'LR');
+	assert.equal(diagramOrientation('graph\n A-->B', diagramDeclaration('graph\n A-->B')), undefined);
+	assert.equal(initializeDiagram(prefix + 'gitGraph LR :\r\n  commit', selectedDiagram('gitGraph')!, 'BT').source,
+		prefix + 'gitGraph BT :\r\n  commit');
+	assert.equal(initializeDiagram('gitGraph:\ncommit', selectedDiagram('gitGraph')!, 'TB').source, 'gitGraph TB:\ncommit');
+	assert.equal(initializeDiagram('xychart horizontal\nx-axis [A]\nbar [1]', selectedDiagram('xychart-beta')!, 'vertical').source,
+		'xychart vertical\nx-axis [A]\nbar [1]');
 	assert.equal(diagramDeclaration('%% comment\n\n').text, '');
-	assert.throws(() => initializeDiagram('---\ntitle: unfinished', diagram), /frontmatter/);
-	assert.throws(() => initializeDiagram('unknown\nImportant text', diagram), /unrecognized/);
+	assert.throws(() => initializeDiagram('---\ntitle: unfinished', diagram, 'TB'), /frontmatter/);
+	assert.throws(() => initializeDiagram('unknown\nImportant text', diagram, 'TB'), /unrecognized/);
+});
+
+void test('body directions update the root without rewriting comments, text or nested directions', () => {
+	const state = selectedDiagram('stateDiagram-v2')!;
+	const body = '%% direction BT\r\nstate Outer {\r\n direction RL\r\n First --> Second\r\n}\r\n'
+		+ 'note right of Outer\r\n direction TB\r\nend note\r\n Outer --> After';
+	const nestedOnly = 'stateDiagram-v2\r\n' + body;
+	assert.equal(diagramOrientation(nestedOnly, diagramDeclaration(nestedOnly)), undefined);
+	assert.equal(initializeDiagram(nestedOnly, state, 'LR').source, 'stateDiagram-v2\r\n  direction LR\r\n' + body);
+
+	const er = 'erDiagram\n  direction TB %% Root\nsubgraph Outer\n  direction BT\n  First ||--|| Second : pairs\nend';
+	assert.equal(diagramOrientation(er, diagramDeclaration(er)), 'TB');
+	assert.equal(initializeDiagram(er, selectedDiagram('erDiagram')!, 'LR').source, er.replace('TB %% Root', 'LR %% Root'));
+
+	const classes = 'classDiagram\n  note "Quoted {\n direction TB\n}"\n  First --> Second : carries {\n  class Third; direction RL';
+	assert.equal(diagramOrientation(classes, diagramDeclaration(classes)), 'RL');
+	assert.equal(initializeDiagram(classes, selectedDiagram('classDiagram')!, 'TB').source, classes.replace('; direction RL', '; direction TB'));
+});
+
+void test('every offered orientation is used by the pinned renderer', () => {
+	const relation = 'First --> Second';
+	const requirement = (id: number, name: string) => `requirement ${name} {\n id: ${id}\n text: "${name}"\n risk: low\n verifymethod: test\n}`;
+	const bodies = {
+		flowchart: relation, agentflow: relation, swimlane: `subgraph One\n${relation}\nend`,
+		gitGraph: 'commit id: "First"\ncommit id: "Second"', timeline: 'First : One\nSecond : Two',
+		xychart: 'x-axis ["First", "Second"]\nbar [10, 10]', class: relation, state: relation,
+		er: 'First ||--|| Second : connects',
+		requirement: requirement(1, 'First') + '\n' + requirement(2, 'Second') + '\nFirst - traces -> Second',
+		usecase: 'actor First\nSecond("Second")\nFirst --> Second',
+	};
+	for (const diagram of DIAGRAM_SYNTAX) {
+		if (!diagram.orientation) continue;
+		const body = bodies[diagram.type as keyof typeof bodies];
+		assert.ok(body, diagram.declaration);
+		const aspects = new Map<string, number>();
+		for (const orientation of diagram.orientation.values) {
+			const source = initializeDiagram('', diagram, orientation).source + body;
+			const label = diagram.declaration + ' ' + orientation;
+			assert.equal(diagramOrientation(source, diagramDeclaration(source)), orientation, label);
+			const model = parse(source);
+			const actual = 'direction' in model ? model.direction : 'orientation' in model ? model.orientation : undefined;
+			const normalized = actual === 'TB' && orientation === 'TD' && diagram.type !== 'timeline' ? 'TD' : actual;
+			assert.equal(normalized, orientation, label);
+			const svg = render(source, { images: false });
+			aspects.set(orientation, svg.width / svg.height);
+			if (diagram.type === 'xychart') {
+				const bars = [...svg.svg.matchAll(/<rect x="([^"]+)" y="([^"]+)" width="[^"]+" height="[^"]+"\/>/g)];
+				assert.equal(bars.length, 2, label);
+				const vertical = orientation === 'vertical';
+				assert.equal(bars[0]![1] === bars[1]![1], !vertical, label);
+				assert.equal(bars[0]![2] === bars[1]![2], vertical, label);
+			}
+		}
+		if (diagram.type === 'timeline') {
+			assert.notEqual(aspects.get('LR'), aspects.get('TD'), diagram.declaration);
+		} else if (diagram.type !== 'xychart') {
+			for (const [orientation, aspect] of aspects) {
+				const horizontal = orientation === 'LR' || orientation === 'RL';
+				assert.equal(aspect > aspects.get(horizontal ? 'TB' : 'LR')!, horizontal, diagram.declaration + ' ' + orientation);
+			}
+		}
+	}
 });
 
 void test('Agentflow declarations share selection and styles with existing beta source', () => {
@@ -94,7 +165,9 @@ void test('Agentflow declarations share selection and styles with existing beta 
 		const declaration = diagramDeclaration(source);
 		assert.equal(declaration.text, keyword + ' LR');
 		assert.equal(declaration.from, prefix.length);
-		assert.equal(selectedDiagram(declaration.text)?.declaration, 'agentflow-beta LR');
+		assert.equal(selectedDiagram(declaration.text)?.declaration, 'agentflow-beta');
+		assert.equal(diagramOrientation(source, declaration), 'LR');
+		assert.equal(initializeDiagram(source, declaration.diagram!, 'TB').source, source.replace(keyword + ' LR', keyword + ' TB'));
 		assert.equal(diagramCategory(source), 'agentflow');
 	}
 	assert.equal(diagramCategory('agentflow-unrecognized LR\n A --> B'), null);
