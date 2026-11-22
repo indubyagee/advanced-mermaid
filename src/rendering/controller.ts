@@ -21,7 +21,12 @@ import { createZoomControls, zoomLimit } from '../ui/zoom-controls';
 import { hasPendingDiagramEnvironmentRefresh, observeDiagramEnvironment } from './environment';
 import { maskClusterTitleOverlaps } from './cluster-title-mask';
 
-export interface ControllerOptions { boundary?: HTMLElement; keepLastValid?: boolean; changed?: (valid: boolean, error?: unknown) => void }
+export interface ControllerOptions {
+	boundary?: HTMLElement;
+	keepLastValid?: boolean;
+	exportFooter?: { actions: HTMLElement; status: HTMLElement };
+	changed?: (valid: boolean, error?: unknown) => void;
+}
 
 interface RenderRequest {
 	readonly source: string;
@@ -44,6 +49,7 @@ export class DiagramController extends Component {
 	private renderedSource?: string;
 	private revision = 0;
 	private canvasRevision = 0;
+	private sourceRevision = 0;
 	private blocked = false;
 	private disposed = false;
 	private layout!: DiagramLayout;
@@ -56,7 +62,10 @@ export class DiagramController extends Component {
 		super();
 	}
 	setSource(source: string): void {
-		if (source !== this.source) this.canvasRevision++;
+		if (source !== this.source) {
+			this.canvasRevision++;
+			this.sourceRevision++;
+		}
 		this.source = source;
 		this.blocked = false;
 		this.updateSettings();
@@ -66,6 +75,7 @@ export class DiagramController extends Component {
 		this.blocked = true;
 		this.revision++;
 		this.canvasRevision++;
+		this.sourceRevision++;
 		this.request = undefined;
 		this.actions?.setValid(false);
 	}
@@ -84,14 +94,15 @@ export class DiagramController extends Component {
 		this.zoomOptions = { always: true, controls: false, get maxScale() { return zoomLimit(host); } };
 		this.syncZoom = createZoomControls(frameEl, this.host, this,
 			() => this.renderedSource === undefined ? undefined : this.diagram?.zoom);
-		this.controls = layout.createDiv({ cls: 'advanced-mermaid-actions' });
+		const footer = this.options.exportFooter;
+		this.controls = (footer?.actions ?? layout).createDiv({ cls: 'advanced-mermaid-actions' });
 		const feedback = layout.createDiv({ cls: 'advanced-mermaid-error', attr: { role: 'status' } });
 		this.feedback = new DiagramFeedback(feedback, this, text => this.copyText(text));
 		this.layout = new DiagramLayout(this.containerEl, layout, viewport, this.host, this, () => {
 			this.diagram?.zoom?.refresh();
 			this.syncZoom();
 		}, this.app, this.options.boundary);
-		this.actions = new DiagramActions(this.app, this, this.controls, this.sourcePath, () => this.captureExport());
+		this.actions = new DiagramActions(this.app, this, this.controls, this.sourcePath, () => this.captureExport(), footer?.status);
 		this.register(observeDiagramEnvironment(this.containerEl, () => this.updateSettings()));
 		this.updateSettings();
 	}
@@ -172,6 +183,7 @@ export class DiagramController extends Component {
 		if (this.display) this.layout.update(result, this.display);
 		this.actions.setValid(!this.configurationError && !this.blocked, result.type === 'flowchart' || result.type === 'agentflow');
 		if (this.configurationError) {
+			this.sourceRevision++;
 			this.feedback.show(this.configurationError, this.source, true);
 		} else this.feedback.clear();
 		this.containerEl.classList.remove('advanced-mermaid-stale');
@@ -188,6 +200,7 @@ export class DiagramController extends Component {
 		this.request = undefined;
 		this.revision++;
 		this.canvasRevision++;
+		this.sourceRevision++;
 		this.renderedSource = undefined;
 		if (this.options.keepLastValid && this.result) {
 			const doc = this.containerEl.ownerDocument;
@@ -210,11 +223,15 @@ export class DiagramController extends Component {
 		const source = this.renderedSource;
 		const revision = this.revision;
 		const canvasRevision = this.canvasRevision;
+		const sourceRevision = this.sourceRevision;
 		if (!result || source === undefined || this.disposed || this.blocked || this.configurationError || this.containerEl.classList.contains('advanced-mermaid-stale')) throw new Error('Render the diagram successfully before exporting it.');
 		const current = (): boolean => !this.disposed && this.revision === revision &&
 			!hasPendingDiagramEnvironmentRefresh(this.containerEl.ownerDocument);
 		return {
 			current, snapshot: () => createSvgSnapshot(result, this.containerEl, current),
+			authored: this.options.exportFooter ? {
+				source: this.source, current: () => !this.disposed && this.sourceRevision === sourceRevision,
+			} : undefined,
 			canvas: result.type === 'flowchart' || result.type === 'agentflow'
 				? { source, current: () => !this.disposed && this.canvasRevision === canvasRevision }
 				: undefined,
@@ -232,6 +249,7 @@ export class DiagramController extends Component {
 		this.request = undefined;
 		this.revision++;
 		this.canvasRevision++;
+		this.sourceRevision++;
 		this.diagram?.destroy();
 		this.diagram = undefined;
 		this.result = undefined;

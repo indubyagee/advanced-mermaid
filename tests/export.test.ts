@@ -18,7 +18,8 @@ void test('PNG budgets reject oversized, non-finite, or empty canvases', () => {
 });
 
 void test('saving creates unique files and retries concurrent collisions without modification', async () => {
-	for (const [extension, data] of [['svg', '<svg/>'], ['canvas', '{"nodes":[],"edges":[]}']] as const) {
+	const source = '---\r\ntitle: café\r\n---\r\n%% comment 🧭\r\nflowchart LR\r\n A-->B\r\n';
+	for (const [extension, data] of [['svg', '<svg/>'], ['canvas', '{"nodes":[],"edges":[]}'], ['mmd', source], ['mermaid', source]] as const) {
 		const files = new Map<string, string | ArrayBuffer>([['Exports/note.' + extension, 'existing']]);
 		let raced = false;
 		const vault: ExportVault = {

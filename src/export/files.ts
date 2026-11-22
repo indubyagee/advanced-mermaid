@@ -42,7 +42,7 @@ export interface ExportVault {
 	createBinary(path: string, data: ArrayBuffer): Promise<unknown>;
 }
 
-export type ExportExtension = 'svg' | 'png' | 'canvas';
+export type ExportExtension = 'svg' | 'png' | 'canvas' | 'mmd' | 'mermaid';
 type ExportDestination = Pick<ExportVault, 'adapter' | 'getAbstractFileByPath'>;
 const pendingPaths = new WeakMap<ExportDestination, Set<string>>();
 

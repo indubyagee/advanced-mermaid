@@ -104,6 +104,7 @@ export class LiveEditor {
 		this.button(draftActions, 'Use note version', () => { this.cssDirty = false; this.conflict = false; this.sync({ force: true }); });
 		this.button(draftActions, 'Render now', () => { if (this.flush()) this.scheduler.now(); });
 		const endActions = footer.createDiv({ cls: 'advanced-mermaid-editor-end-actions' });
+		const exportStatus = footer.createDiv({ cls: 'advanced-mermaid-editor-export-status' });
 		this.sourceBaseline = bridge.source();
 		try { this.css = styleRegion(this.sourceBaseline)?.css ?? ''; } catch { this.draftStatus.textContent = 'Repair the malformed style region in the Mermaid source. The saved note is retained.'; }
 		this.cssBaseline = this.css;
@@ -139,7 +140,7 @@ export class LiveEditor {
 		});
 		this.scheduler = new PreviewScheduler(() => this.element.ownerDocument.defaultView, () => this.render(), text => { this.status.textContent = text; });
 		this.syntax.load();
-		this.controller = new DiagramController(this.canonical, this.sourceBaseline, settings, app, file, { boundary: this.preview, keepLastValid: true, changed: (valid, error) => {
+		this.controller = new DiagramController(this.canonical, this.sourceBaseline, settings, app, file, { boundary: this.preview, keepLastValid: true, exportFooter: { actions: endActions, status: exportStatus }, changed: (valid, error) => {
 			this.status.textContent = valid ? 'Current · ' + (this.canonical.dataset.category ?? 'diagram') : (this.canonical.classList.contains('advanced-mermaid-fallback') ? 'Using global/type fallback styling. ' : this.canonical.classList.contains('advanced-mermaid-stale') ? 'Preview is from the last valid source. ' : 'Diagram error. ') + (error instanceof Error ? error.message : 'Diagram error');
 			if (error && typeof error === 'object' && 'line' in error && typeof error.line === 'number' && Number.isInteger(error.line)) {
 				const line = error.line;
@@ -151,8 +152,6 @@ export class LiveEditor {
 			bridge.parent.requestMeasure();
 		} });
 		this.controller.load();
-		const exports = this.canonical.querySelector<HTMLElement>('.advanced-mermaid-actions');
-		if (exports) endActions.append(exports);
 		this.resize = new win.ResizeObserver(entries => {
 			const width = entries[0]?.contentRect.width ?? 0; const layout = settings().liveEditor.layout;
 			this.element.dataset.layout = layout === 'stacked' || width < (layout === 'auto' ? 768 : 496) ? 'stacked' : 'side-by-side';

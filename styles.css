@@ -172,7 +172,8 @@
 :is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid)[data-align="right"] .advanced-mermaid-viewport svg.pele { margin-inline-start: auto; }
 .advanced-mermaid :is(.advanced-mermaid-mount, .advanced-mermaid-error)[hidden],
 .advanced-mermaid-actions[hidden],
-.advanced-mermaid-actions .advanced-mermaid-export-options button[hidden],
+.advanced-mermaid-export [hidden],
+.advanced-mermaid-editor-export-status button[hidden],
 .advanced-mermaid-editor .advanced-mermaid-editor-preview > [hidden] { display: none; }
 /* Render errors retain readable, wrapping details for long source messages. */
 .advanced-mermaid-error { border-inline-start: 3px solid var(--text-error); padding: var(--size-4-2); }
@@ -302,19 +303,44 @@
 .advanced-mermaid-syntax-selector select { width: 100%; max-width: 100%; min-width: 0; }
 
 .advanced-mermaid-editor-footer {
-	align-items: flex-end;
+	align-items: flex-start;
 	justify-content: space-between;
 	margin-top: 12px;
 }
 .advanced-mermaid-editor-end-actions {
-	align-items: flex-start;
 	margin-inline-start: auto;
+	min-width: 0;
+	max-width: 100%;
 }
 .advanced-mermaid-editor-end-actions .advanced-mermaid-actions {
 	margin-top: 0;
 	min-width: 0;
-	flex-wrap: wrap;
 }
+.advanced-mermaid-editor-end-actions :is(.advanced-mermaid-export-options:not([hidden]), .advanced-mermaid-export-copy, .advanced-mermaid-export-save) {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	align-items: center;
+	min-width: 0;
+	gap: 6px;
+}
+.advanced-mermaid-editor-end-actions .advanced-mermaid-export-options { padding: 0; }
+.advanced-mermaid-editor-end-actions .advanced-mermaid-export-save {
+	border-inline-start: 1px solid var(--background-modifier-border, currentColor);
+	padding-inline-start: 6px;
+}
+.advanced-mermaid-editor-footer button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; height: auto; min-height: 28px; }
+.advanced-mermaid-editor-export-status {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: flex-end;
+	flex: 0 0 100%;
+	min-width: 0;
+	gap: 6px;
+}
+.advanced-mermaid-editor-export-status .advanced-mermaid-export-status { margin: 0; min-width: 0; }
+.advanced-mermaid-editor-export-status:not(:has(.advanced-mermaid-export-status:not(:empty), button:not([hidden]))) { display: none; }
 .advanced-mermaid-editor-status, .advanced-mermaid-renderer-details {
 	font-size: var(--font-ui-smaller, 12px);
 }

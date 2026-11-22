@@ -73,7 +73,7 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 					radius: parseFloat(getComputedStyle(source.querySelector('.cm-editor')).borderRadius),
 					sourceTabs: box(editor.querySelector('[aria-label="Source format"]')), previewTabs: box(editor.querySelector('[aria-label="Preview format"]')),
 					footer: box(footer), actions: actions.map(box), labels: actions.map(button => button.textContent),
-					export: box(footer.querySelector('.advanced-mermaid-export summary')),
+					export: box(footer.querySelector('.advanced-mermaid-export button[aria-expanded]')),
 					overflow: editor.scrollWidth > editor.clientWidth,
 				};
 			});
