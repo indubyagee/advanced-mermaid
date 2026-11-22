@@ -1,10 +1,10 @@
 import { Prec, StateEffect, StateField, type Extension, type EditorState, type Transaction } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet } from '@codemirror/view';
-import { indentUnit } from '@codemirror/language';
+import { indentUnit, syntaxTree } from '@codemirror/language';
 import { editorInfoField, editorLivePreviewField, MarkdownView, type App, type Editor } from 'obsidian';
 import { createDetachedEl } from '../dom';
 import type { AdvancedMermaidSettings } from '../settings';
-import { diagramFences, fenceAt, fenceContaining, fencesBetween, type FenceRange } from './fences';
+import { diagramFences, fenceAt, fenceContaining, fencesBetween, mapFenceBody, type FenceRange } from './fences';
 import { updateFenceDecorations, type ActiveFence, type FencePresentation } from './fence-decorations';
 import { sourceBridge } from './source-bridge';
 import { LiveEditor } from './live-editor';
@@ -33,14 +33,19 @@ function publishOwnership(view: EditorView, active: ActiveFence | null): void {
 }
 
 // A whole-block replacement ends the active session even if its text is identical.
-function mapFence(range: FenceRange, transaction: Transaction): FenceRange | null | undefined {
+function mapFence(range: FenceRange, transaction: Transaction, preserveBodyWhileParsing = false): FenceRange | null | undefined {
 	const { changes } = transaction;
 	let removed = false;
 	changes.iterChangedRanges((from, to) => { if (from <= range.from && to >= range.to) removed = true; });
 	if (removed) return null;
 	const from = changes.mapPos(range.from, 1);
+	const to = changes.mapPos(range.to, -1);
 	const mapped = fenceContaining(diagramFences(transaction.state), from);
-	return mapped?.from === from && mapped.to === changes.mapPos(range.to, -1) ? mapped : undefined;
+	if (mapped) return mapped.from === from && mapped.to === to ? mapped : undefined;
+	if (preserveBodyWhileParsing && syntaxTree(transaction.state).length < to) {
+		return mapFenceBody(transaction.newDoc, changes, range);
+	}
+	return undefined;
 }
 
 export interface InlineExtension {
@@ -89,7 +94,7 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 				return range ? { range, id: ++identity } : null;
 			}
 			if (active && transaction.docChanged) {
-				const range = mapFence(active.range, transaction);
+				const range = mapFence(active.range, transaction, true);
 				if (range === null) return null;
 				active = range ? { id: active.id, range } : null;
 			}
@@ -196,7 +201,10 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 	const decorationContext = (current: EditorState): DecorationContext | null => {
 		if (!current.field(editorLivePreviewField, false)) return null;
 		const active = current.field(state);
-		const fences = diagramFences(current);
+		const parsed = diagramFences(current);
+		const fences = active && !fenceContaining(parsed, active.range.from)
+			? [...parsed, active.range].sort((first, second) => first.from - second.from)
+			: parsed;
 		const selected = new Set<FenceRange>();
 		for (const { from, to } of current.selection.ranges) {
 			for (const fence of fencesBetween(fences, from, to)) selected.add(fence);
