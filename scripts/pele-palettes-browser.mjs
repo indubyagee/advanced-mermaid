@@ -83,10 +83,45 @@ export async function runPelePaletteChecks(page) {
 				host.remove();
 			}
 		}
+		const chartTypes = { Pie: 'pie', XY: 'xychart', Venn: 'venn' };
+		const typePalettes = {
+			pie: { pie1: '#df6021' },
+			xychart: { xyChart: { plotColorPalette: '#df6021, #ad3168' } },
+			venn: { venn1: '#df6021' },
+		};
+		const isDark = document.body.classList.contains('theme-dark');
+		try {
+			for (const [name, body, variables] of cases.filter(([name]) => Object.hasOwn(chartTypes, name))) {
+				const category = chartTypes[name];
+				const profile = {
+					useGlobal: false,
+					overrides: { colors: { series1: { light: '#af1843', dark: '#06a6af' } }, elements: {} },
+					frontmatter: { enabled: false, yaml: JSON.stringify({ config: { themeVariables: typePalettes[category] } }) },
+				};
+				settings.style.diagrams[category] = profile;
+				const hasColor = (source, expected) => {
+					const entry = fixture.diagram(source, settings);
+					try { return paint(entry.host.querySelector('svg.pele')).includes(expected); }
+					finally { entry.child.unload(); entry.host.remove(); }
+				};
+				const checks = { name: name + ' scoped palette' };
+				for (const [mode, color] of [['light', 'rgb(175, 24, 67)'], ['dark', 'rgb(6, 166, 175)']]) {
+					document.body.classList.toggle('theme-dark', mode === 'dark');
+					profile.frontmatter.enabled = false;
+					checks[mode + ' scoped color'] = hasColor(body, color);
+					profile.frontmatter.enabled = true;
+					checks[mode + ' type frontmatter'] = hasColor(body, 'rgb(223, 96, 33)');
+					const authored = '---\n' + JSON.stringify({ config: { themeVariables: variables } }) + '\n---\n' + body;
+					checks[mode + ' authored color'] = hasColor(authored, 'rgb(38, 164, 33)');
+				}
+				delete settings.style.diagrams[category];
+				result.push(checks);
+			}
+		} finally { document.body.classList.toggle('theme-dark', isDark); }
 		return result;
 	}, { cases: samples, series, fallback });
 	for (const { name, ...checks } of report) {
 		for (const [check, passed] of Object.entries(checks)) assert.equal(passed, true, name + ' ' + check);
 	}
-	console.log('Pele palettes passed: eight diagram mappings, default and invalid values, alpha, repeated XY/Venn colors, and SVG/PNG paint.');
+	console.log('Pele palettes passed: eight mappings, scoped and authored Pie/XY/Venn palettes in both themes, invalid values, alpha, and SVG/PNG paint.');
 }

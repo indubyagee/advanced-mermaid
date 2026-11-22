@@ -9,10 +9,12 @@
 ### Added
 
 - Accept `agentflow` as an Advanced Mermaid declaration alongside `agentflow-beta` in previews, Live Editor, and Canvas export.
+- Add per-diagram styles and custom frontmatter for Class, Entity relationship, Requirement, Use case, Packet, Block, Sankey, Pie, Quadrant, XY, and Venn diagrams.
 
 ### Fixed
 
 - Show authored line numbers in syntax errors when family defaults add frontmatter.
+- Preserve Sankey link gradient colors in SVG and PNG exports.
 
 ## 0.3.4 — 2026-11-20
 

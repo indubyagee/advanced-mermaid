@@ -5,9 +5,9 @@ import { SEMANTIC_CONTROLS } from './semantic-controls';
 export const STYLE_RENDERER_VERSION = '1.13.0';
 
 export const DIAGRAM_CATEGORIES = [
-	'agentflow', 'eventmodeling', 'flowchart', 'gantt', 'gitGraph', 'ishikawa',
-	'kanban', 'mindmap', 'radar', 'sequence', 'state', 'swimlane', 'timeline',
-	'treemap', 'treeView', 'journey',
+	'agentflow', 'block', 'class', 'er', 'eventmodeling', 'flowchart', 'gantt', 'gitGraph', 'ishikawa',
+	'kanban', 'mindmap', 'packet', 'pie', 'quadrantChart', 'radar', 'requirement', 'sankey',
+	'sequence', 'state', 'swimlane', 'timeline', 'treemap', 'treeView', 'journey', 'usecase', 'venn', 'xychart',
 ] as const;
 export type DiagramCategory = typeof DIAGRAM_CATEGORIES[number];
 
@@ -16,6 +16,9 @@ export const DIAGRAM_REGISTRY: Readonly<Record<DiagramCategory, {
 	readonly declarations: readonly string[];
 }>> = {
 	agentflow: { label: 'Agentflow', declarations: ['agentflow', 'agentflow-beta'] },
+	block: { label: 'Block', declarations: ['block', 'block-beta'] },
+	class: { label: 'Class', declarations: ['classDiagram'] },
+	er: { label: 'Entity relationship', declarations: ['erDiagram'] },
 	eventmodeling: { label: 'Event Modeling', declarations: ['eventmodeling'] },
 	flowchart: { label: 'Flowchart', declarations: ['flowchart', 'graph', 'flowchart-elk'] },
 	gantt: { label: 'Gantt', declarations: ['gantt'] },
@@ -23,7 +26,12 @@ export const DIAGRAM_REGISTRY: Readonly<Record<DiagramCategory, {
 	ishikawa: { label: 'Ishikawa', declarations: ['ishikawa', 'ishikawa-beta'] },
 	kanban: { label: 'Kanban', declarations: ['kanban'] },
 	mindmap: { label: 'Mindmap', declarations: ['mindmap'] },
+	packet: { label: 'Packet', declarations: ['packet', 'packet-beta'] },
+	pie: { label: 'Pie chart', declarations: ['pie'] },
+	quadrantChart: { label: 'Quadrant chart', declarations: ['quadrantChart'] },
 	radar: { label: 'Radar', declarations: ['radar-beta'] },
+	requirement: { label: 'Requirement', declarations: ['requirementDiagram'] },
+	sankey: { label: 'Sankey', declarations: ['sankey', 'sankey-beta'] },
 	sequence: { label: 'Sequence', declarations: ['sequenceDiagram'] },
 	state: { label: 'State', declarations: ['stateDiagram', 'stateDiagram-v2'] },
 	swimlane: { label: 'Swimlanes', declarations: ['swimlane-beta'] },
@@ -31,6 +39,9 @@ export const DIAGRAM_REGISTRY: Readonly<Record<DiagramCategory, {
 	treemap: { label: 'Treemap', declarations: ['treemap', 'treemap-beta'] },
 	treeView: { label: 'TreeView', declarations: ['treeView-beta'] },
 	journey: { label: 'User Journey', declarations: ['journey'] },
+	usecase: { label: 'Use case', declarations: ['usecase-beta'] },
+	venn: { label: 'Venn', declarations: ['venn-beta'] },
+	xychart: { label: 'XY chart', declarations: ['xychart', 'xychart-beta'] },
 };
 
 export function isDiagramCategory(value: unknown): value is DiagramCategory {

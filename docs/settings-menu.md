@@ -53,6 +53,12 @@ When enabled, these defaults apply to all diagrams in the selected family in Rea
 
 Use normal Mermaid frontmatter keys such as `title` and `config`, including the correctly capitalized family key (`gitGraph`, `treeView`, `journey`, or `swimlane`, for example). Options take effect when supported by Pele 1.13.0. Configurations are limited to 50,000 characters and bounded nesting. Combined render input also follows the renderer's source limit.
 
+For Class diagrams, `config.class.hideEmptyMembersBox` controls empty member compartments. Use `config.er.rankSpacing` to change the spacing between ER ranks and a `direction` statement in the diagram body to set their direction. Use Case reads `config.usecase.nodeSpacing` and `rankSpacing`. Requirement diagrams accept a frontmatter `title` and the shared style controls. Pele 1.13.0 determines the size of requirement boxes using its own layout rules.
+
+Set `config.packet.bitsPerRow` to control how a packet wraps and `config.block.padding` to change the space around block content. Set `config.sankey.linkColor` to `gradient` or `source` to control the colors of Sankey links.
+
+Pie, XY, and Venn use the category colors on their **Advanced** pages. The corresponding Mermaid palette variables in `config.themeVariables` can override those colors for an individual diagram. Use `config.pie.textPosition` to position slice labels, `config.xyChart` for chart dimensions and orientation, and `config.quadrantChart` for title, axis, quadrant, and point label sizes. [Pele palette variables](https://pele.run/theming#series-palettes)
+
 - **Reset shared styles** clears the defaults set under **All diagrams**.
 - Each diagram type has a labeled reset such as **Reset Flowchart styles**. It clears that type's overrides and custom frontmatter and restores inheritance from **All diagrams**.
 - **Undo reset** appears beside the reset confirmation and restores the previous values during that settings session.

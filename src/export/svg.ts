@@ -24,6 +24,7 @@ const VISUAL_PROPERTIES = [
 	'clip-path', 'mask', 'filter', 'marker-start', 'marker-mid', 'marker-end',
 	'visibility', 'display', 'white-space', 'text-transform', 'direction',
 ];
+const GRADIENT_STOP_PROPERTIES = [...VISUAL_PROPERTIES, 'stop-color', 'stop-opacity'];
 
 /** Restore local fragment references expanded to absolute URLs by computed styles. */
 function localReferences(value: string): string {
@@ -71,7 +72,8 @@ export async function createSvgSnapshot(result: RenderResult, container: HTMLEle
 		// Read all computed styles before changing inheritance on any element.
 		const styles = elements.map(element => {
 			const computed = view.getComputedStyle(element);
-			return VISUAL_PROPERTIES.map(property => [property, localReferences(computed.getPropertyValue(property))] as const);
+			const properties = element.localName === 'stop' ? GRADIENT_STOP_PROPERTIES : VISUAL_PROPERTIES;
+			return properties.map(property => [property, localReferences(computed.getPropertyValue(property))] as const);
 		});
 		for (let index = 0; index < elements.length; index++) {
 			const element = elements[index]!;

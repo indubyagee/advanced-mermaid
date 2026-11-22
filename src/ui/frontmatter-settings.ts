@@ -5,6 +5,7 @@ import { rowDefinition } from './setting-controls';
 
 export function frontmatterDefinitions(category: DiagramCategory, profile: TypeStyleProfile, changed: () => void): SettingDefinition[] {
 	const settings = profile.frontmatter ?? { enabled: false, yaml: '' };
+	const configKey = category === 'xychart' ? 'xyChart' : category;
 	const commit = (): void => { profile.frontmatter = settings; changed(); };
 	return [
 		rowDefinition('Use custom frontmatter', 'Apply the saved YAML to every ' + DIAGRAM_REGISTRY[category].label + ' diagram, including those using styles from All diagrams. Source values override matching defaults.', row => row.addToggle(input => {
@@ -14,7 +15,7 @@ export function frontmatterDefinitions(category: DiagramCategory, profile: TypeS
 			row.settingEl.addClass('advanced-mermaid-frontmatter-row');
 			const host = row.controlEl.createDiv({ cls: 'advanced-mermaid-frontmatter' });
 			const input = host.createEl('textarea', { attr: { 'aria-label': DIAGRAM_REGISTRY[category].label + ' frontmatter', spellcheck: 'false', rows: '8' } });
-			input.placeholder = 'config:\n  ' + category + ': {}';
+			input.placeholder = 'config:\n  ' + configKey + ': {}';
 			input.value = settings.yaml;
 			const status = host.createDiv({ attr: { role: 'status', 'aria-live': 'polite' } });
 			const validate = (): boolean => {
