@@ -1,6 +1,7 @@
 import { Compartment, EditorState, Transaction, type Extension } from '@codemirror/state';
 import { EditorView, keymap, lineNumbers, type ViewUpdate } from '@codemirror/view';
 import { defaultKeymap, indentWithTab, insertNewlineAndIndent, undo, redo } from '@codemirror/commands';
+import { indentUnit } from '@codemirror/language';
 import type { App } from 'obsidian';
 import { createDetachedEl } from '../dom';
 import type { AdvancedMermaidSettings } from '../settings';
@@ -11,11 +12,13 @@ import { retainDraft } from './drafts';
 import { PreviewScheduler } from './preview-scheduler';
 import { sourceLanguage } from './languages';
 import { sourceTheme } from './source-theme';
+import { sourceTools } from './source-tools';
 import { overrideOptions, overrideValue, type OverrideOption } from './override-options';
 import { insertDisplayOverride, insertStyleOverride, type StyleTarget } from './override-insertion';
 import { overrideSelector } from '../ui/override-selector';
 import { resolveDisplay } from '../rendering/overrides';
 import { applyEditorStyle } from '../styles/editor-style';
+import { applySourceHighlights } from '../styles/source-highlight';
 import { STYLE_RENDERER_VERSION } from '../styles/registry';
 import { DiagramSyntaxSelector } from '../ui/diagram-syntax-selector';
 import { initializeDiagram, insertComponent, type SourceInsertion } from './syntax/source';
@@ -58,6 +61,7 @@ export class LiveEditor {
 		const doc = bridge.parent.dom.ownerDocument; const win = doc.defaultView!;
 		this.element = createDetachedEl(doc, 'div', { cls: 'advanced-mermaid-editor' });
 		applyEditorStyle(this.element, settings().liveEditor.style);
+		applySourceHighlights(this.element, settings().liveEditor.style.syntax);
 		const header = this.element.createDiv({ cls: 'advanced-mermaid-editor-header' });
 		const sources = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Source format' } });
 		for (const mode of ['mermaid', 'css'] as const) this.tab(sources, mode === 'css' ? 'CSS' : 'Mermaid', () => this.selectInput(mode), mode === 'mermaid');
@@ -122,7 +126,7 @@ export class LiveEditor {
 			compositionstart: () => { const selection = this.nested.state.selection.main; this.compositionRange = { from: selection.from, to: selection.to }; },
 			compositionend: () => { this.compositionRange = undefined; this.scheduler.schedule(settings().liveEditor.debounceMs); },
 		})];
-		extensions.push(sourceTheme, this.presentation.of(this.presentationExtensions()));
+		extensions.push(sourceTheme, sourceTools, this.presentation.of(this.presentationExtensions()));
 		this.nested = new EditorView({ state: EditorState.create({ doc: this.sourceBaseline, extensions }), parent: sourceRoot, root: sourceRoot });
 		this.stopWindowMigration = this.sourceHost.onWindowMigrated(() => {
 			// Adopted CodeMirror styles belong to the original document.
@@ -312,7 +316,13 @@ export class LiveEditor {
 	}
 	private presentationExtensions(): Extension[] {
 		const options = this.settings().liveEditor;
-		return [sourceLanguage(this.inputMode), options.lineNumbers ? lineNumbers() : [], options.wrapSource ? EditorView.lineWrapping : []];
+		const parent = this.bridge.parent.state;
+		return [sourceLanguage(this.inputMode), EditorState.tabSize.of(parent.tabSize),
+			indentUnit.of(parent.facet(indentUnit) === '\t' ? '\t' : '    '),
+			options.lineNumbers ? lineNumbers() : [], options.wrapSource ? EditorView.lineWrapping : []];
+	}
+	syncIndentation(): void {
+		this.nested.dispatch({ effects: this.presentation.reconfigure(this.presentationExtensions()) });
 	}
 	private applySourceFontSize(): void {
 		const size = this.settings().liveEditor.fontSizePx;
@@ -321,6 +331,7 @@ export class LiveEditor {
 	}
 	refresh(): void {
 		applyEditorStyle(this.element, this.settings().liveEditor.style);
+		applySourceHighlights(this.element, this.settings().liveEditor.style.syntax);
 		this.syntax.refresh(true);
 		this.applySourceFontSize();
 		this.nested.dispatch({ effects: this.presentation.reconfigure(this.presentationExtensions()) });

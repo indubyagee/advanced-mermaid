@@ -342,6 +342,19 @@
 /* Editor presentation is independent of diagram style overrides. Theme pairs
    resolve through CSS so a light/dark switch also updates existing editors. */
 .advanced-mermaid-editor, .advanced-mermaid-editor-mode {
+	--am-highlight-declaration: var(--am-highlight-declaration-light);
+	--am-highlight-keyword: var(--am-highlight-keyword-light);
+	--am-highlight-operator: var(--am-highlight-operator-light);
+	--am-highlight-string: var(--am-highlight-string-light);
+	--am-highlight-comment: var(--am-highlight-comment-light);
+	--am-highlight-frontmatter-key: var(--am-highlight-frontmatter-key-light);
+	--am-highlight-frontmatter-value: var(--am-highlight-frontmatter-value-light);
+	--am-highlight-directive: var(--am-highlight-directive-light);
+	--am-highlight-number: var(--am-highlight-number-light);
+	--am-highlight-property: var(--am-highlight-property-light);
+	--advanced-mermaid-indent-guide: var(--advanced-mermaid-indent-guide-light, var(--background-modifier-border, #bdbdbd));
+	--advanced-mermaid-fold-arrow: var(--advanced-mermaid-fold-arrow-light, var(--text-muted, #52525b));
+	--advanced-mermaid-line-number-text: var(--advanced-mermaid-line-number-text-light, var(--text-muted, #52525b));
 	--advanced-mermaid-source-text: var(--advanced-mermaid-source-text-light, var(--text-normal, #222));
 	--advanced-mermaid-source-background: var(--advanced-mermaid-source-background-light, var(--background-primary, #fff));
 	--advanced-mermaid-active-button-text: var(--advanced-mermaid-active-button-text-light, var(--text-on-accent, #fff));
@@ -352,6 +365,19 @@
 	--advanced-mermaid-inactive-button-border: 1px solid var(--advanced-mermaid-inactive-button-border-light);
 }
 .theme-dark .advanced-mermaid-editor, .theme-dark .advanced-mermaid-editor-mode {
+	--am-highlight-declaration: var(--am-highlight-declaration-dark);
+	--am-highlight-keyword: var(--am-highlight-keyword-dark);
+	--am-highlight-operator: var(--am-highlight-operator-dark);
+	--am-highlight-string: var(--am-highlight-string-dark);
+	--am-highlight-comment: var(--am-highlight-comment-dark);
+	--am-highlight-frontmatter-key: var(--am-highlight-frontmatter-key-dark);
+	--am-highlight-frontmatter-value: var(--am-highlight-frontmatter-value-dark);
+	--am-highlight-directive: var(--am-highlight-directive-dark);
+	--am-highlight-number: var(--am-highlight-number-dark);
+	--am-highlight-property: var(--am-highlight-property-dark);
+	--advanced-mermaid-indent-guide: var(--advanced-mermaid-indent-guide-dark, var(--background-modifier-border, #555));
+	--advanced-mermaid-fold-arrow: var(--advanced-mermaid-fold-arrow-dark, var(--text-muted, #aaa));
+	--advanced-mermaid-line-number-text: var(--advanced-mermaid-line-number-text-dark, var(--text-muted, #aaa));
 	--advanced-mermaid-source-text: var(--advanced-mermaid-source-text-dark, var(--text-normal, #ddd));
 	--advanced-mermaid-source-background: var(--advanced-mermaid-source-background-dark, var(--background-primary, #222));
 	--advanced-mermaid-active-button-text: var(--advanced-mermaid-active-button-text-dark, var(--text-on-accent, #fff));

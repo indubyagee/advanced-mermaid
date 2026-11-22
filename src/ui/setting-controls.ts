@@ -6,11 +6,11 @@ import { pickedColor } from './theme-settings';
 export const rowDefinition = (name: string, desc: string, build: (row: Setting) => unknown): SettingDefinition => ({ name, desc, render: row => { const cleanup = build(row); return typeof cleanup === 'function' ? cleanup as () => void : undefined; } });
 
 /** The native picker edits RGB while the literal text field retains alpha. */
-export function colorInput(host: HTMLElement, name: string, get: () => string | undefined, accept: (value?: string) => void, variable?: string, label = name): () => void {
+export function colorInput(host: HTMLElement, name: string, get: () => string | undefined, accept: (value?: string) => void, variable?: string, label = name, fallback = '#808080'): () => void {
 	const group = host.createDiv({ cls: 'advanced-mermaid-color-input' });
 	group.createSpan({ text: label, cls: 'advanced-mermaid-control-label' });
 	const win = host.ownerDocument.defaultView!;
-	const inherited = (): string => normalizeColor(variable ? win.getComputedStyle(host).getPropertyValue(variable).trim() : '') ?? '#808080';
+	const inherited = (): string => normalizeColor(variable ? win.getComputedStyle(host).getPropertyValue(variable).trim() : '') ?? fallback;
 	const picker = group.createEl('input', { attr: { type: 'color', 'aria-label': name + ' picker' } });
 	const text = group.createEl('input', { attr: { type: 'text', 'aria-label': name, placeholder: 'Inherit', spellcheck: 'false' } });
 	const reset = group.createEl('button', { text: '↺', attr: { type: 'button', 'aria-label': 'Reset ' + name, title: 'Use inherited color' } });
@@ -31,7 +31,7 @@ export function colorInput(host: HTMLElement, name: string, get: () => string | 
 	return () => win.cancelAnimationFrame(frame);
 }
 
-export function colorPairDefinition(name: string, desc: string, get: () => ColorPair | undefined, accept: (pair?: ColorPair) => void, variable?: string, controlName = name): SettingDefinition {
+export function colorPairDefinition(name: string, desc: string, get: () => ColorPair | undefined, accept: (pair?: ColorPair) => void, inherited?: string | ColorPair, controlName = name): SettingDefinition {
 	return rowDefinition(name, desc + ' Light and dark inherit independently. Supports hex, RGB and HSL with alpha.', row => {
 		row.settingEl.addClass('advanced-mermaid-color-row');
 		const cleanups: (() => void)[] = [];
@@ -47,7 +47,8 @@ export function colorPairDefinition(name: string, desc: string, get: () => Color
 			for (const mode of ['light', 'dark'] as const) cleanups.push(colorInput(fields, controlName + (mode === 'light' ? ' Light' : ' Dark'), () => get()?.[mode], value => {
 				const pair = { ...get() }; if (value) pair[mode] = value; else delete pair[mode];
 				const result = Object.keys(pair).length ? pair : undefined; accept(result); select.value = result ? 'custom' : 'inherit';
-			}, variable, mode === 'light' ? 'Light' : 'Dark'));
+			}, typeof inherited === 'string' ? inherited : undefined, mode === 'light' ? 'Light' : 'Dark',
+			typeof inherited === 'string' ? undefined : inherited?.[mode]));
 		};
 		mount();
 		return () => cleanups.splice(0).forEach(cleanup => cleanup());

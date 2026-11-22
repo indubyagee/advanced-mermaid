@@ -2,11 +2,15 @@ import { normalizeColor } from './colors';
 import type { ColorPair } from './registry';
 import { boundedNumber, isStyleRecord } from './validate';
 import { normalizeZoomStyle, type ZoomStyleSettings } from './zoom-style';
+import { normalizeSourceHighlights, type SourceHighlightSettings } from './source-highlight';
 
 /** Shared keys keep saved preferences, settings controls and scoped CSS aligned. */
 export const EDITOR_COLORS = {
 	sourceText: { variable: '--advanced-mermaid-source-text', inherited: '--text-normal' },
 	sourceBackground: { variable: '--advanced-mermaid-source-background', inherited: '--background-primary' },
+	lineNumberText: { variable: '--advanced-mermaid-line-number-text', inherited: '--text-muted' },
+	indentGuide: { variable: '--advanced-mermaid-indent-guide', inherited: '--background-modifier-border' },
+	foldArrow: { variable: '--advanced-mermaid-fold-arrow', inherited: '--text-muted' },
 	activeButtonText: { variable: '--advanced-mermaid-active-button-text', inherited: '--text-on-accent' },
 	inactiveButtonText: { variable: '--advanced-mermaid-inactive-button-text', inherited: '--text-normal' },
 	/** Retained for saved-data round trips; Close Editor is no longer exposed. */
@@ -24,9 +28,11 @@ export type EditorColor = keyof typeof EDITOR_COLORS;
 export const BUTTON_RADIUS_RANGE = { min: 0, max: 32 } as const;
 
 export interface EditorStyleSettings {
+	lineNumberFontSizePx: number | null;
 	buttonFontSizePx: number | null;
 	buttonRadiusPx: number | null;
 	colors: Partial<Record<EditorColor, ColorPair>>;
+	syntax: SourceHighlightSettings;
 	zoom: ZoomStyleSettings;
 }
 
@@ -48,9 +54,11 @@ export function normalizeEditorStyle(value: unknown): EditorStyleSettings {
 	}
 	const radius = data.buttonRadiusPx;
 	return {
+		lineNumberFontSizePx: isEditorFontSize(data.lineNumberFontSizePx) ? data.lineNumberFontSizePx : null,
 		buttonFontSizePx: isEditorFontSize(data.buttonFontSizePx) ? data.buttonFontSizePx : null,
 		buttonRadiusPx: boundedNumber(radius, BUTTON_RADIUS_RANGE.min, BUTTON_RADIUS_RANGE.max) && Number.isInteger(radius) ? radius : null,
 		colors,
+		syntax: normalizeSourceHighlights(data.syntax),
 		zoom: normalizeZoomStyle(data.zoom),
 	};
 }
@@ -59,6 +67,9 @@ export function normalizeEditorStyle(value: unknown): EditorStyleSettings {
 export function applyEditorStyle(element: HTMLElement, style: EditorStyleSettings): void {
 	element.dataset.sourceColorLight = String(!!style.colors.sourceText?.light);
 	element.dataset.sourceColorDark = String(!!style.colors.sourceText?.dark);
+	const lineNumberSize = style.lineNumberFontSizePx;
+	if (lineNumberSize === null) element.style.removeProperty('--advanced-mermaid-line-number-font-size');
+	else element.style.setProperty('--advanced-mermaid-line-number-font-size', `${lineNumberSize}px`);
 	applyButtonDimensions(element, style);
 	for (const key of Object.keys(EDITOR_COLORS) as EditorColor[]) {
 		applyEditorColor(element, key, key.startsWith('closeButton') ? undefined : style.colors[key]);

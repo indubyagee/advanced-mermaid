@@ -46,6 +46,8 @@ The renderer runs locally with images disabled. The controller displays errors a
 
 The Mermaid tab commits changes to the note as you edit. The CSS tab validates its draft and commits valid changes as a comment region after the configured delay. The delay defaults to 250 ms and accepts 100–1000 ms. After three consecutive slow renders, automatic preview pauses and **Render now** remains available.
 
+Source highlighting accepts incomplete Mermaid strings and directives. The desktop host’s legacy stream highlighter and the browser fixture’s Lezer highlighter share scoped token colors. Indent guides cover visible logical lines; folding uses CodeMirror state and preserves headers and dedented closing statements. Appearance refreshes retain the nested editor, selection, and folds. Folding does not edit the note or request a preview render. [Source language](../src/editor/languages.ts) · [Source tools](../src/editor/source-tools.ts)
+
 Unexpected teardown can keep up to ten bounded recovery drafts in memory for the current Obsidian session. Unloading the plugin destroys its editor and rendering components and disposes of their listeners and pending work. [Live editor](../src/editor/live-editor.ts) · [Preview scheduler](../src/editor/preview-scheduler.ts) · [Recovery drafts](../src/editor/drafts.ts)
 
 ## Settings and precedence
