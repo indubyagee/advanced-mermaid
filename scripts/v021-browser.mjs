@@ -131,7 +131,7 @@ export async function runNavigationChecks(page) {
 			const zoomed = await svg.getAttribute('viewBox'); assert.notEqual(zoomed, original);
 			const bounds = await svg.boundingBox();
 			const viewport = await host.locator('.advanced-mermaid-viewport').boundingBox();
-			assert.ok(Math.abs(bounds.x - viewport.x) < 1 && Math.abs(bounds.width - viewport.width) < 1 && Math.abs(bounds.height - viewport.height) < 1, 'Zoom fills the rendered viewport');
+			assert.ok(Math.abs(bounds.x - viewport.x) < 1 && Math.abs(bounds.width - viewport.width) < 1 && Math.abs(bounds.height - (viewport.height - 46)) < 1, 'Zoom fills the drawable area above the controls');
 			const x = bounds.x + bounds.width * (fillAvailable ? .5 : .2);
 			const y = bounds.y + bounds.height / 2;
 			if (!fillAvailable) assert.ok(x < fitted.x, 'Start the drag outside the fitted SVG');
@@ -145,9 +145,9 @@ export async function runNavigationChecks(page) {
 			assert.equal(await zoomOut.isDisabled(), true, 'Reset restores the fitted button state');
 			await assertCorner('left');
 			await page.evaluate(() => { navigation.item.settings.alignment = 'left'; navigation.item.child.updateSettings(); });
-			await assertCorner('right');
+			await assertCorner('left');
 			await host.getByRole('button', { name: 'Zoom In', exact: true }).click();
-			await assertCorner('right');
+			await assertCorner('left');
 			await page.evaluate(() => navigation.item.child.setInlineOwned(false, '%% advanced-mermaid: align=right\nflowchart LR\n A[Small]'));
 			await assertCorner('left');
 		} finally { await page.evaluate(() => { navigation.item.child.unload(); navigation.parent.remove(); delete window.navigation; }); }

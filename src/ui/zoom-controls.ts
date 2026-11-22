@@ -11,8 +11,8 @@ export function zoomLimit(host: HTMLElement): number {
 	return Math.max(3, intrinsic > 0 ? 8 * (fittedWidth || intrinsic) / intrinsic : 3);
 }
 
-export function createZoomControls(frame: HTMLElement, host: HTMLElement, owner: Component, currentZoom: () => Zoom | undefined): () => void {
-	const rail = frame.createDiv({ cls: 'pele pele-zoom', attr: { role: 'group', 'aria-label': 'Diagram zoom' } });
+export function createZoomControls(viewport: HTMLElement, host: HTMLElement, owner: Component, currentZoom: () => Zoom | undefined): () => void {
+	const rail = viewport.createDiv({ cls: 'pele pele-zoom', attr: { role: 'group', 'aria-label': 'Diagram zoom' } });
 	rail.remove();
 	for (const event of ['click', 'dblclick', 'pointerdown'] as const) {
 		owner.registerDomEvent(rail, event, evt => evt.stopPropagation());
@@ -39,7 +39,7 @@ export function createZoomControls(frame: HTMLElement, host: HTMLElement, owner:
 	function sync(): void {
 		const zoom = currentZoom();
 		if (!zoom) { rail.remove(); return; }
-		if (rail.parentElement !== frame) frame.append(rail);
+		if (rail.parentElement !== viewport) viewport.append(rail);
 		const scale = zoom.scale;
 		zoomIn.disabled = scale >= Math.max(zoom.fit, zoomLimit(host)) * 0.999;
 		zoomOut.disabled = scale <= zoom.fit;

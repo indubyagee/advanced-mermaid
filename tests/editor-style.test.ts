@@ -4,7 +4,7 @@ import { normalizeSettings } from '../src/settings';
 import { EDITOR_COLORS, normalizeEditorStyle } from '../src/styles/editor-style';
 import { normalizeZoomStyle } from '../src/styles/zoom-style';
 
-const inheritedZoom = { useGlobal: false, colors: {} };
+const inheritedZoom = { placement: 'bottom-left', orientation: 'horizontal', useGlobal: false, colors: {} };
 
 void test('editor style additions preserve old source sizing and independently inherit theme colors', () => {
 	const previous = normalizeSettings({ schemaVersion: 4, liveEditor: { fontSizePx: 23, lineNumbers: false } });
@@ -68,7 +68,7 @@ void test('dedicated Zoom colors inherit independently and global mode retains s
 		border: { light: 'rgba(12, 34, 56, .5)', dark: '#abc' }, text: { dark: '#fff' },
 		background: { light: 'url(x)', dark: 'hsl(0, 0%, 0%)' }, unknown: { light: '#fff' },
 	} });
-	assert.deepEqual(zoom, { useGlobal: true, colors: { border: { light: '#0c223880', dark: '#aabbcc' }, text: { dark: '#ffffff' }, background: { dark: '#000000' } } });
+	assert.deepEqual(zoom, { ...inheritedZoom, useGlobal: true, colors: { border: { light: '#0c223880', dark: '#aabbcc' }, text: { dark: '#ffffff' }, background: { dark: '#000000' } } });
 	const settings = normalizeSettings({ liveEditor: { style: { zoom, colors: { closeButtonText: { dark: '#123456' } } } } });
 	assert.deepEqual(normalizeSettings(JSON.parse(JSON.stringify(settings))).liveEditor.style, settings.liveEditor.style);
 	assert.deepEqual(settings.liveEditor.style.colors.closeButtonText, { dark: '#123456' });
@@ -76,4 +76,15 @@ void test('dedicated Zoom colors inherit independently and global mode retains s
 	assert.deepEqual(settings.liveEditor.style.zoom.colors, zoom.colors);
 	settings.liveEditor.style.zoom.colors.border.light = '#ffffff';
 	assert.deepEqual(normalizeSettings(null).liveEditor.style.zoom, inheritedZoom);
+});
+
+void test('Zoom placement and orientation validate and round-trip with saved colors', () => {
+	assert.deepEqual(normalizeZoomStyle({ placement: 'center', orientation: 'diagonal' }), inheritedZoom);
+	for (const placement of ['top-left', 'bottom-left', 'top-right', 'bottom-right']) {
+		for (const orientation of ['vertical', 'horizontal']) {
+			const saved = { ...inheritedZoom, placement, orientation, colors: { text: { dark: '#112233' } } };
+			const settings = normalizeSettings({ liveEditor: { style: { zoom: saved } } });
+			assert.deepEqual(normalizeSettings(JSON.parse(JSON.stringify(settings))).liveEditor.style.zoom, saved);
+		}
+	}
 });

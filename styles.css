@@ -142,14 +142,21 @@
 /* The SVG fits independently of the mount used by Pele for zoom and pan. */
 .advanced-mermaid-layout { position: relative; box-sizing: border-box; }
 .advanced-mermaid-viewport {
+	--advanced-mermaid-zoom-inset: 8px;
+	/* A 24px button, plus the rail border, padding, and space on both sides. */
+	--advanced-mermaid-zoom-gutter: 46px;
+	position: relative;
 	display: flex;
 	justify-content: center;
 	align-items: flex-start;
 	min-width: 0;
-	min-height: max(96px, calc(3 * var(--input-height, 28px) + 10px));
-	padding-inline-end: 40px;
+	min-height: 98px;
 	box-sizing: border-box;
 }
+.advanced-mermaid[data-zoom-orientation="horizontal"][data-zoom-placement^="top-"] .advanced-mermaid-viewport { padding-top: var(--advanced-mermaid-zoom-gutter); }
+.advanced-mermaid[data-zoom-orientation="horizontal"][data-zoom-placement^="bottom-"] .advanced-mermaid-viewport { padding-bottom: var(--advanced-mermaid-zoom-gutter); }
+.advanced-mermaid[data-zoom-orientation="vertical"][data-zoom-placement$="-left"] .advanced-mermaid-viewport { padding-left: var(--advanced-mermaid-zoom-gutter); }
+.advanced-mermaid[data-zoom-orientation="vertical"][data-zoom-placement$="-right"] .advanced-mermaid-viewport { padding-right: var(--advanced-mermaid-zoom-gutter); }
 .advanced-mermaid[data-align="left"] .advanced-mermaid-viewport { justify-content: flex-start; }
 .advanced-mermaid[data-align="right"] .advanced-mermaid-viewport { justify-content: flex-end; }
 .advanced-mermaid-frame { min-width: 0; max-width: 100%; position: relative; }
@@ -166,7 +173,6 @@
 	max-height: none;
 	background-color: var(--pele-bg);
 }
-:is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid) .advanced-mermaid-viewport { padding-inline-end: 0; }
 :is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid) .advanced-mermaid-viewport :is(.advanced-mermaid-frame, .advanced-mermaid-mount) { width: 100%; min-height: inherit; }
 :is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid)[data-align="center"] .advanced-mermaid-viewport svg.pele { margin-inline: auto; }
 :is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid)[data-align="right"] .advanced-mermaid-viewport svg.pele { margin-inline-start: auto; }
@@ -220,19 +226,12 @@
 .advanced-mermaid :is(button, .advanced-mermaid-export summary) {
 	font-size: var(--advanced-mermaid-button-font-size, var(--font-ui-small, 13px));
 }
-/* Reserve a rail beside the SVG. Keeping controls out of its paint area also
-   avoids Pele shrinking small diagrams to make room for overlaid buttons. */
+/* The viewport reserves a gutter for the rail along the selected edge. */
 .advanced-mermaid .pele-zoom {
-	--pele-zoom-top: 0;
-	--pele-zoom-right: auto;
-	--pele-zoom-left: calc(100% + 8px);
 	position: absolute;
-	top: var(--pele-zoom-top);
-	right: var(--pele-zoom-right);
-	bottom: var(--pele-zoom-bottom, auto);
-	left: var(--pele-zoom-left);
+	inset: auto;
 	display: flex;
-	flex-direction: column;
+	flex-direction: row;
 	gap: 2px;
 	padding: 2px;
 	border: 1px solid var(--advanced-mermaid-zoom-border, var(--pele-border, #8a8a8a));
@@ -241,15 +240,11 @@
 	background: var(--advanced-mermaid-zoom-background, var(--pele-bg, #fff));
 	line-height: 0;
 }
-:is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid) .pele-zoom {
-	--pele-zoom-top: auto;
-	--pele-zoom-bottom: 8px;
-	--pele-zoom-left: 8px;
-}
-:is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid)[data-align="left"] .pele-zoom {
-	--pele-zoom-left: auto;
-	--pele-zoom-right: 8px;
-}
+.advanced-mermaid[data-zoom-placement^="top-"] .pele-zoom { top: var(--advanced-mermaid-zoom-inset); }
+.advanced-mermaid[data-zoom-placement^="bottom-"] .pele-zoom { bottom: var(--advanced-mermaid-zoom-inset); }
+.advanced-mermaid[data-zoom-placement$="-left"] .pele-zoom { left: var(--advanced-mermaid-zoom-inset); }
+.advanced-mermaid[data-zoom-placement$="-right"] .pele-zoom { right: var(--advanced-mermaid-zoom-inset); }
+.advanced-mermaid[data-zoom-orientation="vertical"] .pele-zoom { flex-direction: column; }
 :is(.advanced-mermaid[data-rendered-live-preview], .markdown-preview-view .advanced-mermaid) :is(.pele-zoom, .pele-zoom button) {
 	background-image: none;
 	box-shadow: none;
