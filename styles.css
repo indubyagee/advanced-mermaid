@@ -179,7 +179,7 @@
 .advanced-mermaid :is(.advanced-mermaid-mount, .advanced-mermaid-error)[hidden],
 .advanced-mermaid-actions[hidden],
 .advanced-mermaid-export [hidden],
-.advanced-mermaid-editor-export-status button[hidden],
+.advanced-mermaid-export-feedback button[hidden],
 .advanced-mermaid-editor .advanced-mermaid-editor-preview > [hidden] { display: none; }
 /* Render errors retain readable, wrapping details for long source messages. */
 .advanced-mermaid-error { border-inline-start: 3px solid var(--text-error); padding: var(--size-4-2); }
@@ -311,7 +311,7 @@
 	margin-top: 0;
 	min-width: 0;
 }
-.advanced-mermaid-editor-end-actions :is(.advanced-mermaid-export-options:not([hidden]), .advanced-mermaid-export-copy, .advanced-mermaid-export-save) {
+.advanced-mermaid-export-toolbar :is(.advanced-mermaid-export-options:not([hidden]), .advanced-mermaid-export-copy, .advanced-mermaid-export-save) {
 	display: flex;
 	flex-wrap: wrap;
 	justify-content: flex-end;
@@ -319,13 +319,13 @@
 	min-width: 0;
 	gap: 6px;
 }
-.advanced-mermaid-editor-end-actions .advanced-mermaid-export-options { padding: 0; }
-.advanced-mermaid-editor-end-actions .advanced-mermaid-export-save {
+.advanced-mermaid-export-toolbar .advanced-mermaid-export-options { padding: 0; }
+.advanced-mermaid-export-toolbar .advanced-mermaid-export-save {
 	border-inline-start: 1px solid var(--background-modifier-border, currentColor);
 	padding-inline-start: 6px;
 }
 .advanced-mermaid-editor-footer button { max-width: 100%; white-space: normal; overflow-wrap: anywhere; height: auto; min-height: 28px; }
-.advanced-mermaid-editor-export-status {
+.advanced-mermaid-export-feedback {
 	display: flex;
 	flex-wrap: wrap;
 	align-items: center;
@@ -334,8 +334,9 @@
 	min-width: 0;
 	gap: 6px;
 }
-.advanced-mermaid-editor-export-status .advanced-mermaid-export-status { margin: 0; min-width: 0; }
-.advanced-mermaid-editor-export-status:not(:has(.advanced-mermaid-export-status:not(:empty), button:not([hidden]))) { display: none; }
+.advanced-mermaid-layout > .advanced-mermaid-export-feedback { margin-top: 6px; }
+.advanced-mermaid-export-feedback .advanced-mermaid-export-status { margin: 0; min-width: 0; }
+.advanced-mermaid-export-feedback:not(:has(.advanced-mermaid-export-status:not(:empty), button:not([hidden]))) { display: none; }
 .advanced-mermaid-editor-status, .advanced-mermaid-renderer-details {
 	font-size: var(--font-ui-smaller, 12px);
 }

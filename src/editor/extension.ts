@@ -174,7 +174,7 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 		}
 		if (isActive) {
 			ranges.push(Decoration.replace({ block: true, widget: new InlineWidget(active.id) }).range(fence.from, fence.to));
-		} else if (fence.language === 'mermaid' && !isSelected) {
+		} else if (!isSelected) {
 			const widget = previews.widget(current.sliceDoc(fence.bodyFrom, fence.bodyTo), file);
 			ranges.push(Decoration.replace({ block: true, widget }).range(fence.from, fence.to));
 		}

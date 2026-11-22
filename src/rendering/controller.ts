@@ -24,7 +24,7 @@ import { maskClusterTitleOverlaps } from './cluster-title-mask';
 export interface ControllerOptions {
 	boundary?: HTMLElement;
 	keepLastValid?: boolean;
-	exportFooter?: { actions: HTMLElement; status: HTMLElement };
+	exportFooter?: 'rendered' | { actions: HTMLElement; status: HTMLElement };
 	changed?: (valid: boolean, error?: unknown) => void;
 }
 
@@ -95,14 +95,16 @@ export class DiagramController extends Component {
 		this.syncZoom = createZoomControls(viewport, this.host, this,
 			() => this.renderedSource === undefined ? undefined : this.diagram?.zoom);
 		const footer = this.options.exportFooter;
-		this.controls = (footer?.actions ?? layout).createDiv({ cls: 'advanced-mermaid-actions' });
+		const actionsHost = typeof footer === 'object' ? footer.actions : layout;
+		this.controls = actionsHost.createDiv({ cls: 'advanced-mermaid-actions' });
+		const footerStatus = footer === 'rendered' ? layout.createDiv({ cls: 'advanced-mermaid-export-feedback' }) : footer?.status;
 		const feedback = layout.createDiv({ cls: 'advanced-mermaid-error', attr: { role: 'status' } });
 		this.feedback = new DiagramFeedback(feedback, this, text => this.copyText(text));
 		this.layout = new DiagramLayout(this.containerEl, layout, viewport, this.host, this, () => {
 			this.diagram?.zoom?.refresh();
 			this.syncZoom();
 		}, this.app, this.options.boundary);
-		this.actions = new DiagramActions(this.app, this, this.controls, this.sourcePath, () => this.captureExport(), footer?.status);
+		this.actions = new DiagramActions(this.app, this, this.controls, this.sourcePath, () => this.captureExport(), footerStatus);
 		this.register(observeDiagramEnvironment(this.containerEl, () => this.updateSettings()));
 		this.updateSettings();
 	}

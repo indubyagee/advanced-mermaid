@@ -54,7 +54,9 @@ export class DiagramActions {
 			owner.registerDomEvent(button, 'click', () => { void this.run(action); });
 			this.buttons.set(action, button);
 		};
-		const menu = host.createEl(footerStatus ? 'div' : 'details', { cls: 'advanced-mermaid-export' });
+		const menu = host.createEl(footerStatus ? 'div' : 'details', {
+			cls: footerStatus ? 'advanced-mermaid-export advanced-mermaid-export-toolbar' : 'advanced-mermaid-export',
+		});
 		let feedback = host;
 		let canvasAction: HTMLElement;
 		if (footerStatus) {
@@ -171,7 +173,7 @@ export class DiagramActions {
 			const captured = request;
 			if (action === 'save-mmd' || action === 'save-mermaid') {
 				const authored = captured.authored;
-				if (!authored) throw new Error('Open the Live Editor to save Mermaid source.');
+				if (!authored) throw new Error('Mermaid source is unavailable for this preview.');
 				const extension = action === 'save-mmd' ? 'mmd' : 'mermaid';
 				await this.save(extension, authored.current, (folder, current) =>
 					saveExport(this.app.vault, folder, this.basename, extension, authored.source, current));

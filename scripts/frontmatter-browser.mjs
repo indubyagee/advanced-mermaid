@@ -144,21 +144,12 @@ async function checkAgentflowAliases(page) {
 			});
 			const processBlock = plugin.processors.get(fence).handler;
 			processBlock(source, reading, { sourcePath: 'InlineEditor.md', getSectionInfo: () => null, addChild: child => child.load() });
-			// Obsidian creates the custom-fence preview through the Markdown processor.
-			if (fence === 'pele') {
-				const preview = view.dom.createDiv({ cls: 'alias-pele-preview' });
-				processBlock(source, preview, {
-					sourcePath: 'InlineEditor.md',
-					getSectionInfo: () => ({ lineStart: 2, lineEnd: 5, text: note }),
-					addChild: child => child.load(),
-				});
-			}
 			window.agentflowFixture = { reading, host, plugin, view, note };
 		}, { fence, source });
 		try {
 			await page.waitForFunction(() => {
 				const { reading, host } = agentflowFixture;
-				return [reading.querySelector('svg.pele'), host.querySelector(':is(.advanced-mermaid-rendered-preview, .alias-pele-preview) svg.pele')]
+				return [reading.querySelector('svg.pele'), host.querySelector('.advanced-mermaid-rendered-preview svg.pele')]
 					.every(svg => svg?.textContent.includes('Agentflow defaults') && svg.textContent.includes('Intake'));
 			});
 			await page.evaluate(() => {
