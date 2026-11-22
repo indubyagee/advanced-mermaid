@@ -1,5 +1,4 @@
-import { detectType } from 'pele';
-import { frontmatterEnd } from '../../styles/local-codec';
+import { detectDiagramType, diagramStart } from '../../rendering/pele-source';
 import { checkDiagramSource } from '../../rendering/source-budget';
 import type { DiagramSyntax } from './catalog';
 
@@ -9,21 +8,10 @@ export const sourceEol = (source: string): string => source.includes('\r\n') ? '
 
 /** Skip YAML, ordinary comments and complete (possibly multiline) init directives. */
 export function diagramDeclaration(source: string): DeclarationRange {
-	let from = frontmatterEnd(source, true);
-	while (from < source.length) {
-		const whitespace = /^\s*/.exec(source.slice(from))![0]; from += whitespace.length;
-		if (!source.startsWith('%%', from)) break;
-		if (source.startsWith('%%{', from)) {
-			const end = source.indexOf('}%%', from + 3);
-			if (end < 0) throw new Error('Complete the Mermaid directive before selecting a diagram.');
-			from = end + 3;
-		} else {
-			const end = source.indexOf('\n', from); from = end < 0 ? source.length : end + 1;
-		}
-	}
+	const from = diagramStart(source);
 	const line = source.slice(from).split(/\r?\n/, 1)[0] ?? '';
 	// Semicolons or trailing statements belong to the body, including inline nodes.
-	const declaration = /^(?:(?:flowchart-elk|flowchart|graph|agentflow-beta|swimlane-beta|gitGraph|timeline)\b(?:[ \t]+(?:TB|TD|BT|LR|RL)\b)?:?|[\w-]+)/i.exec(line)?.[0] ?? '';
+	const declaration = /^(?:(?:flowchart-elk|flowchart|graph|agentflow(?:-beta)?|swimlane-beta|gitGraph|timeline)(?=$|[ \t:;])(?:[ \t]+(?:TB|TD|BT|LR|RL)\b)?:?|[\w-]+)/i.exec(line)?.[0] ?? '';
 	return { from, to: from + declaration.length, text: declaration };
 }
 
@@ -35,7 +23,7 @@ function inserted(source: string, from: number, to: number, text: string, select
 export function initializeDiagram(source: string, diagram: DiagramSyntax): SourceInsertion {
 	const declaration = diagramDeclaration(source); const eol = sourceEol(source);
 	let recognized = false;
-	try { recognized = detectType(declaration.text) !== null; } catch { /* Keep an unrecognized draft intact. */ }
+	try { recognized = detectDiagramType(declaration.text) !== null; } catch { /* Keep an unrecognized draft intact. */ }
 	if (declaration.text && !recognized) throw new Error('Select or clear the unrecognized diagram declaration before choosing a diagram.');
 	const prefix = declaration.from && !/\s$/.test(source.slice(0, declaration.from)) ? eol : '';
 	const suffix = declaration.to === source.length ? eol : '';

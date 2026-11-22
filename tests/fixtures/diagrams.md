@@ -45,6 +45,24 @@ flowchart LR
  style A fill:#123456,color:#ffffff
 ```
 
+## Agentflow declaration aliases
+
+```mermaid
+---
+title: Review workflow
+config:
+  agentflow:
+    rankSpacing: 80
+---
+agentflow LR
+  A@{ shape: input, label: "Submission" } --> B[Review]
+```
+
+```pele
+agentflow-beta LR
+  A@{ shape: input, label: "Submission" } --> B[Review]
+```
+
 ## Tall diagram with unlimited height
 
 ```pele

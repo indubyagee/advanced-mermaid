@@ -1,6 +1,6 @@
 # Advanced Mermaid technical reference
 
-Advanced Mermaid is a desktop Obsidian plugin written in TypeScript. The production build bundles Pele 1.12.0 into `main.js` and uses Obsidian’s runtime for its plugin and editor APIs. [User Guide](user-guide.md) · [Pele compatibility](https://pele.run/compatibility)
+Advanced Mermaid is a desktop Obsidian plugin written in TypeScript. The production build bundles Pele 1.13.0 into `main.js` and uses Obsidian’s runtime for its plugin and editor APIs. [User Guide](user-guide.md) · [Pele compatibility](https://pele.run/compatibility)
 
 ## Build and test locally
 
@@ -25,6 +25,13 @@ The build checks TypeScript and bundles [`src/main.ts`](../src/main.ts) with esb
 | `npm run check:release` | Checks version metadata, release files, and the bundled license notices after a build. |
 
 To run the browser fixtures with Chromium as in CI, run `npx playwright install chromium` and set `ADVANCED_MERMAID_BROWSER` to `chromium`. The fixtures use an Obsidian test adapter. Use a test vault in the actual app to verify host behavior such as editor handoff, settings, clipboard access, and pop-out windows.
+
+To reproduce the version comparison, install the pinned renderer packages in a separate local prefix and run the comparison script. It reports per-diagram results and measures edit-to-preview latency with the plugin's installed Pele and the default 250 ms debounce. [Comparison script](../scripts/mermaid-compatibility.mjs)
+
+```sh
+npm install --prefix .local/mermaid-12-3-reference --ignore-scripts --no-audit --no-fund --save-exact mermaid@12.3.0 pele@1.13.0 pele-baseline@npm:pele@1.12.0
+node scripts/mermaid-compatibility.mjs
+```
 
 ## How a diagram renders
 

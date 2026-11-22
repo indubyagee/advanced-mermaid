@@ -1,8 +1,8 @@
-import { detectType } from 'pele';
+import { detectDiagramType } from '../rendering/pele-source';
 import { SEMANTIC_CONTROLS } from './semantic-controls';
 
 /** Contract for the pinned renderer; declaration recognition is not syntax validation. */
-export const STYLE_RENDERER_VERSION = '1.12.0';
+export const STYLE_RENDERER_VERSION = '1.13.0';
 
 export const DIAGRAM_CATEGORIES = [
 	'agentflow', 'eventmodeling', 'flowchart', 'gantt', 'gitGraph', 'ishikawa',
@@ -15,7 +15,7 @@ export const DIAGRAM_REGISTRY: Readonly<Record<DiagramCategory, {
 	readonly label: string;
 	readonly declarations: readonly string[];
 }>> = {
-	agentflow: { label: 'Agentflow', declarations: ['agentflow-beta'] },
+	agentflow: { label: 'Agentflow', declarations: ['agentflow', 'agentflow-beta'] },
 	eventmodeling: { label: 'Event Modeling', declarations: ['eventmodeling'] },
 	flowchart: { label: 'Flowchart', declarations: ['flowchart', 'graph', 'flowchart-elk'] },
 	gantt: { label: 'Gantt', declarations: ['gantt'] },
@@ -37,9 +37,9 @@ export function isDiagramCategory(value: unknown): value is DiagramCategory {
 	return typeof value === 'string' && (DIAGRAM_CATEGORIES as readonly string[]).includes(value);
 }
 
-/** Always pass the complete source to Pele, including frontmatter and comments. */
+/** Detect the family from the complete source, including frontmatter and comments. */
 export function diagramCategory(source: string): DiagramCategory | null {
-	const type = detectType(source);
+	const type = detectDiagramType(source);
 	return isDiagramCategory(type) ? type : null;
 }
 

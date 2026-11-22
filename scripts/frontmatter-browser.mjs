@@ -116,5 +116,82 @@ export async function runFrontmatterChecks(page) {
 		await page.waitForFunction(() => frontmatterFixture.host.querySelector('.advanced-mermaid-svg-source').value.includes('Inline source'));
 		await page.evaluate(() => { frontmatterFixture.view.destroy(); frontmatterFixture.inline.destroy(); frontmatterFixture.host.remove(); delete window.frontmatterFixture; });
 	}
-	console.log('Frontmatter passed: 16 settings families, validation, persistence, scoped reset/undo, reading/layout, SVG/PNG exports, and authored overrides in both Live editor fence languages.');
+	await checkAgentflowAliases(page);
+	console.log('Frontmatter passed: 16 settings families, validation, persistence, scoped reset/undo, reading/layout, SVG/PNG exports, and authored overrides and Agentflow aliases in both Live Editor fence languages.');
+}
+
+async function checkAgentflowAliases(page) {
+	const source = 'agentflow LR\n  A@{ shape: input, label: "Intake" } --> B[Review]';
+	for (const fence of ['mermaid', 'pele']) {
+		await page.evaluate(async ({ fence, source }) => {
+			const plugin = new fixture.AdvancedMermaidPlugin(fixture.app, { id: 'agentflow-alias-fixture' });
+			plugin.data = { style: { diagrams: { agentflow: {
+				frontmatter: { enabled: true, yaml: 'title: Agentflow defaults\nconfig:\n  agentflow: {rankSpacing: 80}' },
+			} } } };
+			await plugin.onload();
+			const reading = document.body.createDiv();
+			const host = document.body.createDiv({ cls: 'agentflow-alias-fixture' });
+			host.style.width = '900px';
+			const language = new fixture.Language(fixture.defineLanguageFacet(), fixture.markdownParser);
+			const note = 'Before\n\n\x60\x60\x60' + fence + '\n' + source + '\n\x60\x60\x60\n\nAfter';
+			const view = new fixture.EditorView({
+				parent: host,
+				state: fixture.EditorState.create({ doc: note, extensions: [language, fixture.history(), fixture.editorInfoField, fixture.editorLivePreviewField, plugin.extensions] }),
+			});
+			const processBlock = plugin.processors.get(fence).handler;
+			processBlock(source, reading, { sourcePath: 'InlineEditor.md', getSectionInfo: () => null, addChild: child => child.load() });
+			// Obsidian creates the custom-fence preview through the Markdown processor.
+			if (fence === 'pele') {
+				const preview = view.dom.createDiv({ cls: 'alias-pele-preview' });
+				processBlock(source, preview, {
+					sourcePath: 'InlineEditor.md',
+					getSectionInfo: () => ({ lineStart: 2, lineEnd: 5, text: note }),
+					addChild: child => child.load(),
+				});
+			}
+			window.agentflowFixture = { reading, host, plugin, view, note };
+		}, { fence, source });
+		try {
+			await page.waitForFunction(() => {
+				const { reading, host } = agentflowFixture;
+				return [reading.querySelector('svg.pele'), host.querySelector(':is(.advanced-mermaid-rendered-preview, .alias-pele-preview) svg.pele')]
+					.every(svg => svg?.textContent.includes('Agentflow defaults') && svg.textContent.includes('Intake'));
+			});
+			await page.evaluate(() => {
+				const { view, plugin, note } = agentflowFixture;
+				view.dispatch({ selection: { anchor: note.indexOf('agentflow LR') } });
+				view.focus();
+				if (!plugin.inline.toggle()) throw new Error('Could not open Agentflow in Live Editor.');
+			});
+			await page.waitForFunction(() => agentflowFixture.host.querySelector('.advanced-mermaid-editor-render svg.pele')?.textContent.includes('Agentflow defaults'));
+			const editor = page.locator('.agentflow-alias-fixture');
+			assert.equal(await editor.getByRole('combobox', { name: 'Diagram type' }).inputValue(), 'agentflow-beta LR');
+			assert.ok(await page.evaluate(() => agentflowFixture.view.state.doc.toString() === agentflowFixture.note), fence + ' source preserved');
+			await page.evaluate(() => {
+				const nested = fixture.EditorView.findFromDOM(fixture.sourceRoot(agentflowFixture.host).querySelector('.cm-editor'));
+				const text = nested.state.doc.toString();
+				const beta = text.replace('agentflow LR', 'agentflow-beta LR').replace('Intake', 'Beta intake');
+				nested.dispatch({ changes: { from: 0, to: text.length, insert: beta } });
+			});
+			await page.waitForFunction(() => agentflowFixture.host.querySelector('.advanced-mermaid-editor-render svg.pele')?.textContent.includes('Beta intake'));
+			assert.equal(await editor.getByRole('combobox', { name: 'Diagram type' }).inputValue(), 'agentflow-beta LR');
+			await page.evaluate(() => {
+				const nested = fixture.EditorView.findFromDOM(fixture.sourceRoot(agentflowFixture.host).querySelector('.cm-editor'));
+				nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert: 'agentflow LR; @' } });
+			});
+			const diagnostic = editor.locator('.advanced-mermaid-error-message');
+			await diagnostic.waitFor({ timeout: 5000 });
+			assert.match(await diagnostic.textContent(), /line 1, column 15: Lexical error on line 1\./);
+			assert.doesNotMatch(await diagnostic.textContent(), /agentflow-beta/);
+		} finally {
+			await page.evaluate(() => {
+				const { reading, host, plugin, view } = agentflowFixture;
+				view.destroy();
+				plugin.unload();
+				reading.remove();
+				host.remove();
+				delete window.agentflowFixture;
+			});
+		}
+	}
 }

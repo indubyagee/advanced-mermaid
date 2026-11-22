@@ -26,7 +26,6 @@ export function applyStyle(element: HTMLElement, settings: Pick<AdvancedMermaidS
 		if (value !== undefined) element.style.setProperty(variable, String(value) + unit);
 		else if (!(field in settings.theme)) element.style.removeProperty(variable);
 	}
-	// Weight controls remain gated: Pele 1.12.0 exposes paint variables but no
-	// matching per-role measurement option. Do not create clipped labels.
+	// Per-role weight overrides need renderer measurement to keep labels readable.
 	element.classList.toggle('advanced-mermaid-custom-cluster-fill', !!(profile.elements.subgraphFill ?? settings.theme.subgraphFill));
 }

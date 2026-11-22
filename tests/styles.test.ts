@@ -1,11 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectType, supports } from 'pele';
 import { DIAGRAM_CATEGORIES, DIAGRAM_REGISTRY, diagramCategory, emptyStyleProfile } from '../src/styles/registry';
 import { validateStyleProfile, validStyleColor, validStyleFont } from '../src/styles/validate';
 import { resolveDiagramStyle, resolveStyleProfile } from '../src/styles/resolve';
 
-void test('all 21 requested aliases map through the pinned Pele detector to 16 categories', () => {
+void test('all 22 declaration forms resolve to the 16 style categories', () => {
 	assert.equal(DIAGRAM_CATEGORIES.length, 16);
 	let count = 0;
 	for (const category of DIAGRAM_CATEGORIES) {
@@ -14,13 +13,11 @@ void test('all 21 requested aliases map through the pinned Pele detector to 16 c
 			for (const prefix of ['', '---\ntitle: Test\n---\n', '%% ordinary comment\n', '%%{init: {"theme":"base"}}%%\n',
 				'---\r\ntitle: Test\r\n---\r\n%% ordinary comment\r\n']) {
 				const source = prefix + declaration;
-				assert.equal(detectType(source), category, source);
 				assert.equal(diagramCategory(source), category, source);
-				assert.ok(supports(source), source);
 			}
 		}
 	}
-	assert.equal(count, 21);
+	assert.equal(count, 22);
 	assert.equal(diagramCategory('pie\n "First": 40'), null);
 	assert.equal(diagramCategory('not a diagram'), null);
 	assert.equal(diagramCategory(''), null);

@@ -10,7 +10,7 @@ Open a complete top-level `pele` or `mermaid` code block in **Live editor**. The
 
 For example, select **Flowchart TB**, place the cursor on the next line, and select `A["node"]` or `A@{ shape: rect, label: process }` from **Component**. Both produce a rectangular node. Other groups offer connections, containers, metadata and styles. Indented snippets such as Mindmap branches or Kanban tasks need the appropriate parent structure; insert them at the desired nesting level.
 
-The component list follows the declaration even when it is edited manually. Declaration aliases such as `graph LR` use the corresponding family's snippets. An unrecognized declaration or incomplete frontmatter disables component/configuration insertion until repaired. The controls are hidden in the CSS tab. Active text composition and invalid/conflicting CSS drafts must be resolved before a syntax action can modify the note.
+The component list follows the declaration even when it is edited manually. Declaration aliases such as `graph LR` and `agentflow-beta LR` use the corresponding family's snippets. An unrecognized declaration or incomplete frontmatter disables component/configuration insertion until repaired. The controls are hidden in the CSS tab. Active text composition and invalid/conflicting CSS drafts must be resolved before a syntax action can modify the note.
 
 ## Preserving source
 
@@ -24,8 +24,12 @@ Each action is a single step in the parent note's undo history. Note text outsid
 
 ## Configuration compatibility
 
-Templates provide editable Mermaid configuration values. The fields for families with project variable tables follow those tables, excluding newer syntax unsupported by the pinned renderer. Additional families use the [Mermaid 12.1 configuration schema](https://github.com/mermaid-js/mermaid/blob/mermaid%4012.1.0/packages/mermaid/src/schemas/config.schema.yaml). Treemap's `config.treemap` fields are consumed by Pele even though that namespace is absent from the pinned Mermaid schema. Info has no diagram-specific configuration fields and receives a general theme example.
+Templates use the Mermaid 12.3.0 schema as a reference. Options take effect where Pele implements them. Treemap uses the `config.treemap` keys described in its syntax docs. Info receives a general theme example. [Tagged Mermaid schema](https://raw.githubusercontent.com/mermaid-js/mermaid/refs/tags/mermaid%4012.3.0/packages/mermaid/src/schemas/config.schema.yaml) · [Treemap options](https://mermaid.ai/open-source/syntax/treemap.html#configuration-options)
 
-Pele 1.12.0 supports a subset of Mermaid configuration and uses its own layout and CSS-based appearance. Some generated keys have no visible effect. Use **Local override** for the plugin's display and style controls. [Pele compatibility](https://pele.run/compatibility)
+Pele 1.13.0 uses its own layout and CSS-based appearance. Authored `config.themeVariables` palettes work for GitGraph, Mindmap, Timeline, Radar, Treemap, Pie, XY and Venn. Use **Local override** for plugin display and style controls. [Pele compatibility](https://pele.run/compatibility) · [Pele palettes](https://pele.run/theming#series-palettes)
+
+Advanced Mermaid accepts both `agentflow` and `agentflow-beta`. The Diagram chooser inserts `agentflow-beta`, the spelling accepted by the published Mermaid 12.3.0 package in the comparison harness. Use `A@{ shape: input, label: "Intake" }` for Agentflow inputs. Pele 1.13.0 draws the `A[/Intake/]` shorthand as a rounded task. [Agentflow syntax](https://mermaid.ai/open-source/syntax/agentflow.html) · [Reproduce the comparison](technical-reference.md#build-and-test-locally)
+
+Flowchart step animation and number badges, BPMN shapes in Flowchart or Swimlanes, and `mindmap.colorBy: depth` remain renderer gaps. Regular Flowchart edges, nested Swimlane groups, and ER directions and subgraphs are covered by the comparison fixtures. [Mermaid 12.3.0 release](https://github.com/mermaid-js/mermaid/releases/tag/mermaid%4012.3.0) · [Comparison cases](../scripts/mermaid-reference-cases.mjs)
 
 Mobile loading is disabled. macOS and Linux host behavior remains unverified.

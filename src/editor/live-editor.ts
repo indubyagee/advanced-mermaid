@@ -16,6 +16,7 @@ import { insertDisplayOverride, insertStyleOverride, type StyleTarget } from './
 import { overrideSelector } from '../ui/override-selector';
 import { resolveDisplay } from '../rendering/overrides';
 import { applyEditorStyle } from '../styles/editor-style';
+import { STYLE_RENDERER_VERSION } from '../styles/registry';
 import { DiagramSyntaxSelector } from '../ui/diagram-syntax-selector';
 import { initializeDiagram, insertComponent, type SourceInsertion } from './syntax/source';
 import { insertConfiguration } from './syntax/configuration-insertion';
@@ -82,7 +83,7 @@ export class LiveEditor {
 		this.status = this.element.createDiv({ cls: 'advanced-mermaid-editor-status', attr: { role: 'status', 'aria-live': 'polite' } });
 		this.draftStatus = this.element.createDiv({ cls: 'advanced-mermaid-draft-status', attr: { role: 'status' } });
 		// Pele is the renderer name.
-		const details = this.element.createEl('details', { cls: 'advanced-mermaid-renderer-details' }); details.createEl('summary', { text: 'Renderer details' }); details.createEl('p', { text: 'Uses Pele 1.12.0.' });
+		const details = this.element.createEl('details', { cls: 'advanced-mermaid-renderer-details' }); details.createEl('summary', { text: 'Renderer details' }); details.createEl('p', { text: `Uses Pele ${STYLE_RENDERER_VERSION}.` });
 		const footer = this.element.createDiv({ cls: 'advanced-mermaid-editor-footer' });
 		const draftActions = footer.createDiv({ cls: 'advanced-mermaid-draft-actions' });
 		this.button(draftActions, 'Copy draft', () => { void win.navigator.clipboard.writeText(this.inputMode === 'css' ? this.css : this.nested.state.doc.toString()).catch(() => { this.draftStatus.textContent = 'Clipboard unavailable. Select and copy the source text.'; }); });

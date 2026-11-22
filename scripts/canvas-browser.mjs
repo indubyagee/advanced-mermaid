@@ -61,7 +61,7 @@ export async function runCanvasChecks(page) {
 			await find(() => empty.host.querySelector('.advanced-mermaid-export-status').textContent.includes('Add a node or group'));
 			const emptyDidNotWrite = fixture.saved.size === before && !chooser();
 
-			const agent = render('agentflow-beta LR\nA@{ shape: refdoc, label: "Policy" } -.- B');
+			const agent = render('agentflow LR\nA@{ shape: refdoc, label: "Policy" } -.- B');
 			const agentModal = await startSave(agent);
 			agent.child.refreshTheme();
 			button(agentModal, 'Save').click();
