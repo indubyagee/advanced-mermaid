@@ -231,6 +231,24 @@ export async function runFullScreenLayoutChecks(page) {
 		window.fullScreenFixture = { host, parent, editor };
 	});
 	const root = page.locator('.advanced-mermaid-full-screen-view > .advanced-mermaid-editor');
+	const preview = root.locator('.advanced-mermaid-editor-preview');
+	const checkZoom = async () => {
+		const svg = preview.locator('svg.pele');
+		const fitted = await svg.getAttribute('viewBox');
+		await preview.getByRole('button', { name: 'Zoom In', exact: true }).click();
+		assert.notEqual(await svg.getAttribute('viewBox'), fitted);
+		const bounds = await preview.evaluate(pane => {
+			const preview = pane.getBoundingClientRect();
+			const drawing = pane.querySelector('svg.pele').getBoundingClientRect();
+			const rail = pane.querySelector('.pele-zoom').getBoundingClientRect();
+			return { width: drawing.width - preview.width, height: drawing.height - preview.height,
+				left: rail.left - preview.left, bottom: preview.bottom - rail.bottom };
+		});
+		assert(Math.abs(bounds.width) <= 1 && Math.abs(bounds.height) <= 1, JSON.stringify(bounds));
+		assert(Math.abs(bounds.left - 8) <= 1 && Math.abs(bounds.bottom - 8) <= 1, JSON.stringify(bounds));
+		await preview.getByRole('button', { name: 'Reset Zoom', exact: true }).click();
+		assert.equal(await svg.getAttribute('viewBox'), fitted);
+	};
 	try {
 		const toolbar = root.locator('.advanced-mermaid-editor-header');
 		const open = toolbar.getByRole('button', { name: 'Open full-screen' });
@@ -272,10 +290,12 @@ export async function runFullScreenLayoutChecks(page) {
 				throw new Error(`Full-screen layout at ${width} × ${height}: ${JSON.stringify(checks)}`, { cause: error });
 			});
 		}
+		await checkZoom();
 		await toolbar.getByRole('button', { name: 'Return to note' }).click();
 		assert.equal(await root.getAttribute('data-full-screen'), null);
 		assert.equal(await root.locator('.advanced-mermaid-editor-columns').evaluate(columns =>
 			getComputedStyle(columns).gridTemplateColumns.split(' ').length), 1);
+		await checkZoom();
 		console.log('Full-screen layout passed: toolbar order, 30/70 and 50/50 splits, diagram placement, source scrolling and return to inline.');
 	} finally {
 		await page.evaluate(() => {

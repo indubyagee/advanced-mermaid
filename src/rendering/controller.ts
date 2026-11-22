@@ -23,6 +23,7 @@ import { maskClusterTitleOverlaps } from './cluster-title-mask';
 
 export interface ControllerOptions {
 	boundary?: HTMLElement;
+	editorPreview?: boolean;
 	keepLastValid?: boolean;
 	exportFooter?: { actions: HTMLElement; status: HTMLElement };
 	changed?: (valid: boolean, error?: unknown) => void;
@@ -102,7 +103,7 @@ export class DiagramController extends Component {
 		this.layout = new DiagramLayout(this.containerEl, layout, viewport, this.host, this, () => {
 			this.diagram?.zoom?.refresh();
 			this.syncZoom();
-		}, this.app, this.options.boundary);
+		}, this.app, this.options);
 		this.actions = new DiagramActions(this.app, this, this.controls, this.sourcePath, () => this.captureExport(), footer?.status);
 		this.register(observeDiagramEnvironment(this.containerEl, () => this.updateSettings()));
 		this.updateSettings();

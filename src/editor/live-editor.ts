@@ -155,7 +155,7 @@ export class LiveEditor {
 		this.stopWindowMigration = this.sourceHost.onWindowMigrated(this.syncWindow);
 		this.scheduler = new PreviewScheduler(() => this.element.ownerDocument.defaultView, () => this.render(), text => { this.status.textContent = text; });
 		this.syntax.load();
-		this.controller = new DiagramController(this.canonical, this.sourceBaseline, settings, app, file, { boundary: this.preview, keepLastValid: true, exportFooter: { actions: endActions, status: exportStatus }, changed: (valid, error) => {
+		this.controller = new DiagramController(this.canonical, this.sourceBaseline, settings, app, file, { boundary: this.preview, editorPreview: true, keepLastValid: true, exportFooter: { actions: endActions, status: exportStatus }, changed: (valid, error) => {
 			this.status.textContent = valid ? 'Current · ' + (this.canonical.dataset.category ?? 'diagram') : (this.canonical.classList.contains('advanced-mermaid-fallback') ? 'Using global/type fallback styling. ' : this.canonical.classList.contains('advanced-mermaid-stale') ? 'Preview is from the last valid source. ' : 'Diagram error. ') + (error instanceof Error ? error.message : 'Diagram error');
 			if (error && typeof error === 'object' && 'line' in error && typeof error.line === 'number' && Number.isInteger(error.line)) {
 				const line = error.line;
