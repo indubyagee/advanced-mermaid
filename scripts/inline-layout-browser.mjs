@@ -210,3 +210,99 @@ export async function runInlineLayoutChecks(page, theme = 'default') {
 		if (originalViewport) await page.setViewportSize(originalViewport);
 	}
 }
+
+/** The full-screen split follows the pane aspect ratio and contains both scroll areas. */
+export async function runFullScreenLayoutChecks(page) {
+	const viewport = page.viewportSize();
+	await page.setViewportSize({ width: 1400, height: 1150 });
+	await page.evaluate(() => {
+		const host = document.body.createDiv({ cls: 'view-content advanced-mermaid-full-screen-view' });
+		const settings = fixture.normalizeSettings({ liveEditor: { fullScreen: true, layout: 'stacked' } });
+		const source = 'flowchart LR\n A[Start] --> B[End]\n' + '%% Scrollable source\n'.repeat(150);
+		const language = new fixture.Language(fixture.defineLanguageFacet(), fixture.markdownParser);
+		const parent = new fixture.EditorView({ state: fixture.EditorState.create({
+			doc: '```mermaid\n' + source + '```',
+			extensions: [language, fixture.editorInfoField, fixture.editorLivePreviewField],
+		}) });
+		const bridge = fixture.sourceBridge(parent, () => fixture.diagramFences(parent.state)[0]);
+		const editor = new fixture.LiveEditor(fixture.app, () => settings, bridge, () => 'Test.md', () => {},
+			() => editor.setFullScreen(!editor.element.hasAttribute('data-full-screen')));
+		host.append(editor.element);
+		window.fullScreenFixture = { host, parent, editor };
+	});
+	const root = page.locator('.advanced-mermaid-full-screen-view > .advanced-mermaid-editor');
+	const preview = root.locator('.advanced-mermaid-editor-preview');
+	const checkZoom = async () => {
+		const svg = preview.locator('svg.pele');
+		const fitted = await svg.getAttribute('viewBox');
+		await preview.getByRole('button', { name: 'Zoom In', exact: true }).click();
+		assert.notEqual(await svg.getAttribute('viewBox'), fitted);
+		const bounds = await preview.evaluate(pane => {
+			const preview = pane.getBoundingClientRect();
+			const drawing = pane.querySelector('svg.pele').getBoundingClientRect();
+			const rail = pane.querySelector('.pele-zoom').getBoundingClientRect();
+			return { width: drawing.width - preview.width, height: drawing.height - preview.height,
+				left: rail.left - preview.left, bottom: preview.bottom - rail.bottom };
+		});
+		assert(Math.abs(bounds.width) <= 1 && Math.abs(bounds.height) <= 1, JSON.stringify(bounds));
+		assert(Math.abs(bounds.left - 8) <= 1 && Math.abs(bounds.bottom - 8) <= 1, JSON.stringify(bounds));
+		await preview.getByRole('button', { name: 'Reset Zoom', exact: true }).click();
+		assert.equal(await svg.getAttribute('viewBox'), fitted);
+	};
+	try {
+		const toolbar = root.locator('.advanced-mermaid-editor-header');
+		const open = toolbar.getByRole('button', { name: 'Open full-screen' });
+		assert.deepEqual(await toolbar.locator('button').allTextContents(), ['Mermaid', 'CSS', 'Open full-screen', 'Pele', 'SVG']);
+		assert(await open.evaluate(button => parseFloat(getComputedStyle(button.parentElement).borderInlineStartWidth) > 0));
+		await page.evaluate(() => { fullScreenFixture.host.style.cssText = 'width: 1200px; height: 680px'; });
+		await open.click();
+		await root.locator('svg.pele').waitFor();
+		for (const [width, height, ratio] of [[1200, 680, 0.3], [980, 1060, 0.5], [450, 710, 0.5], [1200, 680, 0.3]]) {
+			await page.evaluate(({ width, height }) => {
+				fullScreenFixture.host.style.cssText = `width: ${width}px; height: ${height}px`;
+			}, { width, height });
+			const layout = ({ ratio, details }) => {
+				const { host, editor } = fullScreenFixture;
+				const source = host.querySelector('.advanced-mermaid-editor-source');
+				const preview = host.querySelector('.advanced-mermaid-editor-preview');
+				const diagram = preview.querySelector('svg.pele');
+				const left = source.getBoundingClientRect();
+				const right = preview.getBoundingClientRect();
+				const svg = diagram?.getBoundingClientRect();
+				const scroller = fixture.sourceRoot(editor.element).querySelector('.cm-scroller');
+				const checks = {
+					split: Math.abs(left.width / (left.width + right.width) - ratio) < 0.01,
+					aligned: left.right < right.left && left.top === right.top && left.bottom === right.bottom,
+					diagram: !!svg && svg.width > 0 && svg.height > 0 && svg.left >= right.left - 1 &&
+						svg.right <= right.right + 1 && svg.top >= right.top && svg.bottom <= right.bottom,
+					sourceScroll: scroller.scrollHeight > scroller.clientHeight,
+					paneFits: host.scrollWidth <= host.clientWidth + 1 && host.scrollHeight <= host.clientHeight + 1,
+				};
+				return details ? {
+					...checks,
+					paneHeight: [host.clientHeight, host.scrollHeight],
+					paneWidth: [host.clientWidth, host.scrollWidth],
+					sourceHeight: [left.height, scroller.clientHeight, scroller.scrollHeight],
+				} : Object.values(checks).every(Boolean);
+			};
+			await page.waitForFunction(layout, { ratio }, { timeout: 4000 }).catch(async error => {
+				const checks = await page.evaluate(layout, { ratio, details: true });
+				throw new Error(`Full-screen layout at ${width} × ${height}: ${JSON.stringify(checks)}`, { cause: error });
+			});
+		}
+		await checkZoom();
+		await toolbar.getByRole('button', { name: 'Return to note' }).click();
+		assert.equal(await root.getAttribute('data-full-screen'), null);
+		assert.equal(await root.locator('.advanced-mermaid-editor-columns').evaluate(columns =>
+			getComputedStyle(columns).gridTemplateColumns.split(' ').length), 1);
+		await checkZoom();
+		console.log('Full-screen layout passed: toolbar order, 30/70 and 50/50 splits, diagram placement, source scrolling and return to inline.');
+	} finally {
+		await page.evaluate(() => {
+			const { editor, parent, host } = fullScreenFixture;
+			editor.destroy(); parent.destroy(); host.remove();
+			delete window.fullScreenFixture;
+		});
+		await page.setViewportSize(viewport);
+	}
+}

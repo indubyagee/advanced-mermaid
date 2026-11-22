@@ -21,10 +21,10 @@ let nextDiagram = 0;
 
 /** Export operations are initiated only by an explicit diagram action. */
 export class DiagramActions {
+	private readonly diagram = ++nextDiagram;
 	private readonly buttons = new Map<Action, HTMLButtonElement>();
 	private readonly status: HTMLElement;
 	private readonly openCanvasButton: HTMLButtonElement;
-	private readonly basename: string;
 	private readonly abort = new AbortController();
 	private modal?: Modal;
 	private savedCanvasPath?: string;
@@ -33,9 +33,8 @@ export class DiagramActions {
 	private disposed = false;
 
 	constructor(private readonly app: App, owner: Component, private readonly host: HTMLElement,
-		private readonly sourcePath: string, private readonly capture: () => ExportRequest, private readonly footerStatus?: HTMLElement) {
-		const diagram = ++nextDiagram;
-		this.basename = exportBasename(sourcePath, String(diagram));
+		private readonly sourcePath: string | (() => string), private readonly capture: () => ExportRequest, private readonly footerStatus?: HTMLElement) {
+		const diagram = this.diagram;
 		// Keep host editor click handlers from turning an export action into an edit.
 		for (const event of ['click', 'dblclick', 'pointerdown'] as const) {
 			owner.registerDomEvent(host, event, evt => evt.stopPropagation());
@@ -93,8 +92,10 @@ export class DiagramActions {
 		this.openCanvasButton = canvasAction.createEl('button', { text: 'Open canvas', attr: { type: 'button' } });
 		this.openCanvasButton.hidden = true;
 		owner.registerDomEvent(this.openCanvasButton, 'click', () => { void this.openSavedCanvas(); });
-		owner.register(() => { this.disposed = true; this.abort.abort(); this.modal?.close(); });
+		owner.register(() => { this.disposed = true; this.abort.abort(); this.closeModal(); });
 	}
+
+	closeModal(): void { this.modal?.close(); }
 
 	setValid(value: boolean, supportsCanvas = false): void {
 		const changed = this.valid !== value;
@@ -105,6 +106,9 @@ export class DiagramActions {
 		if (!this.savedCanvasPath && (!this.footerStatus || changed || !value)) this.status.textContent = '';
 	}
 
+	private get path(): string { return typeof this.sourcePath === 'function' ? this.sourcePath() : this.sourcePath; }
+	private get basename(): string { return exportBasename(this.path, String(this.diagram)); }
+
 	private updateButtons(): void {
 		for (const button of this.buttons.values()) {
 			button.disabled = !this.valid || this.busy || button.hidden || button.dataset.unavailable === 'true';
@@ -114,7 +118,8 @@ export class DiagramActions {
 	private async save(extension: ExportExtension, isCurrent: () => boolean,
 		write: (folder: string, current: () => boolean) => Promise<string>, description?: string): Promise<void> {
 		if (!isCurrent()) throw new Error('The diagram changed. Export it again.');
-		const folder = this.sourcePath.slice(0, Math.max(0, this.sourcePath.lastIndexOf('/')));
+		const sourcePath = this.path;
+		const folder = sourcePath.slice(0, Math.max(0, sourcePath.lastIndexOf('/')));
 		const path = await new Promise<string | null>(resolve => {
 			this.modal = new SaveExportModal(this.app, this.basename + '.' + extension, folder,
 				(destination, open) => write(destination, () => open() && isCurrent()), resolve, description);

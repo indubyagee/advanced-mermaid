@@ -23,6 +23,7 @@ import { maskClusterTitleOverlaps } from './cluster-title-mask';
 
 export interface ControllerOptions {
 	boundary?: HTMLElement;
+	editorPreview?: boolean;
 	keepLastValid?: boolean;
 	exportFooter?: 'rendered' | { actions: HTMLElement; status: HTMLElement };
 	changed?: (valid: boolean, error?: unknown) => void;
@@ -58,7 +59,7 @@ export class DiagramController extends Component {
 
 	constructor(readonly containerEl: HTMLElement, private source: string,
 		private readonly settings: () => AdvancedMermaidSettings, private readonly app: App,
-		private readonly sourcePath: string, private readonly options: ControllerOptions = {}) {
+		private readonly sourcePath: string | (() => string), private readonly options: ControllerOptions = {}) {
 		super();
 	}
 	setSource(source: string): void {
@@ -80,6 +81,7 @@ export class DiagramController extends Component {
 		this.actions?.setValid(false);
 	}
 	async snapshot(): Promise<SvgSnapshot> { return this.captureExport().snapshot(); }
+	closeExportModal(): void { this.actions.closeModal(); }
 	destroy(): void { this.unload(); }
 	onload(): void {
 		this.disposed = false;
@@ -103,7 +105,7 @@ export class DiagramController extends Component {
 		this.layout = new DiagramLayout(this.containerEl, layout, viewport, this.host, this, () => {
 			this.diagram?.zoom?.refresh();
 			this.syncZoom();
-		}, this.app, this.options.boundary);
+		}, this.app, this.options);
 		this.actions = new DiagramActions(this.app, this, this.controls, this.sourcePath, () => this.captureExport(), footerStatus);
 		this.register(observeDiagramEnvironment(this.containerEl, () => this.updateSettings()));
 		this.updateSettings();

@@ -50,6 +50,19 @@ export async function runSubgraphTitleChecks(page) {
 				await wait();
 				results.push(inspect(`Live Editor (${theme})`, host.querySelector('.advanced-mermaid-editor-render svg.pele')));
 			}
+			const liveSvg = host.querySelector('.advanced-mermaid-editor-render svg.pele');
+			const fittedView = liveSvg.getAttribute('viewBox');
+			const bounds = () => {
+				const { width, height } = maskForEdges(liveSvg).querySelector('rect').getBBox();
+				return [width, height];
+			};
+			const fittedMask = bounds();
+			host.querySelector('.pele-zoom-in').click();
+			host.querySelector('.pele-zoom-in').click();
+			const zoomedView = liveSvg.getAttribute('viewBox');
+			const zoomedMask = bounds();
+			liveSvg.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+			const pannedMask = bounds();
 			[...host.querySelectorAll('[role="tab"]')].find(tab => tab.textContent === 'SVG').click();
 			await wait();
 			const svgSource = host.querySelector('.advanced-mermaid-svg-source').value;
@@ -59,7 +72,8 @@ export async function runSubgraphTitleChecks(page) {
 			nested.dispatch({ changes: { from: 0, to: nested.state.doc.length, insert: 'Invalid diagram' } });
 			[...host.querySelectorAll('button')].find(button => button.textContent === 'Render now').click();
 			results.push(inspect('Last valid Live Editor preview', host.querySelector('.advanced-mermaid-stale svg.pele')));
-			return { results, exportedUnderlays: exportedMask?.querySelectorAll('text').length };
+			return { results, fittedView, zoomedView, fittedMask, zoomedMask, pannedMask,
+				exportedUnderlays: exportedMask?.querySelectorAll('text').length };
 		} finally {
 			document.body.classList.remove('theme-dark');
 			view.destroy(); inline.destroy(); host.remove();
@@ -74,6 +88,9 @@ export async function runSubgraphTitleChecks(page) {
 		assert.ok(mask, `Crossing edges are masked behind title text in ${name}`);
 	}
 	assert.notEqual(reports.results[0].mask, reports.results[1].mask, 'Each diagram has its own mask');
+	assert.notEqual(reports.zoomedView, reports.fittedView);
+	assert.deepEqual(reports.zoomedMask, reports.fittedMask, 'The edge mask keeps its original bounds when zooming');
+	assert.deepEqual(reports.pannedMask, reports.fittedMask, 'The edge mask also covers panned edges');
 	assert.equal(reports.exportedUnderlays, 2, 'The SVG output includes the mask for each crossed title');
 	console.log('Subgraph titles passed in both themes in Rendered view, Reading view, and the Live Editor, including its last valid preview.');
 }

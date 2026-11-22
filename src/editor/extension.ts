@@ -1,16 +1,17 @@
 import { Prec, StateEffect, StateField, type Extension, type EditorState, type Transaction } from '@codemirror/state';
 import { Decoration, EditorView, ViewPlugin, WidgetType, type DecorationSet } from '@codemirror/view';
-import { indentUnit } from '@codemirror/language';
-import { editorInfoField, editorLivePreviewField, type App, type Editor } from 'obsidian';
+import { indentUnit, syntaxTree } from '@codemirror/language';
+import { editorInfoField, editorLivePreviewField, MarkdownView, type App, type Editor } from 'obsidian';
 import { createDetachedEl } from '../dom';
 import type { AdvancedMermaidSettings } from '../settings';
-import { diagramFences, fenceAt, fenceContaining, fencesBetween, type FenceRange } from './fences';
+import { diagramFences, fenceAt, fenceContaining, fencesBetween, mapFenceBody, type FenceRange } from './fences';
 import { updateFenceDecorations, type ActiveFence, type FencePresentation } from './fence-decorations';
 import { sourceBridge } from './source-bridge';
 import { LiveEditor } from './live-editor';
 import { releaseInlineOwner, setInlineOwner } from './ownership';
 import { applyEditorStyle } from '../styles/editor-style';
 import { createRenderedPreviews } from './rendered-preview';
+import type { FullScreenEditor } from './full-screen';
 
 interface DecorationContext extends FencePresentation { enabled: boolean; file: string; styleKey: string }
 interface DecoratedFences extends DecorationContext { decorations: DecorationSet }
@@ -32,14 +33,19 @@ function publishOwnership(view: EditorView, active: ActiveFence | null): void {
 }
 
 // A whole-block replacement ends the active session even if its text is identical.
-function mapFence(range: FenceRange, transaction: Transaction): FenceRange | null | undefined {
+function mapFence(range: FenceRange, transaction: Transaction, preserveBodyWhileParsing = false): FenceRange | null | undefined {
 	const { changes } = transaction;
 	let removed = false;
 	changes.iterChangedRanges((from, to) => { if (from <= range.from && to >= range.to) removed = true; });
 	if (removed) return null;
 	const from = changes.mapPos(range.from, 1);
+	const to = changes.mapPos(range.to, -1);
 	const mapped = fenceContaining(diagramFences(transaction.state), from);
-	return mapped?.from === from && mapped.to === changes.mapPos(range.to, -1) ? mapped : undefined;
+	if (mapped) return mapped.from === from && mapped.to === to ? mapped : undefined;
+	if (preserveBodyWhileParsing && syntaxTree(transaction.state).length < to) {
+		return mapFenceBody(transaction.newDoc, changes, range);
+	}
+	return undefined;
 }
 
 export interface InlineExtension {
@@ -47,8 +53,18 @@ export interface InlineExtension {
 	refresh(): void; remeasure(): void; destroy(): void; openAt(file: string, line: number | (() => number), element?: HTMLElement): boolean;
 }
 
-export function createInlineExtension(app: App, settings: () => AdvancedMermaidSettings): InlineExtension {
-	const views = new Set<EditorView>(); const editors = new Map<EditorView, LiveEditor>();
+export function createInlineExtension(app: App, settings: () => AdvancedMermaidSettings, fullScreen?: FullScreenEditor): InlineExtension {
+	const views = new Set<EditorView>();
+	const sessions = new Map<EditorView, { id: number; editor: LiveEditor; mount: HTMLElement }>();
+	const editorFor = (view: EditorView): LiveEditor | undefined => sessions.get(view)?.editor;
+	const destroySession = (view: EditorView): void => {
+		const session = sessions.get(view);
+		if (!session) return;
+		sessions.delete(view);
+		if (fullScreen?.has(session.editor)) fullScreen.sourceLost(session.editor);
+		else session.editor.destroy();
+		releaseInlineOwner(view.dom, session.id);
+	};
 	const previews = createRenderedPreviews(app, settings);
 	const staticBlocks = StateField.define<readonly FenceRange[]>({
 		create: () => [],
@@ -78,7 +94,7 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 				return range ? { range, id: ++identity } : null;
 			}
 			if (active && transaction.docChanged) {
-				const range = mapFence(active.range, transaction);
+				const range = mapFence(active.range, transaction, true);
 				if (range === null) return null;
 				active = range ? { id: active.id, range } : null;
 			}
@@ -93,9 +109,15 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 			return active;
 		},
 	});
+	const loseSession = (view: EditorView, editor: LiveEditor): void => {
+		const session = sessions.get(view);
+		if (session?.editor !== editor) return;
+		destroySession(view);
+		if (views.has(view) && view.state.field(state, false)?.id === session.id) view.dispatch({ effects: open.of(null) });
+	};
 	const chooseMode = (view: EditorView, from: number, mode: 'static' | 'live' | 'rendered'): void => {
 		if (!settings().liveEditor.enabled || !view.state.field(editorLivePreviewField, false)) return;
-		if (editors.get(view)?.canClose() === false) return;
+		if (editorFor(view)?.canClose() === false) return;
 		const range = fenceAt(view.state, from); if (!range) return;
 		if (mode === 'rendered') {
 			// Live Preview reveals a fence whenever the note cursor is inside it.
@@ -134,26 +156,55 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 		constructor(readonly id: number) { super(); }
 		eq(other: InlineWidget): boolean { return other.id === this.id; }
 		toDOM(view: EditorView): HTMLElement {
-			const bridge = sourceBridge(view, () => { const active = view.state.field(state); return active?.id === this.id ? active.range : undefined; });
+			const existing = sessions.get(view);
+			if (existing?.id === this.id) return existing.mount;
+			destroySession(view);
 			const info = view.state.field(editorInfoField, false);
+			const file = info?.file;
+			let origin: MarkdownView | undefined;
+			const bridge = sourceBridge(view, () => {
+				const active = view.state.field(state, false);
+				if (origin && (origin.getMode() !== 'source' || origin.leaf.view !== origin || origin.editor !== info?.editor)) return;
+				return views.has(view) && active?.id === this.id && view.state.field(editorInfoField, false)?.file === file ? active.range : undefined;
+			});
 			const active = view.state.field(state);
 			if (active?.id === this.id) publishOwnership(view, active);
-			const editor = new LiveEditor(app, settings, bridge, info?.file?.path ?? '', () => requestClose(view));
-			editors.set(view, editor);
-			view.dom.ownerDocument.defaultView!.queueMicrotask(() => { if (editors.get(view) === editor) editor.focus(); });
-			return editor.element;
+			const mount = createDetachedEl(view.dom.ownerDocument, 'div');
+			const editor = new LiveEditor(app, settings, bridge, () => file?.path ?? '',
+				() => fullScreen?.has(editor) ? fullScreen.close(editor) : requestClose(view),
+				fullScreen && (() => {
+					if (fullScreen.has(editor)) { fullScreen.close(editor); return; }
+					if (!settings().liveEditor.fullScreen || !bridge.range()) return;
+					app.workspace.iterateAllLeaves(leaf => {
+						if (leaf.view instanceof MarkdownView && leaf.view.editor === info?.editor) origin = leaf.view;
+					});
+					if (!origin) return;
+					const current = () => !!bridge.range() && editorFor(view) === editor;
+					void fullScreen.open(editor, origin.leaf, current, () => {
+						mount.append(editor.element);
+						editor.setFullScreen(false);
+					}, () => loseSession(view, editor));
+				}));
+			sessions.set(view, { id: this.id, editor, mount });
+			mount.append(editor.element);
+			view.dom.ownerDocument.defaultView!.queueMicrotask(() => { if (editorFor(view) === editor) editor.focus(); });
+			return mount;
 		}
 		ignoreEvent(): boolean { return true; }
 		destroy(dom: HTMLElement): void {
-			for (const [view, editor] of editors) if (editor.element === dom) {
-				editor.destroy(); editors.delete(view); releaseInlineOwner(view.dom, this.id);
+			for (const [view, session] of sessions) if (session.mount === dom) {
+				if (!fullScreen?.has(session.editor)) destroySession(view);
+				break;
 			}
 		}
 	}
 	const decorationContext = (current: EditorState): DecorationContext | null => {
 		if (!current.field(editorLivePreviewField, false)) return null;
 		const active = current.field(state);
-		const fences = diagramFences(current);
+		const parsed = diagramFences(current);
+		const fences = active && !fenceContaining(parsed, active.range.from)
+			? [...parsed, active.range].sort((first, second) => first.from - second.from)
+			: parsed;
 		const selected = new Set<FenceRange>();
 		for (const { from, to } of current.selection.ranges) {
 			for (const fence of fencesBetween(fences, from, to)) selected.add(fence);
@@ -205,13 +256,17 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 		let switching = false;
 		return {
 			update(update) {
-				const editor = editors.get(view);
+				const session = sessions.get(view);
+				const editor = session?.editor;
 				const active = view.state.field(state);
 				const file = view.state.field(editorInfoField, false)?.file?.path;
 				if (update.docChanged || active !== update.startState.field(state) || file !== update.startState.field(editorInfoField, false)?.file?.path) {
 					publishOwnership(view, active);
 				}
 				if (update.docChanged) editor?.syncFromParent(update);
+				if (editor && fullScreen?.has(editor) && (active?.id !== session.id || !editor.sourceAvailable())) {
+					view.dom.ownerDocument.defaultView!.queueMicrotask(() => loseSession(view, editor));
+				}
 				if (update.state.tabSize !== update.startState.tabSize ||
 					update.state.facet(indentUnit) !== update.startState.facet(indentUnit)) editor?.syncIndentation();
 				if (update.transactions.some(transaction => transaction.effects.some(effect => effect.is(refresh)))) {
@@ -225,43 +280,50 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 						switching = true;
 						view.dom.ownerDocument.defaultView!.queueMicrotask(() => {
 							switching = false;
-							if (!views.has(view) || !settings().liveEditor.enabled || editors.get(view)?.canClose() === false) return;
+							if (!views.has(view) || !settings().liveEditor.enabled || editorFor(view)?.canClose() === false) return;
 							const current = fenceAt(view.state, view.state.selection.main.head);
 								if (current && current.from !== view.state.field(state)?.range.from && !isStatic(view.state, current.from)) view.dispatch({ effects: open.of(current.from) });
 						});
 					}
 				}
 			},
-			destroy() { views.delete(view); editors.get(view)?.destroy(); editors.delete(view); setInlineOwner(view.dom); },
+			destroy() { views.delete(view); destroySession(view); setInlineOwner(view.dom); },
 		};
 	});
-	const focused = (editor?: Editor): EditorView | undefined => [...views].find(view => editor ? view.state.field(editorInfoField, false)?.editor === editor : view.hasFocus || editors.get(view)?.element.contains(view.dom.ownerDocument.activeElement));
+	const focused = (editor?: Editor): EditorView | undefined => [...views].find(view => editor ? view.state.field(editorInfoField, false)?.editor === editor : view.hasFocus || editorFor(view)?.hasFocus());
 	return {
-		extension: [staticBlocks, state, decorations, lifecycle, EditorView.scrollHandler.of(view => editors.get(view)?.hasFocus() ?? false)],
+		extension: [staticBlocks, state, decorations, lifecycle, EditorView.scrollHandler.of(view => editorFor(view)?.hasFocus() ?? false)],
 		toggle(checking = false, editor) {
 			const view = focused(editor); if (!view || !settings().liveEditor.enabled || !view.state.field(editorLivePreviewField, false)) return false;
 			const active = view.state.field(state); const range = fenceAt(view.state, view.state.selection.main.head);
 			if (!range) return false;
-			if (!checking && (!active || editors.get(view)?.canClose() !== false)) {
+			if (!checking && (!active || editorFor(view)?.canClose() !== false)) {
 				const current = fenceAt(view.state, view.state.selection.main.head);
 				if (current) chooseMode(view, current.from, active?.range.from === current.from ? 'rendered' : 'live');
 			}
 			return true;
 		},
-		render(checking = false, context) { const view = focused(context); const editor = view && editors.get(view); if (!editor) return false; if (!checking) editor.renderNow(); return true; },
-		refresh() { for (const view of views) { editors.get(view)?.flush(); view.dispatch({ effects: refresh.of(null) }); } previews.refresh(); },
-		remeasure() { for (const editor of editors.values()) editor.remeasure(); },
+		render(checking = false, context) { const view = focused(context); const editor = view && editorFor(view); if (!editor) return false; if (!checking) editor.renderNow(); return true; },
+		refresh() {
+			for (const [view, { editor }] of sessions) {
+				if (!settings().liveEditor.fullScreen && fullScreen?.has(editor)) fullScreen.close(editor);
+				if (views.has(view)) editor.flush();
+			}
+			for (const view of views) view.dispatch({ effects: refresh.of(null) });
+			previews.refresh();
+		},
+		remeasure() { for (const { editor } of sessions.values()) editor.remeasure(); },
 		destroy() {
-			for (const editor of editors.values()) editor.destroy();
+			for (const view of sessions.keys()) destroySession(view);
 			for (const view of views) setInlineOwner(view.dom);
-			editors.clear(); previews.destroy(); views.clear();
+			previews.destroy(); views.clear();
 		},
 		openAt(file, line, element) {
 			if (!settings().liveEditor.enabled) return false;
 			for (const view of views) {
 				if (element && !view.dom.contains(element)) continue;
 				if (view.state.field(editorInfoField, false)?.file?.path !== file || !view.state.field(editorLivePreviewField, false)) continue;
-				if (editors.get(view)?.canClose() === false) return false;
+				if (editorFor(view)?.canClose() === false) return false;
 				const currentLine = typeof line === 'function' ? line() : line;
 				if (currentLine < 0 || currentLine >= view.state.doc.lines) continue;
 				const range = fenceAt(view.state, view.state.doc.line(currentLine + 1).from);

@@ -1,4 +1,4 @@
-import type { EditorState, Line, Text } from '@codemirror/state';
+import type { ChangeDesc, EditorState, Line, Text } from '@codemirror/state';
 import { ensureSyntaxTree, syntaxTree } from '@codemirror/language';
 import type { Tree } from '@lezer/common';
 
@@ -16,16 +16,42 @@ function openingFence(line: Line): OpeningFence | undefined {
 	return undefined;
 }
 
+function closesFence(marker: string, line: Line): boolean {
+	const end = /^ {0,3}(`{3,}|~{3,})\s*$/.exec(line.text)?.[1];
+	return end !== undefined && end[0] === marker[0] && end.length >= marker.length;
+}
+
+function fenceRange({ line, language }: OpeningFence, closing: Line): FenceRange {
+	const bodyFrom = line.to + 1;
+	return { from: line.from, to: closing.to, bodyFrom,
+		bodyTo: Math.max(bodyFrom, closing.from - 1), empty: closing.from === bodyFrom, language };
+}
+
+/** Preserve an already validated fence while Markdown parsing catches up to a body edit. */
+export function mapFenceBody(doc: Text, changes: ChangeDesc, range: FenceRange): FenceRange | undefined {
+	const from = changes.mapPos(range.from, 1);
+	const to = changes.mapPos(range.to, -1);
+	const opening = openingFence(doc.lineAt(from));
+	const closing = doc.lineAt(to);
+	if (!opening || opening.line.from !== from || opening.language !== range.language ||
+		closing.from <= from || closing.to !== to || !closesFence(opening.marker, closing)) return undefined;
+
+	let intact = true;
+	changes.iterChangedRanges((oldFrom, oldTo, newFrom, newTo) => {
+		if (oldFrom < range.bodyFrom || oldTo > range.bodyTo) { intact = false; return; }
+		const last = Math.min(doc.lineAt(newTo).number, closing.number - 1);
+		for (let number = doc.lineAt(newFrom).number; intact && number <= last; number++) {
+			intact = !closesFence(opening.marker, doc.line(number));
+		}
+	});
+	return intact ? fenceRange(opening, closing) : undefined;
+}
+
 /** Collect complete top-level blocks using the parser's fence markers. */
 function collectFences(doc: Text, tree: Tree): readonly FenceRange[] {
 	const fences: FenceRange[] = [];
-	const closeFence = ({ line, marker, language }: OpeningFence, closing: Line): void => {
-		if (closing.from <= line.from) return;
-		const end = /^ {0,3}(`{3,}|~{3,})\s*$/.exec(closing.text)?.[1];
-		if (!end || end[0] !== marker[0] || end.length < marker.length) return;
-		const bodyFrom = line.to + 1;
-		fences.push({ from: line.from, to: closing.to, bodyFrom,
-			bodyTo: Math.max(bodyFrom, closing.from - 1), empty: closing.from === bodyFrom, language });
+	const closeFence = (opening: OpeningFence, closing: Line): void => {
+		if (closing.from > opening.line.from && closesFence(opening.marker, closing)) fences.push(fenceRange(opening, closing));
 	};
 
 	let opening: OpeningFence | undefined;

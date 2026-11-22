@@ -44,6 +44,7 @@ export function normalizeStyleSettings(value: unknown, legacy?: Partial<Record<T
 
 export interface LiveEditorSettings {
 	enabled: boolean; activation: 'manual' | 'focused-block'; layout: 'auto' | 'side-by-side' | 'stacked';
+	fullScreen: boolean;
 	debounceMs: number; lineNumbers: boolean; wrapSource: boolean;
 	/** Null preserves the vault's inherited editor text size. */
 	fontSizePx: number | null;
@@ -53,6 +54,7 @@ export function normalizeLiveEditor(value: unknown): LiveEditorSettings {
 	const data = isStyleRecord(value) ? value : {};
 	return {
 		enabled: data.enabled !== false, activation: data.activation === 'focused-block' ? 'focused-block' : 'manual',
+		fullScreen: data.fullScreen !== false,
 		layout: data.layout === 'side-by-side' || data.layout === 'stacked' ? data.layout : 'auto',
 		debounceMs: typeof data.debounceMs === 'number' && Number.isInteger(data.debounceMs) && data.debounceMs >= 100 && data.debounceMs <= 1000 ? data.debounceMs : 250,
 		lineNumbers: data.lineNumbers !== false, wrapSource: data.wrapSource === true,

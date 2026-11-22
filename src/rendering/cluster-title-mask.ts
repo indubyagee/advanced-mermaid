@@ -7,16 +7,23 @@ export function maskClusterTitleOverlaps(svg: SVGSVGElement): void {
 	if (!titles) return;
 	const underlays = titles.querySelectorAll<SVGTextElement>('.pele-cluster-title > text[fill="none"][stroke]');
 	const edges = svg.querySelector(':scope > .pele-edges');
-	if (!underlays.length || !edges) return;
+	const width = svg.getAttribute('width');
+	const height = svg.getAttribute('height');
+	if (!underlays.length || !edges || !width || !height) return;
 
 	const doc = svg.ownerDocument;
 	const mask = doc.createElementNS(SVG_NS, 'mask');
 	mask.id = `advanced-mermaid-cluster-title-mask-${++nextMaskId}`;
 	mask.setAttribute('maskUnits', 'userSpaceOnUse');
 	mask.setAttribute('mask-type', 'luminance');
+	// Pele zoom changes the viewBox, so percentage bounds would shrink with it.
+	mask.setAttribute('x', '0');
+	mask.setAttribute('y', '0');
+	mask.setAttribute('width', width);
+	mask.setAttribute('height', height);
 	const visible = doc.createElementNS(SVG_NS, 'rect');
-	visible.setAttribute('width', '100%');
-	visible.setAttribute('height', '100%');
+	visible.setAttribute('width', width);
+	visible.setAttribute('height', height);
 	visible.setAttribute('fill', 'white');
 	mask.append(visible);
 	underlays.forEach(underlay => {

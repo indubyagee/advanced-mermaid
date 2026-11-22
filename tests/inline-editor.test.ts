@@ -6,7 +6,7 @@ import { checkDiagramSource, MAX_DIAGRAM_SOURCE_LENGTH } from '../src/rendering/
 import { Language, StreamLanguage, defineLanguageFacet } from '@codemirror/language';
 import { EditorState } from '@codemirror/state';
 import { parser } from '@lezer/markdown';
-import { diagramFences } from '../src/editor/fences';
+import { diagramFences, mapFenceBody } from '../src/editor/fences';
 
 void test('v3 migration preserves display, distinct element defaults, fonts and both color modes', () => {
 	const input = { schemaVersion: 2, alignment: 'right', maxWidth: 'wide', maxHeight: '30vh', fillAvailable: false,
@@ -96,6 +96,34 @@ void test('both fence languages retain their delimiters and exclude nested or in
 	for (const range of ranges) assert.equal(state.sliceDoc(range.bodyFrom, range.bodyTo), 'flowchart LR\n A-->B');
 	assert.ok(state.sliceDoc(ranges[0]!.from, ranges[0]!.to).startsWith('```mermaid'));
 	assert.ok(state.sliceDoc(ranges[1]!.from, ranges[1]!.to).startsWith('~~~pele'));
+});
+
+void test('an active fence survives body syntax errors and repairs during a partial Markdown parse', () => {
+	const language = new Language(defineLanguageFacet(), parser);
+	for (const [marker, fenceLanguage] of [['````', 'mermaid'], ['~~~~', 'pele']] as const) {
+		const state = EditorState.create({
+			doc: `Before\n\n${marker}${fenceLanguage}\nflowchart TD\nA --> B\n${marker}\n\nAfter`,
+			extensions: [language],
+		});
+		const range = diagramFences(state)[0]!;
+		const at = range.bodyFrom + 'flowchart TD'.length;
+		const invalid = state.update({ changes: { from: at, insert: ':' } });
+		const mapped = mapFenceBody(invalid.newDoc, invalid.changes, range)!;
+		assert.equal(invalid.newDoc.sliceString(mapped.bodyFrom, mapped.bodyTo), 'flowchart TD:\nA --> B');
+		const repaired = invalid.state.update({ changes: { from: at, to: at + 1 } });
+		assert.deepEqual(mapFenceBody(repaired.newDoc, repaired.changes, mapped), range);
+
+		const shorter = state.update({ changes: { from: at, insert: '\n' + marker.slice(1) } });
+		assert.ok(mapFenceBody(shorter.newDoc, shorter.changes, range));
+		for (const changes of [
+			{ from: at, insert: '\n' + marker + '\n' },
+			{ from: range.bodyTo + 1, to: range.to },
+			{ from: range.from, to: range.to },
+		]) {
+			const changed = state.update({ changes });
+			assert.equal(mapFenceBody(changed.newDoc, changed.changes, range), undefined);
+		}
+	}
 });
 
 void test('flat HyperMD-style markers pair within one block and reject mismatched closes', () => {

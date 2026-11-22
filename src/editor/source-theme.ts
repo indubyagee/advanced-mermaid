@@ -4,7 +4,8 @@ import { SOURCE_HIGHLIGHTS, SOURCE_HIGHLIGHT_TOKENS } from '../styles/source-hig
 export const sourceTheme = EditorView.theme({
 	'&': {
 		minHeight: '180px',
-		maxHeight: '70vh',
+		height: 'var(--advanced-mermaid-source-height, auto)',
+		maxHeight: 'var(--advanced-mermaid-source-height, 70vh)',
 		border: '1px solid var(--background-modifier-border)',
 		borderRadius: 'var(--radius-m, 6px)',
 		overflow: 'hidden',

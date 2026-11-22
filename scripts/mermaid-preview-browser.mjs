@@ -81,7 +81,9 @@ export async function runMermaidPreviewChecks(page) {
 		assert.equal(await previews.count(), 1); assert.equal(await page.locator('.advanced-mermaid-editor').count(), 1);
 		await page.waitForFunction(() => {
 			const column = mermaidPreviewFixture.host.querySelector('.advanced-mermaid-editor-preview');
-			return Math.abs(column.querySelector('.advanced-mermaid-layout').getBoundingClientRect().width - column.clientWidth * .8) < .05;
+			const viewport = column.querySelector('.advanced-mermaid-viewport').getBoundingClientRect();
+			const fitted = column.querySelector('svg.pele').getBoundingClientRect();
+			return Math.abs(viewport.width - column.clientWidth) < 1 && fitted.width > 0 && fitted.width <= column.clientWidth * .8 + 1;
 		});
 		await modes.getByRole('button', { name: 'Rendered view', exact: true }).click();
 		assert.equal(await previews.count(), 2); assert.equal(await page.locator('.advanced-mermaid-editor').count(), 0);

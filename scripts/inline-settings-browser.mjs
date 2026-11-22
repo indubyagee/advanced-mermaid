@@ -45,7 +45,8 @@ export async function runInlineSettingsChecks(page) {
 		const generalPages = tab.settingItems[0].items.map(item => item.name);
 		const displayLabels = ['Diagram alignment', 'Diagram max width', 'Diagram max height'].every(name =>
 			row(name)?.querySelector(`[aria-label="${name}"]`));
-		const editorEssentials = !!row('Editor layout') && !!row('Wrap source') && !row('Preview delay');
+		const editorEssentials = !!row('Editor layout') && !!row('Wrap source') && !row('Preview delay')
+			&& row('Enable full-screen editor')?.querySelector('input[type="checkbox"]')?.checked === true;
 		open('About');
 		const aboutVersion = row('Advanced Mermaid').textContent.includes('Version 1.2.3');
 		back();

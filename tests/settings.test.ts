@@ -6,6 +6,10 @@ import { ConfigurationError, resolveDisplay } from '../src/rendering/overrides';
 
 void test('schema 6 defaults to native width and preserves explicitly saved presets and fill', () => {
 	const fresh = normalizeSettings(null);
+	assert.equal(fresh.liveEditor.fullScreen, true);
+	assert.equal(normalizeSettings({ liveEditor: { fullScreen: true } }).liveEditor.fullScreen, true);
+	assert.equal(normalizeSettings({ liveEditor: { fullScreen: false } }).liveEditor.fullScreen, false);
+	assert.equal(normalizeSettings({ liveEditor: { fullScreen: 'false' } }).liveEditor.fullScreen, true);
 	assert.equal(fresh.schemaVersion, 6);
 	assert.equal(fresh.maxWidth, 'default');
 	assert.equal(fresh.fillAvailable, false);

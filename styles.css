@@ -152,11 +152,12 @@
 	min-width: 0;
 	min-height: 98px;
 	box-sizing: border-box;
+	padding: var(--advanced-mermaid-gutter-top, 0px) var(--advanced-mermaid-gutter-right, 0px) var(--advanced-mermaid-gutter-bottom, 0px) var(--advanced-mermaid-gutter-left, 0px);
 }
-.advanced-mermaid[data-zoom-orientation="horizontal"][data-zoom-placement^="top-"] .advanced-mermaid-viewport { padding-top: var(--advanced-mermaid-zoom-gutter); }
-.advanced-mermaid[data-zoom-orientation="horizontal"][data-zoom-placement^="bottom-"] .advanced-mermaid-viewport { padding-bottom: var(--advanced-mermaid-zoom-gutter); }
-.advanced-mermaid[data-zoom-orientation="vertical"][data-zoom-placement$="-left"] .advanced-mermaid-viewport { padding-left: var(--advanced-mermaid-zoom-gutter); }
-.advanced-mermaid[data-zoom-orientation="vertical"][data-zoom-placement$="-right"] .advanced-mermaid-viewport { padding-right: var(--advanced-mermaid-zoom-gutter); }
+.advanced-mermaid[data-zoom-orientation="horizontal"][data-zoom-placement^="top-"] .advanced-mermaid-viewport { --advanced-mermaid-gutter-top: var(--advanced-mermaid-zoom-gutter); }
+.advanced-mermaid[data-zoom-orientation="horizontal"][data-zoom-placement^="bottom-"] .advanced-mermaid-viewport { --advanced-mermaid-gutter-bottom: var(--advanced-mermaid-zoom-gutter); }
+.advanced-mermaid[data-zoom-orientation="vertical"][data-zoom-placement$="-left"] .advanced-mermaid-viewport { --advanced-mermaid-gutter-left: var(--advanced-mermaid-zoom-gutter); }
+.advanced-mermaid[data-zoom-orientation="vertical"][data-zoom-placement$="-right"] .advanced-mermaid-viewport { --advanced-mermaid-gutter-right: var(--advanced-mermaid-zoom-gutter); }
 .advanced-mermaid[data-align="left"] .advanced-mermaid-viewport { justify-content: flex-start; }
 .advanced-mermaid[data-align="right"] .advanced-mermaid-viewport { justify-content: flex-end; }
 .advanced-mermaid-frame { min-width: 0; max-width: 100%; position: relative; }
@@ -280,6 +281,14 @@
 }
 .advanced-mermaid-editor-header { justify-content: space-between; margin-bottom: 12px; }
 .advanced-mermaid-editor-header [aria-label="Preview format"] { margin-inline-start: auto; }
+.advanced-mermaid-full-screen-action {
+	display: flex;
+	align-items: center;
+	border-inline-start: 1px solid var(--background-modifier-border, currentColor);
+	padding-inline-start: 6px;
+}
+.advanced-mermaid-full-screen-action:has(> button[hidden]),
+.advanced-mermaid-full-screen-toggle[hidden] { display: none; }
 .advanced-mermaid-syntax-selector {
 	display: flex;
 	flex-wrap: wrap;
@@ -347,13 +356,61 @@
 	grid-template-columns: minmax(0, 48fr) minmax(0, 52fr);
 	gap: 16px;
 }
-.advanced-mermaid-editor[data-layout="stacked"] .advanced-mermaid-editor-columns { grid-template-columns: minmax(0, 1fr); }
+.advanced-mermaid-editor[data-layout="stacked"]:not([data-full-screen]) .advanced-mermaid-editor-columns { grid-template-columns: minmax(0, 1fr); }
+.advanced-mermaid-full-screen-view { overflow: auto; }
+.advanced-mermaid-editor[data-full-screen] {
+	container: advanced-mermaid-full-screen / size;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	border: 0;
+}
+.advanced-mermaid-editor[data-full-screen] > * { flex-shrink: 0; }
+.advanced-mermaid-editor[data-full-screen] > .advanced-mermaid-editor-columns {
+	flex: 1 0 180px;
+	min-height: 0;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-rows: minmax(0, 1fr);
+}
+@container advanced-mermaid-full-screen (min-aspect-ratio: 1) {
+	.advanced-mermaid-editor[data-full-screen] > .advanced-mermaid-editor-columns {
+		grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
+	}
+}
+.advanced-mermaid-editor[data-full-screen] .advanced-mermaid-editor-source > div {
+	--advanced-mermaid-source-height: 100%;
+	height: 100%;
+}
 .advanced-mermaid-editor-source, .advanced-mermaid-editor-preview {
 	min-width: 0;
 	max-width: 100%;
 	overflow: auto;
 }
 .advanced-mermaid-editor-preview { position: relative; }
+/* Keep the fitted diagram size separate from the canvas Pele uses when zoomed. */
+.advanced-mermaid-editor-render,
+.advanced-mermaid-editor-render .advanced-mermaid-layout { height: 100%; }
+.advanced-mermaid-editor-render .advanced-mermaid-layout {
+	display: flex;
+	flex-direction: column;
+}
+.advanced-mermaid-editor-render .advanced-mermaid-viewport {
+	flex: 1;
+	align-items: stretch;
+	overflow: hidden;
+	padding: 0;
+}
+.advanced-mermaid-editor[data-full-screen] .advanced-mermaid-editor-render .advanced-mermaid-viewport { min-height: 0; }
+.advanced-mermaid-editor-render .advanced-mermaid-frame { display: flex; width: 100%; }
+/* Pele offsets the mount padding when it expands the SVG to the zoom canvas. */
+.advanced-mermaid-editor-render .advanced-mermaid-frame > .advanced-mermaid-mount {
+	width: 100%;
+	height: auto;
+	box-sizing: border-box;
+	padding: var(--advanced-mermaid-gutter-top, 0px) var(--advanced-mermaid-gutter-right, 0px) var(--advanced-mermaid-gutter-bottom, 0px) var(--advanced-mermaid-gutter-left, 0px);
+}
+.advanced-mermaid-editor-render[data-align="center"] svg.pele { margin-inline: auto; }
+.advanced-mermaid-editor-render[data-align="right"] svg.pele { margin-inline-start: auto; }
 /* Keep Pele measurable behind SVG text and preserve visibility in snapshots. */
 .advanced-mermaid-editor-render[inert] {
 	position: absolute;

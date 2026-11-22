@@ -37,6 +37,8 @@ export class LiveEditor {
 	private readonly scheduler: PreviewScheduler;
 	private readonly nested: EditorView;
 	private readonly stopWindowMigration: () => void;
+	private readonly syncWindow: () => void;
+	private readonly fullScreenButton?: HTMLButtonElement;
 	private readonly syntax: DiagramSyntaxSelector;
 	private css = '';
 	private cssBaseline = '';
@@ -48,8 +50,8 @@ export class LiveEditor {
 	private inputMode: 'mermaid' | 'css' = 'mermaid';
 	private outputMode: 'pele' | 'svg' = 'pele';
 	private svgOutput?: { requested: boolean };
-	private readonly resize: ResizeObserver;
-	private readonly intersection: IntersectionObserver;
+	private resize?: ResizeObserver;
+	private intersection?: IntersectionObserver;
 	private visible = true;
 	private readonly buttons: HTMLButtonElement[] = [];
 	private readonly presentation = new Compartment();
@@ -57,14 +59,20 @@ export class LiveEditor {
 	private cancelCssTimer?: () => void;
 
 	constructor(private readonly app: App, private readonly settings: () => AdvancedMermaidSettings, private readonly bridge: SourceBridge,
-		private readonly file: string, private readonly close: () => void) {
-		const doc = bridge.parent.dom.ownerDocument; const win = doc.defaultView!;
+		private readonly file: () => string, private readonly close: () => void, toggleFullScreen?: () => void) {
+		const doc = bridge.parent.dom.ownerDocument;
 		this.element = createDetachedEl(doc, 'div', { cls: 'advanced-mermaid-editor' });
 		applyEditorStyle(this.element, settings().liveEditor.style);
 		applySourceHighlights(this.element, settings().liveEditor.style.syntax);
 		const header = this.element.createDiv({ cls: 'advanced-mermaid-editor-header' });
 		const sources = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Source format' } });
 		for (const mode of ['mermaid', 'css'] as const) this.tab(sources, mode === 'css' ? 'CSS' : 'Mermaid', () => this.selectInput(mode), mode === 'mermaid');
+		if (toggleFullScreen) {
+			const action = header.createDiv({ cls: 'advanced-mermaid-full-screen-action' });
+			this.fullScreenButton = this.button(action, 'Open full-screen', toggleFullScreen);
+			this.fullScreenButton.addClass('advanced-mermaid-full-screen-toggle');
+			this.fullScreenButton.hidden = !settings().liveEditor.fullScreen;
+		}
 		const outputs = header.createDiv({ attr: { role: 'tablist', 'aria-label': 'Preview format' } });
 		for (const mode of ['pele', 'svg'] as const) this.tab(outputs, mode === 'svg' ? 'SVG' : 'Pele', () => this.selectOutput(mode), mode === 'pele');
 		const syntaxHost = this.element.createDiv();
@@ -99,7 +107,7 @@ export class LiveEditor {
 		const details = this.element.createEl('details', { cls: 'advanced-mermaid-renderer-details' }); details.createEl('summary', { text: 'Renderer details' }); details.createEl('p', { text: `Uses Pele ${STYLE_RENDERER_VERSION}.` });
 		const footer = this.element.createDiv({ cls: 'advanced-mermaid-editor-footer' });
 		const draftActions = footer.createDiv({ cls: 'advanced-mermaid-draft-actions' });
-		this.button(draftActions, 'Copy draft', () => { void win.navigator.clipboard.writeText(this.inputMode === 'css' ? this.css : this.nested.state.doc.toString()).catch(() => { this.draftStatus.textContent = 'Clipboard unavailable. Select and copy the source text.'; }); });
+		this.button(draftActions, 'Copy draft', () => { void this.element.ownerDocument.defaultView!.navigator.clipboard.writeText(this.inputMode === 'css' ? this.css : this.nested.state.doc.toString()).catch(() => { this.draftStatus.textContent = 'Clipboard unavailable. Select and copy the source text.'; }); });
 		this.button(draftActions, 'Discard changes', () => { this.cssDirty = false; this.conflict = false; this.invalid = false; this.sync({ force: true }); });
 		this.button(draftActions, 'Use note version', () => { this.cssDirty = false; this.conflict = false; this.sync({ force: true }); });
 		this.button(draftActions, 'Render now', () => { if (this.flush()) this.scheduler.now(); });
@@ -111,9 +119,9 @@ export class LiveEditor {
 		const extensions: Extension[] = [keymap.of([
 			{ ...indentWithTab, stopPropagation: true },
 			{ key: 'Enter', run: insertNewlineAndIndent, stopPropagation: true },
-			{ key: 'Mod-z', run: () => undo(bridge.parent) }, { key: 'Mod-Shift-z', run: () => redo(bridge.parent) }, { key: 'Mod-y', run: () => redo(bridge.parent) },
+			{ key: 'Mod-z', run: () => !!bridge.range() && undo(bridge.parent) }, { key: 'Mod-Shift-z', run: () => !!bridge.range() && redo(bridge.parent) }, { key: 'Mod-y', run: () => !!bridge.range() && redo(bridge.parent) },
 			{ key: 'Mod-Enter', run: () => { if (this.flush()) this.scheduler.now(); return true; } },
-			{ key: 'Escape', run: () => { if (this.canClose()) close(); return true; }, stopPropagation: true }, ...defaultKeymap,
+			{ key: 'Escape', run: () => { if (this.element.hasAttribute('data-full-screen') || this.canClose()) close(); return true; }, stopPropagation: true }, ...defaultKeymap,
 		]), EditorView.updateListener.of(update => {
 			if (!update.docChanged || update.transactions.every(transaction => !transaction.docChanged || transaction.annotation(nestedOrigin))) return;
 			if (this.compositionRange) this.compositionRange.to = Math.max(this.compositionRange.to, update.state.selection.main.to);
@@ -129,18 +137,25 @@ export class LiveEditor {
 		})];
 		extensions.push(sourceTheme, sourceTools, this.presentation.of(this.presentationExtensions()));
 		this.nested = new EditorView({ state: EditorState.create({ doc: this.sourceBaseline, extensions }), parent: sourceRoot, root: sourceRoot });
-		this.stopWindowMigration = this.sourceHost.onWindowMigrated(() => {
+		let sourceDocument = doc;
+		this.syncWindow = () => {
+			const current = this.element.ownerDocument;
+			if (current === sourceDocument) return;
+			sourceDocument = current;
+			this.controller.closeExportModal();
 			// Adopted CodeMirror styles belong to the original document.
 			const replacement = this.sourceHost.createDiv().attachShadow({ mode: 'open' });
 			replacement.append(this.nested.dom);
 			this.nested.setRoot(replacement);
 			sourceRoot.host.remove();
 			sourceRoot = replacement;
-			this.nested.requestMeasure();
-		});
+			this.observeSurface();
+			this.remeasure();
+		};
+		this.stopWindowMigration = this.sourceHost.onWindowMigrated(this.syncWindow);
 		this.scheduler = new PreviewScheduler(() => this.element.ownerDocument.defaultView, () => this.render(), text => { this.status.textContent = text; });
 		this.syntax.load();
-		this.controller = new DiagramController(this.canonical, this.sourceBaseline, settings, app, file, { boundary: this.preview, keepLastValid: true, exportFooter: { actions: endActions, status: exportStatus }, changed: (valid, error) => {
+		this.controller = new DiagramController(this.canonical, this.sourceBaseline, settings, app, file, { boundary: this.preview, editorPreview: true, keepLastValid: true, exportFooter: { actions: endActions, status: exportStatus }, changed: (valid, error) => {
 			this.status.textContent = valid ? 'Current · ' + (this.canonical.dataset.category ?? 'diagram') : (this.canonical.classList.contains('advanced-mermaid-fallback') ? 'Using global/type fallback styling. ' : this.canonical.classList.contains('advanced-mermaid-stale') ? 'Preview is from the last valid source. ' : 'Diagram error. ') + (error instanceof Error ? error.message : 'Diagram error');
 			if (error && typeof error === 'object' && 'line' in error && typeof error.line === 'number' && Number.isInteger(error.line)) {
 				const line = error.line;
@@ -152,16 +167,36 @@ export class LiveEditor {
 			bridge.parent.requestMeasure();
 		} });
 		this.controller.load();
+		this.observeSurface();
+	}
+	private observeSurface(): void {
+		this.resize?.disconnect();
+		this.intersection?.disconnect();
+		const win = this.element.ownerDocument.defaultView!;
 		this.resize = new win.ResizeObserver(entries => {
-			const width = entries[0]?.contentRect.width ?? 0; const layout = settings().liveEditor.layout;
-			this.element.dataset.layout = layout === 'stacked' || width < (layout === 'auto' ? 768 : 496) ? 'stacked' : 'side-by-side';
-			bridge.parent.requestMeasure();
+			this.applyLayout(entries[0]?.contentRect.width ?? 0);
+			this.bridge.parent.requestMeasure();
 		}); this.resize.observe(this.element);
 		this.intersection = new win.IntersectionObserver(entries => {
 			this.visible = entries[0]?.isIntersecting ?? true;
-			if (this.visible) this.scheduler.schedule(settings().liveEditor.debounceMs); else if (!this.nested.hasFocus) this.scheduler.cancel();
+			if (this.visible) this.scheduler.schedule(this.settings().liveEditor.debounceMs); else if (!this.nested.hasFocus) this.scheduler.cancel();
 		}); this.intersection.observe(this.element);
 	}
+	private applyLayout(width: number): void {
+		const layout = this.settings().liveEditor.layout;
+		const stacked = layout === 'stacked' || width < (layout === 'auto' ? 768 : 496);
+		this.element.dataset.layout = stacked ? 'stacked' : 'side-by-side';
+	}
+	setFullScreen(open: boolean): void {
+		if (this.disposed) return;
+		this.controller.closeExportModal();
+		this.element.toggleAttribute('data-full-screen', open);
+		if (this.fullScreenButton) this.fullScreenButton.textContent = open ? 'Return to note' : 'Open full-screen';
+		this.syncWindow();
+		this.applyLayout(this.element.clientWidth);
+		this.remeasure();
+	}
+	sourceAvailable(): boolean { return !!this.bridge.range(); }
 	private button(host: HTMLElement, text: string, action: () => void): HTMLButtonElement {
 		const button = host.createEl('button', { text, attr: { type: 'button' } }); button.addEventListener('click', action); return button;
 	}
@@ -221,7 +256,7 @@ export class LiveEditor {
 
 	flush(): boolean {
 		this.clearCssTimer();
-		if (this.conflict || this.invalid) return false;
+		if (this.conflict || this.invalid || !this.bridge.range()) return false;
 		if (!this.cssDirty) return true;
 		try {
 			const source = this.bridge.source(); const current = styleRegion(source)?.css ?? '';
@@ -301,7 +336,7 @@ export class LiveEditor {
 			if (force) {
 				this.protectDraft('Finish composing before loading the note version.');
 			} else {
-				retainDraft({ file: this.file, source: cssMode ? this.sourceBaseline : previous, css: cssMode ? previous : this.css, reason: 'External change during composition' });
+				retainDraft({ file: this.file(), source: cssMode ? this.sourceBaseline : previous, css: cssMode ? previous : this.css, reason: 'External change during composition' });
 				this.protectDraft('External change during composition. Local draft retained. Copy the draft or use the note version.');
 			}
 			return;
@@ -335,8 +370,8 @@ export class LiveEditor {
 		this.applySourceFontSize();
 		this.nested.dispatch({ effects: this.presentation.reconfigure(this.presentationExtensions()) });
 		this.nested.requestMeasure();
-		const layout = this.settings().liveEditor.layout; const width = this.element.getBoundingClientRect().width;
-		this.element.dataset.layout = layout === 'stacked' || width < (layout === 'auto' ? 768 : 496) ? 'stacked' : 'side-by-side';
+		this.applyLayout(this.element.clientWidth);
+		if (this.fullScreenButton) this.fullScreenButton.hidden = !this.element.hasAttribute('data-full-screen') && !this.settings().liveEditor.fullScreen;
 		this.controller.settingsChanged(); this.bridge.parent.requestMeasure();
 	}
 	remeasure(): void { this.nested.requestMeasure(); this.bridge.parent.requestMeasure(); }
@@ -367,14 +402,14 @@ export class LiveEditor {
 			if (this.svgOutput === revision) this.output.value = String(error);
 		}
 	}
-	destroy(): void {
+	destroy(recoveryReason?: string): void {
 		if (this.disposed) return;
-		if (this.cssDirty || this.conflict) retainDraft({ file: this.file, source: this.inputMode === 'mermaid' ? this.nested.state.doc.toString() : this.sourceBaseline, css: this.css, reason: 'Editor closed with an unsaved draft' });
+		if (recoveryReason || this.cssDirty || this.conflict) retainDraft({ file: this.file(), source: this.inputMode === 'mermaid' ? this.nested.state.doc.toString() : this.sourceBaseline, css: this.css, reason: recoveryReason ?? 'Editor closed with an unsaved draft' });
 		this.disposed = true;
 		this.svgOutput = undefined;
 		this.scheduler.destroy();
-		this.resize.disconnect();
-		this.intersection.disconnect();
+		this.resize?.disconnect();
+		this.intersection?.disconnect();
 		this.syntax.unload();
 		this.stopWindowMigration();
 		this.nested.destroy();
