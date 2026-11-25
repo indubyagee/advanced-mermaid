@@ -1,5 +1,48 @@
 import assert from 'node:assert/strict';
 
+export async function runRenderedScrollChecks(page) {
+	const result = await page.evaluate(async () => {
+		const host = document.body.createDiv();
+		host.style.width = '600px';
+		const source = 'flowchart TD\n' + Array.from({ length: 40 }, (_, index) => `N${index} --> N${index + 1}`).join('\n');
+		const before = 'Before\n\n'.repeat(180);
+		const fence = '```mermaid\n' + source + '\n```';
+		const after = '\n\n' + 'After\n\n'.repeat(180);
+		const settings = fixture.normalizeSettings({ maxHeight: '300px' });
+		const inline = fixture.createInlineExtension(fixture.app, () => settings);
+		const language = new fixture.Language(fixture.defineLanguageFacet(), fixture.markdownParser);
+		const view = new fixture.EditorView({ parent: host, state: fixture.EditorState.create({
+			doc: before + fence + after, extensions: [language, fixture.editorInfoField, fixture.editorLivePreviewField, inline.extension],
+		}) });
+		view.dom.style.height = '450px';
+		view.scrollDOM.style.overflow = 'auto';
+		const rendered = '.advanced-mermaid-rendered-preview';
+		const measure = () => host.querySelector(rendered)?.getBoundingClientRect().height;
+		const mounts = [];
+		const observer = new MutationObserver(records => {
+			if (records.some(record => [...record.addedNodes].some(node => node instanceof HTMLElement && node.matches(rendered)))) {
+				const height = measure();
+				if (height !== undefined) mounts.push(height);
+			}
+		});
+		const frame = () => new Promise(resolve => requestAnimationFrame(resolve));
+		try {
+			await frame();
+			const startsOutsideViewport = !host.querySelector(rendered);
+			observer.observe(host, { childList: true, subtree: true });
+			view.dispatch({ effects: fixture.EditorView.scrollIntoView(before.length + fence.length + 2, { y: 'start' }) });
+			for (let i = 0; i < 10; i++) await frame();
+			return { startsOutsideViewport, mounts, settledHeight: measure() };
+		} finally {
+			observer.disconnect(); view.destroy(); inline.destroy(); host.remove();
+		}
+	});
+	assert.equal(result.startsOutsideViewport, true, 'The diagram starts outside the editor viewport');
+	assert.ok(result.settledHeight > 300 && result.mounts.length, `The tall diagram must mount and fit: ${JSON.stringify(result)}`);
+	assert.ok(result.mounts.every(height => height <= result.settledHeight + 1), `Newly mounted diagrams must not introduce oversized scroll geometry: ${JSON.stringify(result)}`);
+	console.log('Rendered scroll regression passed: a tall diagram enters the viewport at its fitted height.');
+}
+
 /** Real keyboard events in nested CodeMirror with a bounded note scroller. */
 export async function runEditorInteractionChecks(page) {
 	await page.evaluate(() => {

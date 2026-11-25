@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Fixed
+
+- Prevent Live Preview from flickering or jumping when scrolling past tall diagrams.
+
 ## 0.4.0
 
 ### Changed

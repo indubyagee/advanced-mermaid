@@ -287,6 +287,7 @@ export function createInlineExtension(app: App, settings: () => AdvancedMermaidS
 					}
 				}
 			},
+			docViewUpdate() { previews.mountPending(view); },
 			destroy() { views.delete(view); destroySession(view); setInlineOwner(view.dom); },
 		};
 	});
