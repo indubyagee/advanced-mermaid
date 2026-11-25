@@ -10,7 +10,7 @@ import { runSubgraphTitleChecks } from './subgraph-title-browser.mjs';
 import { runInlineSettingsChecks } from './inline-settings-browser.mjs';
 import { runFullScreenLayoutChecks, runInlineLayoutChecks } from './inline-layout-browser.mjs';
 import { runPresetChecks, runEditorModeChecks } from './v02-browser.mjs';
-import { runEditorInteractionChecks, runNavigationChecks } from './v021-browser.mjs';
+import { runEditorInteractionChecks, runNavigationChecks, runRenderedScrollChecks } from './v021-browser.mjs';
 import { runEditorStyleChecks } from './editor-style-browser.mjs';
 import { runOwnershipScopeChecks, runRendererOwnershipChecks } from './renderer-ownership-browser.mjs';
 import { runMermaidPreviewChecks } from './mermaid-preview-browser.mjs';
@@ -50,6 +50,7 @@ try {
 	const page = await browser.newPage({ viewport: { width: 1000, height: 800 } });
 	page.on('pageerror', error => console.error('Browser error:', error));
 	await page.goto(`http://127.0.0.1:${server.address().port}`);
+	await runRenderedScrollChecks(page);
 	await runSourceToolsChecks(page);
 	await runDiagramRefreshChecks(page);
 	await runDiagramEnvironmentChecks(page);
